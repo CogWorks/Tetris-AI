@@ -27,8 +27,7 @@ class TetrisSimulator(object):
     level = 0
     
     game_over = False
-    
-    pieces = ["O","I","Z","S","T","L","J"]
+    pieces = ["I", "O", "T", "S", "Z", "J", "L"]
     
     #pieces = ["BIG_T","BIG_I","BIG_J","BIG_L","BIG_S","BIG_Z",
     #              "PLUS","U","BIG_V","D","B","W",
@@ -145,6 +144,22 @@ class TetrisSimulator(object):
         space.append([0,0,0,0,0,0,0,0,0,0])
         
         self.space = space
+    
+    
+    def get_random_zoid( self ):
+
+        #generate random, but with dummy value 7? [in the specs, but what good is it?]
+        z_id = random.randint( 0, len(self.zoids) )
+
+        #then repeat/dummy check, and reroll *once*
+        if not self.curr_z or z_id == len(self.zoids):
+            return random.randint( 0, len(self.zoids)-1 )
+        elif self.zoids[z_id] == self.curr_z:
+            return random.randint( 0, len(self.zoids)-1 )
+
+        return z_id
+    ###
+    
     
     def get_options(self):
         self.options = self.possible_moves()
