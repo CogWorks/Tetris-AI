@@ -799,7 +799,7 @@ class TetrisSimulator(object):
         self.move(options[choice])
     
     
-    def run(self, eps = -1):
+    def run(self, eps = -1, printstep = 500):
         max_eps = -1
         ep = 0
         while not self.game_over and ep != max_eps:
@@ -812,11 +812,10 @@ class TetrisSimulator(object):
             ####controllers
             self.control()
             
-            if self.show_scores:
+            if self.show_scores or ep % printstep == 0:
               print("Episode: " + str(ep))
               self.printscores()
-            
-            ep += 1
+            ep += 1 
         
         print("\n\nGame Over\nFinal scores:")
         print("Episodes: " + str(ep))
@@ -847,9 +846,9 @@ def main(argv):
   
   sim = TetrisSimulator(controller = controller2)
   
-  sim.show_scores = True
+  sim.show_scores = False
   sim.show_options = False
-  sim.show_choice = True
+  sim.show_choice = False
   
   sim.option_step = .3
   sim.choice_step = 0
