@@ -838,7 +838,11 @@ class TetrisSimulator(object):
                 break
             
             ####controllers
-            self.control()
+            try:
+                self.control()
+            except Error:
+                print("IT'S THAT ONE WEIRD ERROR. YOU KNOW THE ONE.")
+                
             
             if self.show_scores or ep % printstep == 0:
               print("Episode: " + str(ep))
