@@ -163,6 +163,13 @@ class TetrisSimulator(object):
     
     def get_options(self):
         self.options = self.possible_moves()
+        
+        #cull game-ending options
+        non_ending = []
+        for i in self.options:
+            if not i[5]:
+                non_ending.append(i)
+        self.options = non_ending
     
     
     #work all of these functions in here
@@ -196,8 +203,11 @@ class TetrisSimulator(object):
         y = len(space) - row - 1
         ix = x
         iy = y
+        ends_game = False
         for i in self.shapes[zoid][rot]:
             for j in i:
+                if iy < 0:
+                    ends_game = True
                 if j != 0 and iy >= 0:
                     #print("stamping",iy,ix)
                     space[iy][ix] = 2
@@ -205,7 +215,7 @@ class TetrisSimulator(object):
             ix = x
             iy += 1
         
-        return space
+        return ends_game
     
     def move(self, movelist):
         self.do_move(movelist[0],movelist[1],movelist[2])
@@ -293,9 +303,9 @@ class TetrisSimulator(object):
             #and each possible column for that rotation
             for c in range(0, len(space[0]) - len(self.shapes[zoid][r][0]) + 1):
                 row = self.find_drop(c,r,zoid,space)
-                simboard = self.possible_board(c,r,row)
+                simboard, ends_game = self.possible_board(c,r,row)
                 features = self.get_features(simboard)
-                opt = [c,r,row,simboard,features]
+                opt = [c,r,row,simboard,features, ends_game]
                 options.append(opt)
                 
         if self.show_options:
@@ -309,9 +319,9 @@ class TetrisSimulator(object):
             
         newspace = copy.deepcopy(self.space)
         
-        self.sim_move(col, rot, row, zoid, newspace)
+        ends_game = self.sim_move(col, rot, row, zoid, newspace)
         
-        return newspace
+        return newspace, ends_game
         
     
     def find_drop(self, col, rot, zoid, space):
@@ -824,6 +834,9 @@ class TetrisSimulator(object):
             ##generate options and features
             self.get_options()
             
+            if len(self.options) == 0:
+                break
+            
             ####controllers
             self.control()
             
@@ -836,21 +849,45 @@ class TetrisSimulator(object):
         print("Episodes: " + str(ep))
         self.printscores()
     
+def testboard():
+    testboard = []
+    testboard.append([0,0,0,0,0,0,0,0,0,0])
+    testboard.append([0,0,0,0,0,0,0,0,0,0])
+    testboard.append([0,0,0,0,0,0,0,0,0,0])
+    testboard.append([0,0,0,0,0,0,0,0,0,0])
+    testboard.append([0,0,0,0,0,0,0,0,0,0])
+    testboard.append([0,0,0,0,0,0,0,0,0,0])
+    testboard.append([0,0,0,0,0,0,0,0,0,0])
+    testboard.append([0,0,0,0,0,0,0,0,0,0])
+    testboard.append([0,0,0,0,0,0,0,0,0,0])
+    testboard.append([1,0,1,0,1,0,1,0,1,0])
+    testboard.append([0,1,0,1,0,1,0,1,0,1])
+    testboard.append([1,0,1,0,1,0,1,0,1,0])
+    testboard.append([0,1,0,1,0,1,0,1,0,1])
+    testboard.append([1,0,1,0,1,0,1,0,1,0])
+    testboard.append([0,1,0,1,0,1,0,1,0,1])
+    testboard.append([1,0,1,0,1,0,1,0,1,0])
+    testboard.append([0,1,0,1,0,1,0,1,0,1])
+    testboard.append([1,0,1,0,1,0,1,0,1,0])
+    testboard.append([0,1,0,1,0,1,0,1,0,1])
+    testboard.append([1,0,1,0,1,0,1,0,1,0])
+    return testboard
+    
     
 #Run main.
 def main(argv):
-  
-  #default Dellacherie controller; 660,000 lines avg / game in literature!
-  controller1 = [["landing_height",-1],
+    
+    #default Dellacherie controller; 660,000 lines avg / game in literature!
+    controller1 = [["landing_height",-1],
                 ["eroded_cells",1],
                 ["row_trans",-1],
                 ["col_trans",-1],
                 ["pits",-4],
                 ["cuml_wells",-1]]
-  
-  
-  #DTS controller, from Dellacherie + Thiery & Scherrer; 35,000,000 rows?!!?!
-  controller2 = [["landing_height",-12.63],
+    
+    
+    #DTS controller, from Dellacherie + Thiery & Scherrer; 35,000,000 rows?!!?!
+    controller2 = [["landing_height",-12.63],
                 ["eroded_cells",6.60],
                 ["row_trans",-9.22],
                 ["col_trans",-19.77],
@@ -858,22 +895,22 @@ def main(argv):
                 ["cuml_wells",-10.49],
                 ["pit_depth",-1.61],
                 ["pit_rows",-24.04]]
-  
-  sim = TetrisSimulator(controller = controller2)
-  
-  sim.show_scores = False
-  sim.show_options = False
-  sim.show_choice = False
-  
-  sim.option_step = 0
-  sim.choice_step = 0
-  
-  sim.run()
-  
+    
+    sim = TetrisSimulator(board, controller = controller2)
+    
+    sim.show_scores = True
+    sim.show_options = False
+    sim.show_choice = True
+    
+    sim.option_step = .05
+    sim.choice_step = 0
+    
+    sim.run()
+    
 
 
 if __name__ == "__main__":
-  main(sys.argv)
+    main(sys.argv)
 ###
   
   
