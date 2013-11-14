@@ -861,11 +861,11 @@ def main(argv):
   
   sim = TetrisSimulator(controller = controller2)
   
-  sim.show_scores = False
+  sim.show_scores = True
   sim.show_options = False
-  sim.show_choice = False
+  sim.show_choice = True
   
-  sim.option_step = .3
+  sim.option_step = .1
   sim.choice_step = 0
   
   sim.run()
