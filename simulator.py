@@ -896,7 +896,7 @@ def main(argv):
                 ["pit_depth",-1.61],
                 ["pit_rows",-24.04]]
     
-    sim = TetrisSimulator(board, controller = controller2)
+    sim = TetrisSimulator(controller = controller2)
     
     sim.show_scores = True
     sim.show_options = False
