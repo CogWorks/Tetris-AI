@@ -1,0 +1,76 @@
+Want to run a new model? Here's what to do!
+
+Screen-ception.
+
+
+1. Connect to the cwl-projects server under your account.
+
+    $ ssh [your_rcs_id]@cwl-projects.cogsci.rpi.edu
+    
+
+2. If you haven't before, clone the simulator repository.
+
+    $ git clone git@github.com:CogWorks/Tetris-AI
+    
+    or, if that fails, clone the read-only version
+    
+    $ git clone http://www.github.com/CogWorks/Tetris-AI
+    
+2.1 If you HAVE already cloned the project, 
+    pull the newest version.
+    
+    $git pull
+    
+3. Now to run it.
+    You'll want to set-and-forget, right? So use Screen!
+    
+    Start a new Screen session.
+    $ screen -S [model_name]
+    
+4. Run your current AI model 
+    (after editing the file particulars; 
+    turn off all score reporting).
+    
+    $cd Tetris-AI
+    $python simulator.py
+    
+5. Now it's running to its heart's content.
+    But you have shit to do. Disconnect from the screen...
+    
+    Press [CTRL] + [A], then [D]
+    
+5.1 Oh god, it's gone! What have I done?! Check on the screen.
+
+    show the list of the current screens.
+    $ screen -ls
+    
+    and to log back into a running screen...
+    $ screen -r [model_name]
+    
+6. Exit out, and be done with it. The screen 
+    will continue running on the remote server ad infinitum.
+    You can disconnect completely.
+    
+    From the ssh session:
+    $ exit 
+    
+    
+7. When the model dies, which it surely will, and you're done
+    make SURE to log back into the server, 
+    enter the screen session,
+    and terminate it.
+    
+    If the program is still running and you want to end it.
+        press [CTRL] + [C]
+    
+    To exit the screen:
+    $ exit
+    
+    Check to make sure no screen sessions are running:
+    $ screen -ls
+    
+    
+    If no models are running, 
+    and no screen sessions are persistent, 
+    you're in the clear.
+    
