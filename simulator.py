@@ -397,16 +397,21 @@ class TetrisSimulator(object):
         print("Max Ht: " + str(feats["max_ht"]))
         print("Pits: " + str(feats["pits"]))
         print("All heights: " + str(feats["all_ht"]))
+        print("Mean height: " + str(feats["mean_ht"]))
         print("Cleared: " + str(feats["cleared"]))
         print("Landing height: " + str(feats["landing_height"]))
         print("Eroded cells: " + str(feats["eroded_cells"]))
         print("Column trans: " + str(feats["col_trans"]))
         print("Row trans: " + str(feats["row_trans"]))
+        print("All trans: " + str(feats["all_trans"]))
         print("Wells: " + str(feats["wells"]))
         print("Cumulative wells: " + str(feats["cuml_wells"]))
+        print("Deep wells: " + str(feats["deep_wells"]))
+        print("Max well: " + str(feats["max_well"]))
         print("Cumulative clears: " + str(feats["cuml_cleared"]))
         print("Cumulative eroded: " + str(feats["cuml_eroded"]))
         print("Pit depths: " + str(feats["pit_depth"]))
+        print("Mean pit depths: " + str(feats["mean_pit_depth"]))
         print("Pit rows: " + str(feats["pit_rows"]))
         self.printspace(opt[3])
     
@@ -462,20 +467,29 @@ class TetrisSimulator(object):
         
         features = {}
         
+        features["mean_ht"] = sum(all_heights) / len(all_heights)
         features["max_ht"] = max(all_heights)
-        features["pits"] = sum(all_pits)
+        features["min_ht"] = min(all_heights)
         features["all_ht"] = sum(all_heights)
+        features["max_ht_diff"] = features["max_ht"] - features["mean_ht"]
+        features["min_ht_diff"] = features["mean_ht"] - features["min_ht"]
+        features["pits"] = sum(all_pits)
         features["cleared"] = self.filled_lines(space)
         features["landing_height"] = self.get_landing_height(space)
         features["eroded_cells"] = self.get_eroded_cells(space)
         features["col_trans"] = sum(col_trans)
         features["row_trans"] = sum(row_trans)
+        features["all_trans"] = sum(col_trans) + sum(row_trans)
         features["wells"] = sum(wells)
         features["cuml_wells"] = self.accumulate(wells)
+        features["deep_wells"] = sum([i for i in wells if i != 1])
+        features["max_well"] = max(wells)
         features["cuml_cleared"] = self.accumulate([features["cleared"]])
         features["cuml_eroded"] = self.accumulate([features["eroded_cells"]])
         features["pit_depth"] = sum(pit_depths)
+        features["mean_pit_depth"] = sum(pit_depths) / len(pit_depths)
         features["pit_rows"] = len(pit_rows)
+        
         
         return features
     
@@ -840,7 +854,7 @@ class TetrisSimulator(object):
             ####controllers
             try:
                 self.control()
-            except Error:
+            except TypeError:
                 print("IT'S THAT ONE WEIRD ERROR. YOU KNOW THE ONE.")
                 
             
