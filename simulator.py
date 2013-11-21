@@ -852,7 +852,7 @@ class TetrisSimulator(object):
     
     
     def run(self, eps = -1, printstep = 500):
-        max_eps = -1
+        max_eps = eps
         ep = 0
         while not self.game_over and ep != max_eps:
             if self.game_over:
@@ -871,7 +871,7 @@ class TetrisSimulator(object):
                 print("IT'S THAT ONE WEIRD ERROR. YOU KNOW THE ONE.")
                 
             
-            if self.show_scores or ep % printstep == 0:
+            if self.show_scores or ep % printstep == 0 and not printstep == -1:
               print("Episode: " + str(ep))
               self.printscores()
             ep += 1 
