@@ -56,14 +56,17 @@ start_controller = [["landing_height",0],
                 
 tolerances = [10,10,10,10,10,10]
 
+working_controllers = []
+
+results = []
 
 for a in range(0,10):
 	random_controller = generate_controller(start_controller, tolerances)
 	print(random_controller)
 	working_controllers.append(random_controller)
 
-for b in range (0, len(working_controllers))
-	test = TetrisSimulator(controller = working_controllers[i])
+for b in range (0, len(working_controllers)):
+	test = TetrisSimulator(controller = working_controllers[b])
 	test_result = test.run()
 	results.append(test_result)
 	
@@ -108,7 +111,7 @@ print(merge_controllers([c1,c2,c3,c4]))
 
 
 
-sim_test = TetrisSimulator(controller = random_controller, show_choice = True, choice_step = 0)
+#sim_test = TetrisSimulator(controller = random_controller, show_choice = True, choice_step = 0)
 
-result = sim_test.run()
-print result
+#result = sim_test.run()
+#print result
