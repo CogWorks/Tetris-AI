@@ -54,58 +54,42 @@ start_controller = [["landing_height",0],
                 ["pits",0],
                 ["cuml_wells",0]]
                 
-tolerances = [10,10,10,10,10,10]
+tolerances = [1,1,1,1,1,1]
 
-working_controllers = []
+depth = 5
+controllers = 10
+survivors = 4
+for x in range (0, depth):
+	results = []
 
-results = []
+	for a in range(0, controllers):
+		random_controller = generate_controller(start_controller, tolerances)
+		print(random_controller)
+		test = TetrisSimulator(controller = random_controller)
+		test_result = test.run()
+		results.append([random_controller, test_result])
+		
+		
+	sorted_results = sorted(results, key=lambda k: k[1]['lines'])
 
-for a in range(0,10):
-	random_controller = generate_controller(start_controller, tolerances)
-	print(random_controller)
-	working_controllers.append(random_controller)
+	for d in sorted_results:
+		print d[1]["lines"]
 
-for b in range (0, len(working_controllers)):
-	test = TetrisSimulator(controller = working_controllers[b])
-	test_result = test.run()
-	results.append(test_result)
-	
-#USAGE: generate_controller(start, tols)
-random_controller = generate_controller(start_controller, tolerances)
-print(random_controller)
-				
+	top_results = sorted_results[-survivors:]
 
+	for e in top_results:
+		print e[1]["lines"]
 
-#USAGE: merge_controllers(controllers)
-c1 = [["landing_height",0],
-        ["eroded_cells",0],
-        ["row_trans",0],
-        ["col_trans",0],
-        ["pits",0],
-        ["cuml_wells",0]]
+	top_controllers = []
+		
+	for f in top_four:
+		top_controllers.append(f[0])
 
-c2 = [["landing_height",1],
-        ["eroded_cells",1],
-        ["row_trans",1],
-        ["col_trans",1],
-        ["pits",1],
-        ["cuml_wells",1]]
+	start_controller, tolerances = merge_controllers(top_controllers)
 
-c3 = [["landing_height",2],
-        ["eroded_cells",2],
-        ["row_trans",2],
-        ["col_trans",2],
-        ["pits",2],
-        ["cuml_wells",2]]
+	print start_controller
+	print tolerances
 
-c4 = [["landing_height",-1],
-        ["eroded_cells",-1],
-        ["row_trans",-1],
-        ["col_trans",-1],
-        ["pits",-1],
-        ["cuml_wells",-1]]
-
-print(merge_controllers([c1,c2,c3,c4]))
 
 
 
