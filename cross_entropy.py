@@ -16,8 +16,25 @@ def generate_controller(start, tols):
         
     return new_controller
 
-
-
+#Takes a list of controllers (lists) with the same number of features
+#outputs a new average controller, and the stdev for each value
+def collapse_controllers(controllers):
+    new_controller = []
+    tolerances = []
+    #for each feature (of all controllers)
+    for i in range(0,len(controllers[0])):
+        feature = controllers[0][i][0]
+        vals = []
+        for j in controllers:
+            vals.append(j[i][1])
+        mean = float(sum(vals)) / float(len(vals))
+        tol = numpy.std(vals)
+        
+        new_controller.append([feature,mean])
+        tolerances.append(tol)
+    
+    return new_controller, tolerances
+        
 
 
 ###Script
@@ -39,24 +56,48 @@ start_controller = [["landing_height",0],
                 
 tolerances = [10,10,10,10,10,10]
 
-
+#USAGE: generate_controller(start, tols)
 random_controller = generate_controller(start_controller, tolerances)
 print(random_controller)
 				
-sim_test = TetrisSimulator(controller = random_controller)
+
+
+#USAGE: collapse_controllers(controllers)
+c1 = [["landing_height",0],
+        ["eroded_cells",0],
+        ["row_trans",0],
+        ["col_trans",0],
+        ["pits",0],
+        ["cuml_wells",0]]
+
+c2 = [["landing_height",1],
+        ["eroded_cells",1],
+        ["row_trans",1],
+        ["col_trans",1],
+        ["pits",1],
+        ["cuml_wells",1]]
+
+c3 = [["landing_height",2],
+        ["eroded_cells",2],
+        ["row_trans",2],
+        ["col_trans",2],
+        ["pits",2],
+        ["cuml_wells",2]]
+
+c4 = [["landing_height",-1],
+        ["eroded_cells",-1],
+        ["row_trans",-1],
+        ["col_trans",-1],
+        ["pits",-1],
+        ["cuml_wells",-1]]
+
+print(collapse_controllers([c1,c2,c3,c4]))
 
 
 
 
-#new function: to generate new tolerances (stdev):
-    #get all values of a particular feature into a single vector
-    #  vals = [a,b,c,d,e]
-    #and call
-    #  numpy.std(vals)
-    #Do this for each value to generate the new tolerances
-    #and, while you're at it, take the means to generate the new "base model"
 
-
+sim_test = TetrisSimulator(controller = random_controller, show_choice = True, choice_step = 0)
 
 result = sim_test.run()
 print result

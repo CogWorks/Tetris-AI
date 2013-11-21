@@ -74,7 +74,9 @@ class TetrisSimulator(object):
                 }
     
     
-    def __init__(self,board = None, curr = None, next = None, controller = None):
+    def __init__(self,board = None, curr = None, next = None, controller = None, 
+                    show_scores = False, show_options = False, show_choice = False,
+                    option_step = .1, choice_step = .5):
         """Generates object based on given board layout"""
         if board:
             self.space = board
@@ -101,6 +103,13 @@ class TetrisSimulator(object):
                             ["pits",-4],
                             ["cuml_wells",-1]]
         
+        
+        self.show_scores = show_scores
+        self.show_options = show_options
+        self.show_choice = show_choice
+    
+        self.option_step = option_step
+        self.choice_step = choice_step
         
         #self.heights = self.get_heights(self.space)
         #self.pits = self.get_all_pits(self.space)
@@ -927,13 +936,6 @@ def main(argv):
                 ["pit_rows",-24.04]]
     
     sim = TetrisSimulator(controller = controller2)
-    
-    sim.show_scores = True
-    sim.show_options = False
-    sim.show_choice = True
-    
-    sim.option_step = .05
-    sim.choice_step = 0
     
     sim.run()
     
