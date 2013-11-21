@@ -18,7 +18,7 @@ def generate_controller(start, tols):
 
 #Takes a list of controllers (lists) with the same number of features
 #outputs a new average controller, and the stdev for each value
-def collapse_controllers(controllers):
+def merge_controllers(controllers):
     new_controller = []
     tolerances = []
     #for each feature (of all controllers)
@@ -62,7 +62,7 @@ print(random_controller)
 				
 
 
-#USAGE: collapse_controllers(controllers)
+#USAGE: merge_controllers(controllers)
 c1 = [["landing_height",0],
         ["eroded_cells",0],
         ["row_trans",0],
@@ -91,7 +91,7 @@ c4 = [["landing_height",-1],
         ["pits",-1],
         ["cuml_wells",-1]]
 
-print(collapse_controllers([c1,c2,c3,c4]))
+print(merge_controllers([c1,c2,c3,c4]))
 
 
 
