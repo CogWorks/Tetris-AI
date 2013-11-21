@@ -56,6 +56,17 @@ start_controller = [["landing_height",0],
                 
 tolerances = [10,10,10,10,10,10]
 
+
+for a in range(0,10):
+	random_controller = generate_controller(start_controller, tolerances)
+	print(random_controller)
+	working_controllers.append(random_controller)
+
+for b in range (0, len(working_controllers))
+	test = TetrisSimulator(controller = working_controllers[i])
+	test_result = test.run()
+	results.append(test_result)
+	
 #USAGE: generate_controller(start, tols)
 random_controller = generate_controller(start_controller, tolerances)
 print(random_controller)
