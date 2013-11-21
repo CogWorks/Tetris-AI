@@ -1,5 +1,4 @@
 #to be added
-# return scores upon death
 # arguments to set what is printed by the object
 # 
 
