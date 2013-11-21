@@ -40,7 +40,7 @@ start_controller = [["landing_height",0],
 tolerances = [10,10,10,10,10,10]
 
 
-random_controller = generate_controller(start_controller, tolerances))
+random_controller = generate_controller(start_controller, tolerances)
 
 				
 sim_test = TetrisSimulator(controller = random_controller)
