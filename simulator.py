@@ -95,7 +95,7 @@ class TetrisSimulator(object):
                             ["row_trans",-1],
                             ["col_trans",-1],
                             ["pits",-4],
-                            ["cum_wells",-1]]
+                            ["cuml_wells",-1]]
         
         
         #self.heights = self.get_heights(self.space)
