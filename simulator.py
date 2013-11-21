@@ -871,14 +871,6 @@ class TetrisSimulator(object):
         print("Episodes: " + str(ep))
         self.printscores()
         
-        self.lines = 0
-        self.l1 = 0
-        self.l2 = 0
-        self.l3 = 0
-        self.l4 = 0
-        self.score = 0
-        self.level = 0
-        
         return({"lines":self.lines,
                 "l1":self.l1,
                 "l2":self.l2,

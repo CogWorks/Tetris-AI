@@ -41,7 +41,7 @@ tolerances = [10,10,10,10,10,10]
 
 
 random_controller = generate_controller(start_controller, tolerances)
-
+print(random_controller)
 				
 sim_test = TetrisSimulator(controller = random_controller)
 
