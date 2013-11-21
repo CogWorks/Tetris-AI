@@ -82,7 +82,7 @@ for x in range (0, depth):
 
 	top_controllers = []
 		
-	for f in top_four:
+	for f in top_results:
 		top_controllers.append(f[0])
 
 	start_controller, tolerances = merge_controllers(top_controllers)
