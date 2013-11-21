@@ -76,7 +76,7 @@ class TetrisSimulator(object):
     
     def __init__(self,board = None, curr = None, next = None, controller = None, 
                     show_scores = False, show_options = False, show_choice = False,
-                    option_step = .1, choice_step = .5):
+                    option_step = 0, choice_step = 0):
         """Generates object based on given board layout"""
         if board:
             self.space = board
