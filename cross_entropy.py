@@ -1,5 +1,5 @@
 from simulator import TetrisSimulator
-import random, numpy
+import random, numpy, argparse
 
 
 ###Functions
@@ -56,46 +56,81 @@ start_controller = [["landing_height",0],
                 
 tolerances = [1,1,1,1,1,1]
 
-depth = 5
-controllers = 10
-survivors = 4
-for x in range (0, depth):
-	results = []
-
-	for a in range(0, controllers):
-		random_controller = generate_controller(start_controller, tolerances)
-		print(random_controller)
-		test = TetrisSimulator(controller = random_controller)
-		test_result = test.run()
-		results.append([random_controller, test_result])
-		
-		
-	sorted_results = sorted(results, key=lambda k: k[1]['lines'])
-
-	for d in sorted_results:
-		print d[1]["lines"]
-
-	top_results = sorted_results[-survivors:]
-
-	for e in top_results:
-		print e[1]["lines"]
-
-	top_controllers = []
-		
-	for f in top_results:
-		top_controllers.append(f[0])
-
-	start_controller, tolerances = merge_controllers(top_controllers)
-
-	print start_controller
-	print tolerances
-
-
-
-
-
-
-#sim_test = TetrisSimulator(controller = random_controller, show_choice = True, choice_step = 0)
-
-#result = sim_test.run()
-#print result
+if __name__ == '__main__':
+    
+    #defaults from Thierry and Scherrer paper:
+        #original controller centered on 0, 
+        #original variance 100, (they used variance, we use Standard Deviation; figure out how that works)
+        #100 controllers, 
+        #10 survivors, 
+        #all new variances were varied by the constant 4
+    
+    parser = argparse.ArgumentParser( formatter_class = argparse.ArgumentDefaultsHelpFormatter )
+    
+    parser.add_argument( '-d', '--depth',
+                        action = "store", dest = "depth",
+                        type = int, default = 5,
+                        help = "Set how many cross-entropy generations to traverse.")
+    
+    parser.add_argument( '-c', '--controllers',
+                        action = "store", dest = "controllers",
+                        type = int, default = 10,
+                        help = "Set the number of controllers to spawn in each generation.")
+    
+    parser.add_argument( '-s', '--survivors',
+                        action = "store", dest = "survivors",
+                        type = int, default = 4,
+                        help = "Set how many of the best controllers survive each generation.")
+    
+    parser.add_argument( '-e', '--episodes',
+                        action = "store", dest = "episodes",
+                        type = int, default = -1,
+                        help = "Set maximum number of episodes for all controllers to play.")
+    parser.add_argument( '-r', '--report_every',
+                        action = "store", dest = "report_every",
+                        type = int, default = 500,
+                        help = "How often, in episodes, to report the current scores. -1 disables")
+    
+    args = parser.parse_args()
+    
+    depth = args.depth
+    controllers = args.controllers
+    survivors = args.survivors
+    episodes = args.episodes
+    report_every = args.report_every
+    
+    
+    for x in range (0, depth):
+        results = []
+    
+        for a in range(0, controllers):
+            random_controller = generate_controller(start_controller, tolerances)
+            print(random_controller)
+            sim = TetrisSimulator(controller = random_controller)
+            sim_result = sim.run(eps = episodes, printstep = report_every)
+            results.append([random_controller, sim_result])
+            
+            
+        sorted_results = sorted(results, key=lambda k: k[1]['lines'])
+    
+        for d in sorted_results:
+            print d[1]["lines"]
+    
+        top_results = sorted_results[-survivors:]
+    
+        for e in top_results:
+            print e[1]["lines"]
+    
+        top_controllers = []
+            
+        for f in top_results:
+            top_controllers.append(f[0])
+    
+        start_controller, tolerances = merge_controllers(top_controllers)
+    
+        print start_controller
+        print tolerances
+        
+    
+    
+    
