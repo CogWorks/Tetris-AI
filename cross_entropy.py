@@ -8,5 +8,8 @@ start_controller = [["landing_height",-1],
                 ["pits",-4],
                 ["cuml_wells",-1]]
 				
-sim_test = TetrisSimulator(controller = controller)
-sim_test.run()
+sim_test = TetrisSimulator(controller = start_controller)
+
+
+result = sim_test.run()
+print result

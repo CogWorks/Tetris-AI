@@ -1,3 +1,8 @@
+#to be added
+# return scores upon death
+# arguments to set what is printed by the object
+# 
+
 
 import sys, random, os, time, copy
 
@@ -866,6 +871,22 @@ class TetrisSimulator(object):
         print("\n\nGame Over\nFinal scores:")
         print("Episodes: " + str(ep))
         self.printscores()
+        
+        self.lines = 0
+        self.l1 = 0
+        self.l2 = 0
+        self.l3 = 0
+        self.l4 = 0
+        self.score = 0
+        self.level = 0
+        
+        return({"lines":self.lines,
+                "l1":self.l1,
+                "l2":self.l2,
+                "l3":self.l3,
+                "l4":self.l4,
+                "score":self.score,
+                "level":self.level})
     
 def testboard():
     testboard = []
