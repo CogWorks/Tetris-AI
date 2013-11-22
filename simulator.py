@@ -426,8 +426,8 @@ class TetrisSimulator(object):
         print("Pit depths: " + str(feats["pit_depth"]))
         print("Mean pit depths: " + str(feats["mean_pit_depth"]))
         print("Pit rows: " + str(feats["pit_rows"]))
-        print("Column 9 heght: " + str(feats["column_9"])
-        print("Scored tetris: " + str(feats["tetris"])
+        print("Column 9 heght: " + str(feats["column_9"]))
+        print("Scored tetris: " + str(feats["tetris"]))
         self.printspace(opt[3])
     
     def printzoid(self, zoid = None):
