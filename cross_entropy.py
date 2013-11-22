@@ -1,3 +1,22 @@
+#To-dos
+
+#absolutely need to get read-write file system things going,
+    #means we can preserve a run's progress if the machine needs to go down.
+    #also allows us to record which controllers are performing well and
+        #run some stats over them
+    #would need to log:
+        #each layer's base model, tolerances, and generated models
+        #each model's performance
+
+#should also track the BEST model's performance,
+    #i.e. keep a COMPLETE list of model runs and performances to be able to 
+        #report the best of all runs.
+        
+#need to be able to define in argparse the 
+    #base model values, base tolerance values, 
+    #all printing options
+    #
+
 from simulator import TetrisSimulator
 import random, numpy, argparse
 
@@ -54,7 +73,11 @@ start_controller = [["landing_height",0],
                 ["pits",0],
                 ["cuml_wells",0]]
                 
-tolerances = [1,1,1,1,1,1]
+                #["tetris",1000],
+                #["column_9",-400]]
+                
+tolerances = [100,100,100,100,100,100]
+                #100,100]
 
 if __name__ == '__main__':
     
@@ -91,6 +114,12 @@ if __name__ == '__main__':
                         type = int, default = 500,
                         help = "How often, in episodes, to report the current scores. -1 disables")
     
+    #parse for seed
+    #parse for tolerance
+    #parse for initial values
+    #parse for printing
+    #parse for result to maximize
+    
     args = parser.parse_args()
     
     depth = args.depth
@@ -106,13 +135,15 @@ if __name__ == '__main__':
         for a in range(0, controllers):
             random_controller = generate_controller(start_controller, tolerances)
             print(random_controller)
-            sim = TetrisSimulator(controller = random_controller)
+            sim = TetrisSimulator(controller = random_controller, show_choice = True)
             sim_result = sim.run(eps = episodes, printstep = report_every)
             results.append([random_controller, sim_result])
             
             
         sorted_results = sorted(results, key=lambda k: k[1]['lines'])
-    
+        
+        #sort by "l4" or "lines" or "score"
+        
         for d in sorted_results:
             print d[1]["lines"]
     
