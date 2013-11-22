@@ -1,6 +1,6 @@
 #to be added
-# arguments to set what is printed by the object
-# 
+# ability to control zoid sequences
+# proper dummy-redundency and/or 7-bag zoid selection
 
 
 import sys, random, os, time, copy
@@ -426,6 +426,8 @@ class TetrisSimulator(object):
         print("Pit depths: " + str(feats["pit_depth"]))
         print("Mean pit depths: " + str(feats["mean_pit_depth"]))
         print("Pit rows: " + str(feats["pit_rows"]))
+        print("Column 9 heght: " + str(feats["column_9"])
+        print("Scored tetris: " + str(feats["tetris"])
         self.printspace(opt[3])
     
     def printzoid(self, zoid = None):
@@ -502,6 +504,12 @@ class TetrisSimulator(object):
         features["pit_depth"] = sum(pit_depths)
         features["mean_pit_depth"] = sum(pit_depths) / len(pit_depths)
         features["pit_rows"] = len(pit_rows)
+        
+        #JKL additions - previous work
+        
+        #JKL additions - on the fly
+        features["column_9"] = all_heights[-1]
+        features["tetris"] = 1 if features["cleared"] == 4 else 0
         
         
         return features
