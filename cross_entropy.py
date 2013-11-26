@@ -1,12 +1,8 @@
 #To-dos
 
-#absolutely need to get read-write file system things going,
-    #means we can preserve a run's progress if the machine needs to go down.
-    #also allows us to record which controllers are performing well and
-        #run some stats over them
-    #would need to log:
-        #each layer's base model, tolerances, and generated models
-        #each model's performance
+#File-reading
+    #be able to read generated files to "pick up where we left off"
+    #may need some revisions to the logging structure (just a rough draft anyway)
 
 #should also track the BEST model's performance,
     #i.e. keep a COMPLETE list of model runs and performances to be able to 
@@ -17,9 +13,11 @@
     #all printing options
     #
 
-from simulator import TetrisSimulator
-import random, numpy, argparse
+#must be able to control game seed. needs changes in simulator.py for this to take effect
 
+from simulator import TetrisSimulator
+import random, numpy, argparse, os
+from time import gmtime, strftime
 
 ###Functions
 def generate_controller(start, tols):
@@ -56,6 +54,26 @@ def merge_controllers(controllers):
         
 
 
+def write_controller(name, file, controller, tolerances = None):
+    file.write("Controller:\t" + name + "\n")
+    header = "feature\tval"
+    if tolerances:
+        header = header + "\ttolerance"
+    file.write(header + "\n")
+    for i in range(0,len(controller)):
+        file.write(controller[i][0] + "\t" + str(controller[i][1]))
+        if tolerances:
+            file.write("\t" + str(tolerances[i]))
+        file.write("\n")
+    file.write("\n")
+
+result_fields = ["lines","score","level","l1","l2","l3","l4"]
+def write_result(name, file, result):
+    file.write("\t" + name + " Results:\n")
+    for f in result_fields:
+        file.write("\t" + f + ":\t" + str(result[f]) + "\n")
+    file.write("\n")
+
 ###Script
 
 #staring from Dellacherie model
@@ -80,6 +98,8 @@ tolerances = [100,100,100,100,100,100]
                 #100,100]
 
 if __name__ == '__main__':
+    
+    datestring = strftime("%Y-%m-%d_%H-%M-%S", gmtime())
     
     #defaults from Thierry and Scherrer paper:
         #original controller centered on 0, 
@@ -114,6 +134,12 @@ if __name__ == '__main__':
                         type = int, default = 500,
                         help = "How often, in episodes, to report the current scores. -1 disables")
     
+    parser.add_argument( '-o', '--output',
+                        action = "store", dest = "output_file",
+                        type = str, default = datestring,
+                        help = "Output file. Extension will be .txt")
+    
+    
     #parse for seed
     #parse for tolerance
     #parse for initial values
@@ -122,6 +148,11 @@ if __name__ == '__main__':
     
     args = parser.parse_args()
     
+    if not os.path.exists("runs"):
+        os.makedirs("runs")
+    outfile = open("runs/" + args.output_file + ".incomplete.txt", "w")
+    #logfile = open("log.txt", "a")
+        
     depth = args.depth
     controllers = args.controllers
     survivors = args.survivors
@@ -129,14 +160,32 @@ if __name__ == '__main__':
     report_every = args.report_every
     
     
-    for x in range (0, depth):
-        results = []
+    #logfile.write("Run initiated at " + datestring + "\n")
     
+    outfile.write("Depth      :\t" + str(depth) + "\n")
+    outfile.write("Controllers:\t" + str(controllers) + "\n")
+    outfile.write("Survivors  :\t" + str(survivors) + "\n")
+    outfile.write("Episodes   :\t" + str(episodes) + "\n")
+    outfile.write("\n")
+    
+    write_controller("INIT", outfile, start_controller, tolerances)
+    
+    for x in range (0, depth):
+        
+        outfile.write("Run:\t" + str(x+1) + "\n\n")
+        
+        results = []
+        
         for a in range(0, controllers):
             random_controller = generate_controller(start_controller, tolerances)
-            print(random_controller)
+            controller_name = "R" + str(x + 1) + "_" + str(a+1)
+            write_controller(controller_name, outfile, random_controller)
+            
             sim = TetrisSimulator(controller = random_controller, show_choice = True)
             sim_result = sim.run(eps = episodes, printstep = report_every)
+            
+            write_result(controller_name, outfile, sim_result)
+            
             results.append([random_controller, sim_result])
             
             
@@ -149,19 +198,21 @@ if __name__ == '__main__':
     
         top_results = sorted_results[-survivors:]
     
-        for e in top_results:
-            print e[1]["lines"]
+        #for e in top_results:
+        #    print e[1]["lines"]
     
         top_controllers = []
             
         for f in top_results:
             top_controllers.append(f[0])
-    
+        
         start_controller, tolerances = merge_controllers(top_controllers)
-    
-        print start_controller
-        print tolerances
+        
+        write_controller("R" + str(x+1) + "_mean", outfile, start_controller, tolerances)
+        
+        #print start_controller
+        #print tolerances
         
     
-    
+    os.rename("runs/" + datestring + ".incomplete.txt", "runs/" + datestring+".txt")
     
