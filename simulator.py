@@ -943,7 +943,7 @@ def main(argv):
                 ["pit_depth",-1.61],
                 ["pit_rows",-24.04]]
     
-    sim = TetrisSimulator(controller = controller2, show_choice = True)
+    sim = TetrisSimulator(controller = controller1, show_choice = True, show_options = True, option_step = .2, choice_step = .5)
     
     sim.run()
     

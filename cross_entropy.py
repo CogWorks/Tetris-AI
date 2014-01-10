@@ -103,7 +103,7 @@ if __name__ == '__main__':
     
     #defaults from Thierry and Scherrer paper:
         #original controller centered on 0, 
-        #original variance 100, (they used variance, we use Standard Deviation; figure out how that works)
+        #original variance 100, (they used variance, we use Standard Deviation; just SQUARE stdev to get this)
         #100 controllers, 
         #10 survivors, 
         #all new variances were varied by the constant 4
@@ -133,7 +133,9 @@ if __name__ == '__main__':
                         action = "store", dest = "report_every",
                         type = int, default = 500,
                         help = "How often, in episodes, to report the current scores. -1 disables")
-    
+    parser.add_argument( '-v', '--visuals',
+                        action = "store_true", dest = "visuals",
+                        help = "Show visualizations.")
     parser.add_argument( '-o', '--output',
                         action = "store", dest = "output_file",
                         type = str, default = datestring,
@@ -158,6 +160,11 @@ if __name__ == '__main__':
     survivors = args.survivors
     episodes = args.episodes
     report_every = args.report_every
+    if args.show_visuals:
+        show_choice = True
+    else:
+        show_choice = False
+        
     
     
     #logfile.write("Run initiated at " + datestring + "\n")
@@ -181,7 +188,7 @@ if __name__ == '__main__':
             controller_name = "R" + str(x + 1) + "_" + str(a+1)
             write_controller(controller_name, outfile, random_controller)
             
-            sim = TetrisSimulator(controller = random_controller, show_choice = True)
+            sim = TetrisSimulator(controller = random_controller, show_choice = show_choice)
             sim_result = sim.run(eps = episodes, printstep = report_every)
             
             write_result(controller_name, outfile, sim_result)
