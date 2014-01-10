@@ -134,7 +134,7 @@ if __name__ == '__main__':
                         type = int, default = 500,
                         help = "How often, in episodes, to report the current scores. -1 disables")
     parser.add_argument( '-v', '--visuals',
-                        action = "store_true", dest = "visuals",
+                        action = "store_true", dest = "show_visuals", default = False,
                         help = "Show visualizations.")
     parser.add_argument( '-o', '--output',
                         action = "store", dest = "output_file",
