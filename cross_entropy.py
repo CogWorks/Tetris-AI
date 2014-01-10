@@ -136,6 +136,9 @@ if __name__ == '__main__':
     parser.add_argument( '-v', '--visuals',
                         action = "store_true", dest = "show_visuals", default = False,
                         help = "Show visualizations.")
+    parser.add_argument( '-vs', '--visual_step',
+                        action = "store", dest = "visual_step", default = 0,
+                        help = "Timestep between choices in seconds.")
     parser.add_argument( '-o', '--output',
                         action = "store", dest = "output_file",
                         type = str, default = datestring,
@@ -164,6 +167,7 @@ if __name__ == '__main__':
         show_choice = True
     else:
         show_choice = False
+    v_step = args.visual_step
         
     
     
@@ -188,7 +192,7 @@ if __name__ == '__main__':
             controller_name = "R" + str(x + 1) + "_" + str(a+1)
             write_controller(controller_name, outfile, random_controller)
             
-            sim = TetrisSimulator(controller = random_controller, show_choice = show_choice)
+            sim = TetrisSimulator(controller = random_controller, show_choice = show_choice, choice_step = v_step)
             sim_result = sim.run(eps = episodes, printstep = report_every)
             
             write_result(controller_name, outfile, sim_result)
