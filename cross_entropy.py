@@ -21,39 +21,38 @@ from time import gmtime, strftime
 
 ###Functions
 def generate_controller(start, tols):
-    new_controller = []
+    new_controller = {}
     
     #for each feature
-    for i in range(0,len(start)):
+    for k in sorted(start.keys()):
         #generate a new value around the mean
-        val = random.gauss(start[i][1],tols[i])
+        val = random.gauss(start[k],tols[k])
         
         #and add this pair to the new controller
-        new_controller.append([start[i][0],val])
+        new_controller[k]= val
         
     return new_controller
 
 #Takes a list of controllers (lists) with the same number of features
 #outputs a new average controller, and the stdev for each value
 def merge_controllers(controllers):
-    new_controller = []
-    tolerances = []
+    new_controller = {}
+    new_tolerances = {}
     #for each feature (of all controllers)
-    for i in range(0,len(controllers[0])):
-        feature = controllers[0][i][0]
+    for k in sorted(controllers[0].keys()):
         vals = []
-        for j in controllers:
-            vals.append(j[i][1])
+        for c in controllers:
+            vals.append(c[k])
         mean = float(sum(vals)) / float(len(vals))
         tol = numpy.std(vals)
         
-        new_controller.append([feature,mean])
-        tolerances.append(tol)
+        new_controller[k] = mean
+        new_tolerances[k] = tol
     
     return new_controller, tolerances
         
 
-
+"""
 def write_controller(name, file, controller, tolerances = None):
     file.write("Controller:\t" + name + "\n")
     header = "feature\tval"
@@ -73,29 +72,36 @@ def write_result(name, file, result):
     for f in result_fields:
         file.write("\t" + f + ":\t" + str(result[f]) + "\n")
     file.write("\n")
+"""
+
 
 ###Script
 
 #staring from Dellacherie model
-target_controller = [["landing_height",-1],
-                ["eroded_cells",1],
-                ["row_trans",-1],
-                ["col_trans",-1],
-                ["pits",-4],
-                ["cuml_wells",-1]]
+target_controller = {"landing_height":-1,
+                "eroded_cells":1,
+                "row_trans":-1,
+                "col_trans":-1,
+                "pits":-4,
+                "cuml_wells":-1}
                 
-start_controller = [["landing_height",0],
-                ["eroded_cells",0],
-                ["row_trans",0],
-                ["col_trans",0],
-                ["pits",0],
-                ["cuml_wells",0]]
+start_controller = {"landing_height":0,
+                "eroded_cells":0,
+                "row_trans":0,
+                "col_trans":0,
+                "pits":0,
+                "cuml_wells":0}
                 
                 #["tetris",1000],
                 #["column_9",-400]]
                 
-tolerances = [100,100,100,100,100,100]
-                #100,100]
+tolerances = {"landing_height":100,
+                "eroded_cells":100,
+                "row_trans":100,
+                "col_trans":100,
+                "pits":100,
+                "cuml_wells":100}
+
 
 if __name__ == '__main__':
     
@@ -137,7 +143,7 @@ if __name__ == '__main__':
                         action = "store_true", dest = "show_visuals", default = False,
                         help = "Show visualizations.")
     parser.add_argument( '-vs', '--visual_step',
-                        action = "store", dest = "visual_step", default = 0,
+                        action = "store", dest = "visual_step", type=float, default = 0,
                         help = "Timestep between choices in seconds.")
     parser.add_argument( '-o', '--output',
                         action = "store", dest = "output_file",
@@ -170,7 +176,11 @@ if __name__ == '__main__':
     v_step = args.visual_step
         
     
+    #session, depth, controllers, survivors, episodes, 
     
+    header_std = ["session","depth","controllers","survivors","base_val","base_var","episodes"]
+    header_in = []
+    header_out = []
     #logfile.write("Run initiated at " + datestring + "\n")
     
     outfile.write("Depth      :\t" + str(depth) + "\n")
@@ -179,23 +189,23 @@ if __name__ == '__main__':
     outfile.write("Episodes   :\t" + str(episodes) + "\n")
     outfile.write("\n")
     
-    write_controller("INIT", outfile, start_controller, tolerances)
+    #write_controller("INIT", outfile, start_controller, tolerances)
     
     for x in range (0, depth):
         
-        outfile.write("Run:\t" + str(x+1) + "\n\n")
+        #outfile.write("Run:\t" + str(x+1) + "\n\n")
         
         results = []
         
         for a in range(0, controllers):
             random_controller = generate_controller(start_controller, tolerances)
             controller_name = "R" + str(x + 1) + "_" + str(a+1)
-            write_controller(controller_name, outfile, random_controller)
+            #write_controller(controller_name, outfile, random_controller)
             
             sim = TetrisSimulator(controller = random_controller, show_choice = show_choice, choice_step = v_step)
             sim_result = sim.run(eps = episodes, printstep = report_every)
             
-            write_result(controller_name, outfile, sim_result)
+            #write_result(controller_name, outfile, sim_result)
             
             results.append([random_controller, sim_result])
             
@@ -219,7 +229,7 @@ if __name__ == '__main__':
         
         start_controller, tolerances = merge_controllers(top_controllers)
         
-        write_controller("R" + str(x+1) + "_mean", outfile, start_controller, tolerances)
+        #write_controller("R" + str(x+1) + "_mean", outfile, start_controller, tolerances)
         
         #print start_controller
         #print tolerances

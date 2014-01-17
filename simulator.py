@@ -96,12 +96,12 @@ class TetrisSimulator(object):
         if controller:
             self.controller = controller
         else: #default Dellacherie model
-            self.controller = [["landing_height",-1],
-                            ["eroded_cells",1],
-                            ["row_trans",-1],
-                            ["col_trans",-1],
-                            ["pits",-4],
-                            ["cuml_wells",-1]]
+            self.controller = {"landing_height":-1,
+                            "eroded_cells":1,
+                            "row_trans":-1,
+                            "col_trans":-1,
+                            "pits":-4,
+                            "cuml_wells":-1}
         
         
         self.show_scores = show_scores
@@ -687,8 +687,8 @@ class TetrisSimulator(object):
         #generate function values
         for i in opts:
             val = 0
-            for j in vars:
-                val += i[4][j[0]] * j[1]
+            for j in vars.keys():
+                val += i[4][j] * vars[j]
                 #print(j, i[4][j[0]])
             i.append(val)
         
@@ -709,7 +709,7 @@ class TetrisSimulator(object):
         
         return out
     
-    
+    """
     def prioritize(self, var, opts, func = min):
         crit = None
         
@@ -813,28 +813,28 @@ class TetrisSimulator(object):
 
     ###
     # BReaks on a non-illegal move. 
-    """
-    Traceback (most recent call last):
-      File "simulator.py", line 808, in <module>
-        main(sys.argv)
-      File "simulator.py", line 771, in main
-        sim.choose_Dellacherie(show = printout)
-      File "simulator.py", line 674, in choose_Dellacherie
-        options)
-      File "simulator.py", line 542, in evaluate
-        val += i[4][j[0]] * j[1]
-    TypeError: unsupported operand type(s) for *: 'NoneType' and 'int'
-    """
+    
+    #Traceback (most recent call last):
+    #  File "simulator.py", line 808, in <module>
+    #    main(sys.argv)
+    #  File "simulator.py", line 771, in main
+    #    sim.choose_Dellacherie(show = printout)
+    #  File "simulator.py", line 674, in choose_Dellacherie
+    #    options)
+    #  File "simulator.py", line 542, in evaluate
+    #    val += i[4][j[0]] * j[1]
+    #TypeError: unsupported operand type(s) for *: 'NoneType' and 'int'
+    
     ###
     def choose_Dellacherie(self):
         options = self.options
         
-        options = self.evaluate([["landing_height",-1],
-                            ["eroded_cells",1],
-                            ["row_trans",-1],
-                            ["col_trans",-1],
-                            ["pits",-4],
-                            ["cuml_wells",-1]], 
+        options = self.evaluate({"landing_height":-1,
+                            "eroded_cells":1,
+                            "row_trans":-1,
+                            "col_trans":-1,
+                            "pits":-4,
+                            "cuml_wells":-1}, 
                             options)
         
         choice = random.randint(0, len(options)-1)
@@ -846,6 +846,9 @@ class TetrisSimulator(object):
             
         self.move(options[choice])
         
+    
+    """
+    
     def control(self):
         options = self.options
         options = self.evaluate(self.controller, options)
@@ -925,25 +928,37 @@ def testboard():
 def main(argv):
     
     #default Dellacherie controller; 660,000 lines avg / game in literature!
-    controller1 = [["landing_height",-1],
-                ["eroded_cells",1],
-                ["row_trans",-1],
-                ["col_trans",-1],
-                ["pits",-4],
-                ["cuml_wells",-1]]
+    controller1 = {"landing_height":-1,
+                "eroded_cells":1,
+                "row_trans":-1,
+                "col_trans":-1,
+                "pits":-4,
+                "cuml_wells":-1}
     
     
     #DTS controller, from Dellacherie + Thiery & Scherrer; 35,000,000 rows?!!?!
-    controller2 = [["landing_height",-12.63],
-                ["eroded_cells",6.60],
-                ["row_trans",-9.22],
-                ["col_trans",-19.77],
-                ["pits",-13.08],
-                ["cuml_wells",-10.49],
-                ["pit_depth",-1.61],
-                ["pit_rows",-24.04]]
+    controller2 = {"landing_height":-12.63,
+                "eroded_cells":6.60,
+                "row_trans":-9.22,
+                "col_trans":-19.77,
+                "pits":-13.08,
+                "cuml_wells":-10.49,
+                "pit_depth":-1.61,
+                "pit_rows":-24.04}
     
-    sim = TetrisSimulator(controller = controller1, show_choice = True, show_options = True, option_step = .2, choice_step = .5)
+    #bad controller for demonstration's purposes
+    controller3 = {"landing_height":1,
+                "eroded_cells":1,
+                "row_trans":-1,
+                "col_trans":-1,
+                "pits":1,
+                "cuml_wells":-1}
+    
+    sim = TetrisSimulator(controller = controller1, 
+                        show_choice = True, 
+                        show_options = True, 
+                        option_step = .02, 
+                        choice_step = .5)
     
     sim.run()
     
