@@ -76,7 +76,7 @@ class TetrisSimulator(object):
     
     def __init__(self,board = None, curr = None, next = None, controller = None, 
                     show_scores = False, show_options = False, show_choice = False,
-                    option_step = 0, choice_step = 0):
+                    option_step = 0, choice_step = 0, name = "Controller"):
         """Generates object based on given board layout"""
         if board:
             self.space = board
@@ -92,6 +92,8 @@ class TetrisSimulator(object):
             self.next_z = next
         else:
             self.next_z = self.pieces[random.randint(0,len(self.pieces)-1)]
+        
+        self.name = name
         
         if controller:
             self.controller = controller
@@ -386,6 +388,7 @@ class TetrisSimulator(object):
     ### DISPLAY
     
     def printscores(self):
+        print("Name:\t" + str(self.name))
         print("Level:\t" + str(self.level))
         print("Score:\t" + str(self.score))
         print("Lines:\t" + str(self.lines))
@@ -402,33 +405,46 @@ class TetrisSimulator(object):
             if self.option_step > 0:
                 time.sleep(self.option_step)
     
+    def printcontroller(self, feats = False):
+        for k in sorted(self.controller.keys()):
+            outstr = k.ljust(15) + ":\t" 
+            if feats:
+                outstr += str(feats[k]) + "\t(" + ('%3.3f'%self.controller[k]).rjust(8) + ")"
+            else:
+                outstr += ('%3.3f'%self.controller[k]).rjust(8)
+            print(outstr)
+
+    
     def printopt(self, opt):
         feats = opt[4]
-        print("Col: " + str(opt[0]))
-        print("Rot: " + str(opt[1]))
-        print("Row: " + str(opt[2]))
-        print("Max Ht: " + str(feats["max_ht"]))
-        print("Pits: " + str(feats["pits"]))
-        print("All heights: " + str(feats["all_ht"]))
-        print("Mean height: " + str(feats["mean_ht"]))
-        print("Cleared: " + str(feats["cleared"]))
-        print("Landing height: " + str(feats["landing_height"]))
-        print("Eroded cells: " + str(feats["eroded_cells"]))
-        print("Column trans: " + str(feats["col_trans"]))
-        print("Row trans: " + str(feats["row_trans"]))
-        print("All trans: " + str(feats["all_trans"]))
-        print("Wells: " + str(feats["wells"]))
-        print("Cumulative wells: " + str(feats["cuml_wells"]))
-        print("Deep wells: " + str(feats["deep_wells"]))
-        print("Max well: " + str(feats["max_well"]))
-        print("Cumulative clears: " + str(feats["cuml_cleared"]))
-        print("Cumulative eroded: " + str(feats["cuml_eroded"]))
-        print("Pit depths: " + str(feats["pit_depth"]))
-        print("Mean pit depths: " + str(feats["mean_pit_depth"]))
-        print("Pit rows: " + str(feats["pit_rows"]))
-        print("Column 9 heght: " + str(feats["column_9"]))
-        print("Scored tetris: " + str(feats["tetris"]))
+        print("\n")
+        self.printscores()
+        self.printcontroller(feats)
         self.printspace(opt[3])
+        #print("Col: " + str(opt[0]))
+        #print("Rot: " + str(opt[1]))
+        #print("Row: " + str(opt[2]))
+        #print("Max Ht: " + str(feats["max_ht"]))
+        #print("Pits: " + str(feats["pits"]))
+        #print("All heights: " + str(feats["all_ht"]))
+        #print("Mean height: " + str(feats["mean_ht"]))
+        #print("Cleared: " + str(feats["cleared"]))
+        #print("Landing height: " + str(feats["landing_height"]))
+        #print("Eroded cells: " + str(feats["eroded_cells"]))
+        #print("Column trans: " + str(feats["col_trans"]))
+        #print("Row trans: " + str(feats["row_trans"]))
+        #print("All trans: " + str(feats["all_trans"]))
+        #print("Wells: " + str(feats["wells"]))
+        #print("Cumulative wells: " + str(feats["cuml_wells"]))
+        #print("Deep wells: " + str(feats["deep_wells"]))
+        #print("Max well: " + str(feats["max_well"]))
+        #print("Cumulative clears: " + str(feats["cuml_cleared"]))
+        #print("Cumulative eroded: " + str(feats["cuml_eroded"]))
+        #print("Pit depths: " + str(feats["pit_depth"]))
+        #print("Mean pit depths: " + str(feats["mean_pit_depth"]))
+        #print("Pit rows: " + str(feats["pit_rows"]))
+        #print("Column 9 heght: " + str(feats["column_9"]))
+        #print("Scored tetris: " + str(feats["tetris"]))
     
     def printzoid(self, zoid = None):
         if not zoid:
@@ -883,14 +899,15 @@ class TetrisSimulator(object):
                 
             
             if self.show_scores or ep % printstep == 0 and not printstep == -1:
-              print("Episode: " + str(ep))
+              print("\nEpisode: " + str(ep))
               self.printscores()
             ep += 1 
         
         print("\n\nGame Over\nFinal scores:")
         print("Episodes: " + str(ep))
         self.printscores()
-        
+        self.printcontroller()
+        print("\n")
         return({"lines":self.lines,
                 "l1":self.l1,
                 "l2":self.l2,

@@ -35,7 +35,7 @@ def generate_controller(start, tols):
 
 #Takes a list of controllers (lists) with the same number of features
 #outputs a new average controller, and the stdev for each value
-def merge_controllers(controllers):
+def merge_controllers(controllers, noise):
     new_controller = {}
     new_tolerances = {}
     #for each feature (of all controllers)
@@ -47,60 +47,47 @@ def merge_controllers(controllers):
         tol = numpy.std(vals)
         
         new_controller[k] = mean
-        new_tolerances[k] = tol
+        new_tolerances[k] = tol + random.random()*(noise*2)-noise
     
-    return new_controller, tolerances
+    return new_controller, new_tolerances
         
 
-"""
-def write_controller(name, file, controller, tolerances = None):
-    file.write("Controller:\t" + name + "\n")
-    header = "feature\tval"
-    if tolerances:
-        header = header + "\ttolerance"
-    file.write(header + "\n")
-    for i in range(0,len(controller)):
-        file.write(controller[i][0] + "\t" + str(controller[i][1]))
-        if tolerances:
-            file.write("\t" + str(tolerances[i]))
-        file.write("\n")
-    file.write("\n")
 
-result_fields = ["lines","score","level","l1","l2","l3","l4"]
-def write_result(name, file, result):
-    file.write("\t" + name + " Results:\n")
-    for f in result_fields:
-        file.write("\t" + f + ":\t" + str(result[f]) + "\n")
-    file.write("\n")
-"""
+header = ["session","optimize","depth","controllers","survivors","episodes",
+            "noise","initial_value","variance",
+            "game_seed","name"]
+outputs = ["lines","l1","l2","l3","l4","score","level"]
 
+def write_header(file, features):
+    vars = []
+    for i in features:
+        vars.append(i + "_var")
+    
+    outheader = header + features + vars + outputs
+    file.write("\t".join(outheader) + "\n")
+    
+def write_controller(file, session_vars, name, features, controller, vars = False, outs = False):
+    outlist = []
+    outlist = outlist + session_vars
+    outlist.append(name)
+    for f in features:
+        outlist.append(str(controller[f]))
+    for f in features:
+        if vars:
+            outlist.append(str(vars[f]))
+        else:
+            outlist.append("")
+    for o in outputs:
+        if outs:
+            outlist.append(str(outs[o]))
+        else:
+            outlist.append("")
+    file.write("\t".join(outlist) + "\n")
+    
 
 ###Script
 
-#staring from Dellacherie model
-target_controller = {"landing_height":-1,
-                "eroded_cells":1,
-                "row_trans":-1,
-                "col_trans":-1,
-                "pits":-4,
-                "cuml_wells":-1}
-                
-start_controller = {"landing_height":0,
-                "eroded_cells":0,
-                "row_trans":0,
-                "col_trans":0,
-                "pits":0,
-                "cuml_wells":0}
-                
-                #["tetris",1000],
-                #["column_9",-400]]
-                
-tolerances = {"landing_height":100,
-                "eroded_cells":100,
-                "row_trans":100,
-                "col_trans":100,
-                "pits":100,
-                "cuml_wells":100}
+
 
 
 if __name__ == '__main__':
@@ -135,105 +122,126 @@ if __name__ == '__main__':
                         action = "store", dest = "episodes",
                         type = int, default = -1,
                         help = "Set maximum number of episodes for all controllers to play.")
+    
+    parser.add_argument( '-n', '--noise',
+                        action = "store", dest = "noise",
+                        type = float, default = 0,
+                        help = "Set constant noise value. Set to 0 for non-noisy variance iterations.")
+    
+    parser.add_argument( '-i', '--initial',
+                        action = "store", dest = "initial_val",
+                        type = float, default = 0,
+                        help = "Set initial value for the \"start\" controller.")
+    
+    parser.add_argument( '-var', '--variance',
+                        action = "store", dest = "variance",
+                        type = float, default = 100,
+                        help = "Set initial variance for cross entropy generation.")
+    
     parser.add_argument( '-r', '--report_every',
                         action = "store", dest = "report_every",
                         type = int, default = 500,
                         help = "How often, in episodes, to report the current scores. -1 disables")
+                        
     parser.add_argument( '-v', '--visuals',
                         action = "store_true", dest = "show_visuals", default = False,
                         help = "Show visualizations.")
     parser.add_argument( '-vs', '--visual_step',
                         action = "store", dest = "visual_step", type=float, default = 0,
                         help = "Timestep between choices in seconds.")
+                        
     parser.add_argument( '-o', '--output',
                         action = "store", dest = "output_file",
                         type = str, default = datestring,
                         help = "Output file. Extension will be .txt")
     
+    parser.add_argument( '-op', '--optimize',
+                        action = "store", dest = "optimize",
+                        type = str, default = "lines",
+                        help = "Select what criterion to optimize via cross-entropy: lines, score, level, l1, l2, l3, l4. Defaults to 'lines'.")
     
-    #parse for seed
-    #parse for tolerance
-    #parse for initial values
-    #parse for printing
-    #parse for result to maximize
+    parser.add_argument( '-f', '--features',
+                        action = "store", dest = "features",
+                        type = str, nargs = '+',
+                        default = ["landing_height","eroded_cells","row_trans","col_trans","pits","cuml_wells"],
+                        help = "List of all features to be used in the model. See 'simulator.py' for known features.")
     
+    
+    #harvest argparse
     args = parser.parse_args()
     
     if not os.path.exists("runs"):
         os.makedirs("runs")
-    outfile = open("runs/" + args.output_file + ".incomplete.txt", "w")
-    #logfile = open("log.txt", "a")
+    outfile = open("runs/" + args.output_file + ".incomplete.tsv", "w")
         
     depth = args.depth
     controllers = args.controllers
     survivors = args.survivors
     episodes = args.episodes
+    noise = args.noise
     report_every = args.report_every
+    initial_val = args.initial_val
+    variance = args.variance
+    features = args.features
+    optimize = args.optimize
+    
     if args.show_visuals:
         show_choice = True
     else:
         show_choice = False
     v_step = args.visual_step
+    
+    
+    #log headers
+    
+    session_variables = [args.output_file, optimize, str(depth), str(controllers), str(survivors), str(episodes),
+                        str(noise), str(initial_val), str(variance), str("NIL")]
+    
+    write_header(outfile, features)
+    
+    start_controller = {}
+    tolerances = {}
+    for f in features:
+        start_controller[f] = initial_val
+        tolerances[f] = variance
         
-    
-    #session, depth, controllers, survivors, episodes, 
-    
-    header_std = ["session","depth","controllers","survivors","base_val","base_var","episodes"]
-    header_in = []
-    header_out = []
-    #logfile.write("Run initiated at " + datestring + "\n")
-    
-    outfile.write("Depth      :\t" + str(depth) + "\n")
-    outfile.write("Controllers:\t" + str(controllers) + "\n")
-    outfile.write("Survivors  :\t" + str(survivors) + "\n")
-    outfile.write("Episodes   :\t" + str(episodes) + "\n")
-    outfile.write("\n")
-    
-    #write_controller("INIT", outfile, start_controller, tolerances)
     
     for x in range (0, depth):
         
-        #outfile.write("Run:\t" + str(x+1) + "\n\n")
+        #session_vars, name, features, controller, vars = False, outs = False
+        write_controller(outfile, session_variables, "G" + str(x+1), features, start_controller, 
+                        vars = tolerances)
         
         results = []
         
         for a in range(0, controllers):
             random_controller = generate_controller(start_controller, tolerances)
-            controller_name = "R" + str(x + 1) + "_" + str(a+1)
-            #write_controller(controller_name, outfile, random_controller)
+            controller_name = "G" + str(x + 1) + "_" + str(a+1)
             
-            sim = TetrisSimulator(controller = random_controller, show_choice = show_choice, choice_step = v_step)
+            sim = TetrisSimulator(controller = random_controller, show_choice = show_choice, choice_step = v_step, name = controller_name)
             sim_result = sim.run(eps = episodes, printstep = report_every)
             
-            #write_result(controller_name, outfile, sim_result)
+            #session_vars, name, features, controller, vars = False, outs = False
+            write_controller(outfile, session_variables, controller_name, features, random_controller, 
+                            outs = sim_result)
             
             results.append([random_controller, sim_result])
             
             
-        sorted_results = sorted(results, key=lambda k: k[1]['lines'])
-        
-        #sort by "l4" or "lines" or "score"
+        sorted_results = sorted(results, key=lambda k: k[1][optimize])
         
         for d in sorted_results:
             print d[1]["lines"]
     
         top_results = sorted_results[-survivors:]
     
-        #for e in top_results:
-        #    print e[1]["lines"]
-    
         top_controllers = []
             
         for f in top_results:
             top_controllers.append(f[0])
         
-        start_controller, tolerances = merge_controllers(top_controllers)
-        
-        #write_controller("R" + str(x+1) + "_mean", outfile, start_controller, tolerances)
-        
-        #print start_controller
-        #print tolerances
+        start_controller, tolerances = merge_controllers(top_controllers, noise)
         
     
-    os.rename("runs/" + datestring + ".incomplete.txt", "runs/" + datestring+".txt")
+    os.rename("runs/" + datestring + ".incomplete.tsv", "runs/" + datestring+".tsv")
     
