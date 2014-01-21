@@ -15,6 +15,23 @@
 
 #must be able to control game seed. needs changes in simulator.py for this to take effect
 
+
+#Need better randomization control
+
+#Need to add some ability to play overhangs.
+
+#Need to have some rudimentary constraints added in.
+
+#Need "diminishing noise" implementation
+
+#Need "convergence" value
+
+#Need 2-piece look-ahead
+
+#Need to add post-testing; 
+#i.e. Each "good" model must play a host of random games to verify its generalizability
+
+
 from simulator import TetrisSimulator
 import random, numpy, argparse, os
 from time import gmtime, strftime
@@ -47,7 +64,7 @@ def merge_controllers(controllers, noise):
         tol = numpy.std(vals)
         
         new_controller[k] = mean
-        new_tolerances[k] = tol + random.random()*(noise*2)-noise
+        new_tolerances[k] = tol + noise
     
     return new_controller, new_tolerances
         
