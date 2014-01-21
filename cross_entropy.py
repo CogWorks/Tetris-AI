@@ -30,7 +30,9 @@
 
 #Need to add post-testing; 
 #i.e. Each "good" model must play a host of random games to verify its generalizability
-
+#could just have parameter for number of games played per controller 
+#maybe use a "criterion score"?
+#!! careful! will multiplicatively increase runtime!!
 
 from simulator import TetrisSimulator
 import random, numpy, argparse, os
