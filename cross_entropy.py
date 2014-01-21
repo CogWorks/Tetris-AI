@@ -262,5 +262,5 @@ if __name__ == '__main__':
         start_controller, tolerances = merge_controllers(top_controllers, noise)
         
     outfile.close()
-    os.rename("runs/" + datestring + ".incomplete.tsv", "runs/" + datestring+".tsv")
+    os.rename("runs/" + args.output_file + ".incomplete.tsv", "runs/" + args.output_file+".tsv")
     
