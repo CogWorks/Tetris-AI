@@ -24,15 +24,15 @@
 
 #Need "diminishing noise" implementation
 
-#Need "convergence" value
+#Need "convergence" value ; they allowed 80 generations for convergence; what do we do?
 
 #Need 2-piece look-ahead
 
-#Need to add post-testing; 
-#i.e. Each "good" model must play a host of random games to verify its generalizability
-#could just have parameter for number of games played per controller 
-#maybe use a "criterion score"?
-#!! careful! will multiplicatively increase runtime!!
+#Need to add post-testing; FOR EACH ITERATION'S RESULTANT AVERAGE CONTROLLER
+    #i.e. Each "good" model must play a host of random games to verify its generalizability
+    #could just have parameter for number of games played per controller 
+    #maybe use a "criterion score"?
+    #!! careful! will multiplicatively increase runtime!!
 
 from simulator import TetrisSimulator
 import random, numpy, argparse, os
@@ -82,13 +82,15 @@ def write_header(file, features):
     for i in features:
         vars.append(i + "_var")
     
-    outheader = header + features + vars + outputs
+    outheader = header + ["test_game"] + features + vars + outputs
     file.write("\t".join(outheader) + "\n")
     
-def write_controller(file, session_vars, name, features, controller, vars = False, outs = False):
+def write_controller(file, session_vars, name, features, controller, vars = False, outs = False, test_game = False):
     outlist = []
     outlist = outlist + session_vars
     outlist.append(name)
+    outlist.append(str(test_game))
+    
     for f in features:
         outlist.append(str(controller[f]))
     for f in features:
@@ -152,6 +154,11 @@ if __name__ == '__main__':
                         type = float, default = 0,
                         help = "Set initial value for the \"start\" controller.")
     
+    parser.add_argument( '-t', '--tests',
+                        action = "store", dest = "tests",
+                        type = int, default = 30,
+                        help = "Set number of games for testing each iteration.")
+    
     parser.add_argument( '-var', '--variance',
                         action = "store", dest = "variance",
                         type = float, default = 100,
@@ -203,6 +210,7 @@ if __name__ == '__main__':
     variance = args.variance
     features = args.features
     optimize = args.optimize
+    tests = args.tests
     
     if args.show_visuals:
         show_choice = True
@@ -225,11 +233,13 @@ if __name__ == '__main__':
         tolerances[f] = variance
         
     
+    write_controller(outfile, session_variables, "G" + str(0), features, start_controller, 
+                        vars = tolerances)
+    
     for x in range (0, depth):
         
         #session_vars, name, features, controller, vars = False, outs = False
-        write_controller(outfile, session_variables, "G" + str(x+1), features, start_controller, 
-                        vars = tolerances)
+        
         
         results = []
         
@@ -260,6 +270,21 @@ if __name__ == '__main__':
             top_controllers.append(f[0])
         
         start_controller, tolerances = merge_controllers(top_controllers, noise)
+        
+        
+        ######now run start controller through a number of new games stored in 'tests'
+        
+        #output of each game saved to a list, for each score type
+            # also write to log file
+            
+        #for each score type, save mean AND S.D. (or variance, or other)
+            #write to log file as FINAL version
+        #######
+        
+        #output resultant controller and its scores
+        write_controller(outfile, session_variables, "G" + str(x+1), features, start_controller, 
+                        vars = tolerances)
+        
         
     outfile.close()
     os.rename("runs/" + args.output_file + ".incomplete.tsv", "runs/" + args.output_file+".tsv")
