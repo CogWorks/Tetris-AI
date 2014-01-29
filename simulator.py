@@ -185,8 +185,8 @@ class TetrisSimulator(object):
     def report_board_features( self ):
         return self.get_features(self.space)
     
-    def report_move_features( self, col, rot, row):
-        return self.get_move_features(self.space, col, rot, row, self.curr_z)
+    def report_move_features( self, col, rot, row, offset = -1):
+        return self.get_move_features(self.space, col, rot, row + offset, self.curr_z)
     
     def get_options(self):
         self.options = self.possible_moves()
