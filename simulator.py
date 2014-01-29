@@ -79,7 +79,7 @@ class TetrisSimulator(object):
                     option_step = 0, choice_step = 0, name = "Controller"):
         """Generates object based on given board layout"""
         if board:
-            self.space = board
+            self.space = self.convert_space(board)
         else:
             self.init_board()
             
@@ -175,6 +175,18 @@ class TetrisSimulator(object):
         return z_id
     ###
     
+    def set_zoids( self , curr, next):
+        self.curr_z = curr
+        self.next_z = next
+    
+    def set_board( self, board):
+        self.space = self.convert_space(board)
+    
+    def report_board_features( self ):
+        return self.get_features(self.space)
+    
+    def report_move_features( self, col, rot, row):
+        return self.get_move_features(self.space, col, rot, row, self.curr_z)
     
     def get_options(self):
         self.options = self.possible_moves()
@@ -338,6 +350,11 @@ class TetrisSimulator(object):
         
         return newspace, ends_game
         
+    def get_move_features(self, board, col, rot, row, zoid):
+        newboard = copy.deepcopy(board)
+        self.sim_move(col, rot, row, zoid, newboard)
+        self.printspace(newboard)
+        return self.get_features(newboard)
     
     def find_drop(self, col, rot, zoid, space):
         if not zoid:
@@ -485,7 +502,22 @@ class TetrisSimulator(object):
     
     ######## FEATURES
     
-    def get_features(self, space):
+    def convert_space(self, space):
+        newspace = []
+        for r in space:
+            row = []
+            for c in r:
+                if c == 0:
+                    row.append(0)
+                else:
+                    row.append(1)
+            newspace.append(row)
+        return newspace
+    
+    def get_features(self, space, convert = False):
+        
+        if convert:
+            space = self.convert_space(space)
         
         cleared_space = self.clear_rows(space)
         
@@ -928,7 +960,7 @@ def testboard():
     testboard.append([0,0,0,0,0,0,0,0,0,0])
     testboard.append([0,0,0,0,0,0,0,0,0,0])
     testboard.append([1,0,1,0,1,0,1,0,1,0])
-    testboard.append([0,1,0,1,0,1,0,1,0,1])
+    testboard.append([0,20,0,1,0,1,0,1,0,1])
     testboard.append([1,0,1,0,1,0,1,0,1,0])
     testboard.append([0,1,0,1,0,1,0,1,0,1])
     testboard.append([1,0,1,0,1,0,1,0,1,0])
@@ -939,6 +971,8 @@ def testboard():
     testboard.append([0,1,0,1,0,1,0,1,0,1])
     testboard.append([1,0,1,0,1,0,1,0,1,0])
     return testboard
+
+
     
     
 #Run main.
@@ -977,7 +1011,11 @@ def main(argv):
                         option_step = .02, 
                         choice_step = .5)
     
-    sim.run()
+    sim2 = TetrisSimulator(board = testboard(), curr = "Z", next = "S" )
+    print(sim2.report_move_features(col = 1, row = 12, rot = 1))
+    
+    
+    #sim.run()
     
 
 
