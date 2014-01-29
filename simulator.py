@@ -351,9 +351,13 @@ class TetrisSimulator(object):
         return newspace, ends_game
         
     def get_move_features(self, board, col, rot, row, zoid):
+        
         newboard = copy.deepcopy(board)
+        
         self.sim_move(col, rot, row, zoid, newboard)
-        self.printspace(newboard)
+        
+        #self.printspace(newboard)
+        
         return self.get_features(newboard)
     
     def find_drop(self, col, rot, zoid, space):
