@@ -76,8 +76,11 @@ class TetrisSimulator(object):
     
     def __init__(self,board = None, curr = None, next = None, controller = None, 
                     show_scores = False, show_options = False, show_choice = False,
-                    option_step = 0, choice_step = 0, name = "Controller"):
+                    option_step = 0, choice_step = 0, name = "Controller", seed = time.time() * 10000000000000.0):
         """Generates object based on given board layout"""
+        self.sequence = random.Random()
+        self.sequence.seed(seed)
+        
         if board:
             self.space = self.convert_space(board)
         else:
@@ -86,12 +89,12 @@ class TetrisSimulator(object):
         if curr:
             self.curr_z = curr
         else:
-            self.curr_z = self.pieces[random.randint(0,len(self.pieces)-1)]
+            self.curr_z = self.pieces[self.sequence.randint(0,len(self.pieces)-1)]
             
         if next:
             self.next_z = next
         else:
-            self.next_z = self.pieces[random.randint(0,len(self.pieces)-1)]
+            self.next_z = self.pieces[self.sequence.randint(0,len(self.pieces)-1)]
         
         self.name = name
         
@@ -164,13 +167,13 @@ class TetrisSimulator(object):
     def get_random_zoid( self ):
 
         #generate random, but with dummy value 7? [in the specs, but what good is it?]
-        z_id = random.randint( 0, len(self.zoids) )
+        z_id = sequence.randint( 0, len(self.zoids) )
 
         #then repeat/dummy check, and reroll *once*
         if not self.curr_z or z_id == len(self.zoids):
-            return random.randint( 0, len(self.zoids)-1 )
+            return self.sequence.randint( 0, len(self.zoids)-1 )
         elif self.zoids[z_id] == self.curr_z:
-            return random.randint( 0, len(self.zoids)-1 )
+            return self.sequence.randint( 0, len(self.zoids)-1 )
 
         return z_id
     ###
@@ -250,7 +253,7 @@ class TetrisSimulator(object):
     #pure random selection
     def new_zoids(self):
         self.curr_z = self.next_z
-        self.next_z = self.pieces[random.randint(0,len(self.pieces)-1)]
+        self.next_z = self.pieces[self.sequence.randint(0,len(self.pieces)-1)]
     
     def filled_lines(self, space):
         count = 0
@@ -1014,13 +1017,14 @@ def main(argv):
                         show_choice = True, 
                         show_options = True, 
                         option_step = .02, 
-                        choice_step = .5)
+                        choice_step = .5,
+                        seed = 10)
     
-    sim2 = TetrisSimulator(board = testboard(), curr = "Z", next = "S" )
-    print(sim2.report_move_features(col = 1, row = 12, rot = 1))
+    #sim2 = TetrisSimulator(board = testboard(), curr = "Z", next = "S" )
+    #print(sim2.report_move_features(col = 1, row = 12, rot = 1))
     
     
-    #sim.run()
+    sim.run()
     
 
 
