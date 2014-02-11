@@ -140,17 +140,17 @@ if __name__ == '__main__':
     
     parser.add_argument( '-d', '--depth',
                         action = "store", dest = "depth",
-                        type = int, default = 5,
+                        type = int, default = 80,
                         help = "Set how many cross-entropy generations to traverse.")
     
     parser.add_argument( '-c', '--controllers',
                         action = "store", dest = "controllers",
-                        type = int, default = 10,
+                        type = int, default = 100,
                         help = "Set the number of controllers to spawn in each generation.")
     
     parser.add_argument( '-s', '--survivors',
                         action = "store", dest = "survivors",
-                        type = int, default = 4,
+                        type = int, default = 10,
                         help = "Set how many of the best controllers survive each generation.")
     
     parser.add_argument( '-e', '--episodes',
@@ -160,7 +160,7 @@ if __name__ == '__main__':
     
     parser.add_argument( '-n', '--noise',
                         action = "store", dest = "noise",
-                        type = float, default = 0,
+                        type = float, default = 4,
                         help = "Set constant noise value. Set to 0 for non-noisy variance iterations.")
     
     parser.add_argument( '-dn', '--dim_noise',
@@ -177,6 +177,7 @@ if __name__ == '__main__':
                         action = "store", dest = "test_games",
                         type = int, default = 10,
                         help = "Set number of unique games to test.")
+                        
     parser.add_argument( '-tr', '--test_reps',
                         action = "store", dest = "test_reps",
                         type = int, default = 3,
@@ -195,6 +196,7 @@ if __name__ == '__main__':
     parser.add_argument( '-v', '--visuals',
                         action = "store_true", dest = "show_visuals", default = False,
                         help = "Show visualizations.")
+                        
     parser.add_argument( '-vs', '--visual_step',
                         action = "store", dest = "visual_step", type=float, default = 0,
                         help = "Timestep between choices in seconds.")
@@ -218,8 +220,13 @@ if __name__ == '__main__':
                         action = "store", dest = "features",
                         type = str, nargs = '+',
                         default = ["landing_height","eroded_cells","row_trans","col_trans","pits","cuml_wells"],
-                        help = "List of all features to be used in the model. See 'simulator.py' for known features.")
-    
+                        help = """List of all features to be used in the model, separated by spaces. Taken from simulator.py. Select from:\n
+                                mean_ht,  max_ht,  min_ht,  all_ht,  \n
+                                max_ht_diff,  min_ht_diff,  pits,  cleared,  \n
+                                landing_height,  eroded_cells,  col_trans,  row_trans,  \n
+                                all_trans,  wells,  cuml_wells,  deep_wells,  \n
+                                max_well,  cuml_cleared,  cuml_eroded,  pit_depth,  \n
+                                mean_pit_depth,  pit_rows,  column_9,  tetris.\n""")
     
     #harvest argparse
     args = parser.parse_args()
