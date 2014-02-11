@@ -48,17 +48,17 @@
 
 
 from simulator import TetrisSimulator
-import random, numpy, argparse, os
+import random, numpy, argparse, os, time
 from time import gmtime, strftime
 
 ###Functions
-def generate_controller(start, tols):
+def generate_controller(start, tols, rng):
     new_controller = {}
     
     #for each feature
     for k in sorted(start.keys()):
         #generate a new value around the mean
-        val = random.gauss(start[k],tols[k])
+        val = rng.gauss(start[k],tols[k])
         
         #and add this pair to the new controller
         new_controller[k]= val
@@ -86,7 +86,7 @@ def merge_controllers(controllers, noise):
 
 
 header = ["session","optimize","depth","controllers","survivors","episodes",
-            "noise","initial_value","variance",
+            "noise","initial_value","variance","session_seed",
             "game_seed","name"]
 outputs = ["lines","l1","l2","l3","l4","score","level"]
 
@@ -98,9 +98,10 @@ def write_header(file, features):
     outheader = header + ["test_game"] + features + vars + outputs
     file.write("\t".join(outheader) + "\n")
     
-def write_controller(file, session_vars, name, features, controller, vars = False, outs = False, test_game = False):
+def write_controller(file, session_vars, name, features, controller, game_seed = "NIL", vars = False, outs = False, test_game = False):
     outlist = []
     outlist = outlist + session_vars
+    outlist.append(str(game_seed))
     outlist.append(name)
     outlist.append(str(test_game))
     
@@ -172,10 +173,14 @@ if __name__ == '__main__':
                         type = float, default = 0,
                         help = "Set initial value for the \"start\" controller.")
     
-    parser.add_argument( '-t', '--tests',
-                        action = "store", dest = "tests",
-                        type = int, default = 30,
-                        help = "Set number of games for testing each iteration.")
+    parser.add_argument( '-tg', '--test_games',
+                        action = "store", dest = "test_games",
+                        type = int, default = 10,
+                        help = "Set number of unique games to test.")
+    parser.add_argument( '-tr', '--test_reps',
+                        action = "store", dest = "test_reps",
+                        type = int, default = 3,
+                        help = "Set number of times to run tests on each unique test game.")
     
     parser.add_argument( '-var', '--variance',
                         action = "store", dest = "variance",
@@ -197,7 +202,12 @@ if __name__ == '__main__':
     parser.add_argument( '-o', '--output',
                         action = "store", dest = "output_file",
                         type = str, default = datestring,
-                        help = "Output file. Extension will be .txt")
+                        help = "Output file. Extension will be .tsv")
+                        
+    parser.add_argument( '-sd', '--seed',
+                        action = "store", dest = "random_seed",
+                        type = float, default = time.time(),
+                        help = "Set the random number seed for this session. Defaults to current system time time 10 trillion.")
     
     parser.add_argument( '-op', '--optimize',
                         action = "store", dest = "optimize",
@@ -229,7 +239,12 @@ if __name__ == '__main__':
     variance = args.variance
     features = args.features
     optimize = args.optimize
-    tests = args.tests
+    test_games = args.test_games
+    test_reps = args.test_reps
+    
+    random_seed = args.random_seed
+    rng = random.Random()
+    rng.seed(random_seed)
     
     if args.show_visuals:
         show_choice = True
@@ -241,7 +256,7 @@ if __name__ == '__main__':
     #log headers
     
     session_variables = [args.output_file, optimize, str(depth), str(controllers), str(survivors), str(episodes),
-                        str(noise), str(initial_val), str(variance), str("NIL")]
+                        str(noise), str(initial_val), str(variance), str(random_seed)]
     
     write_header(outfile, features)
     
@@ -263,15 +278,17 @@ if __name__ == '__main__':
         results = []
         
         for a in range(0, controllers):
-            random_controller = generate_controller(start_controller, tolerances)
+            random_controller = generate_controller(start_controller, tolerances, rng = rng)
             controller_name = "G" + str(x + 1) + "_" + str(a+1)
             
-            sim = TetrisSimulator(controller = random_controller, show_choice = show_choice, choice_step = v_step, name = controller_name)
+            game_seed = rng.randint(0,100000)
+            
+            sim = TetrisSimulator(controller = random_controller, show_choice = show_choice, choice_step = v_step, name = controller_name, seed = game_seed)
             sim_result = sim.run(eps = episodes, printstep = report_every)
             
             #session_vars, name, features, controller, vars = False, outs = False
             write_controller(outfile, session_variables, controller_name, features, random_controller, 
-                            outs = sim_result)
+                            outs = sim_result, game_seed = game_seed)
             
             results.append([random_controller, sim_result])
             
@@ -291,18 +308,29 @@ if __name__ == '__main__':
         start_controller, tolerances = merge_controllers(top_controllers, noise)
         
         
-        ######now run start controller through a number of new games stored in 'tests'
-        
-        #output of each game saved to a list, for each score type
-            # also write to log file
+        test_results = []
+        for g in range(0,test_games):
+            test_seed = 10001 + g
+            for r in range(0, test_reps):
+                test_name = "G" + str(x + 1) + "_T" + str(g+1) + "_R" + str(r+1)
+                test_sim = TetrisSimulator(controller = start_controller, show_choice = show_choice, choice_step = v_step, name = test_name, seed = test_seed)
+                test_res = test_sim.run(eps = episodes, printstep = report_every)
+                
+                test_results.append(test_res)
+                write_controller(outfile, session_variables, test_name, features, start_controller, outs = test_res, game_seed = test_seed)
             
-        #for each score type, save mean AND S.D. (or variance, or other)
-            #write to log file as FINAL version
-        #######
+        test_avg = {}
+        
+        for o in outputs:
+            val = 0.0
+            for r in test_results:
+                val += r[o]
+            test_avg[o] = val / float(len(test_results))
+        
         
         #output resultant controller and its scores
         write_controller(outfile, session_variables, "G" + str(x+1), features, start_controller, 
-                        vars = tolerances)
+                        vars = tolerances, outs = test_avg)
         
         noise = noise * dim_noise
         
