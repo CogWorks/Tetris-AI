@@ -1018,7 +1018,8 @@ def main(argv):
                         show_options = True, 
                         option_step = .02, 
                         choice_step = .5,
-                        seed = 10)
+                        seed = 1
+                        )
     
     #sim2 = TetrisSimulator(board = testboard(), curr = "Z", next = "S" )
     #print(sim2.report_move_features(col = 1, row = 12, rot = 1))

@@ -16,7 +16,6 @@
 
 ## BEFORE OFFICIAL FIRST RUN ##
 
-#must be able to control game seed. needs changes in simulator.py for this to take effect
 
 #Need better randomization control
 
@@ -163,6 +162,11 @@ if __name__ == '__main__':
                         type = float, default = 0,
                         help = "Set constant noise value. Set to 0 for non-noisy variance iterations.")
     
+    parser.add_argument( '-dn', '--dim_noise',
+                        action = "store", dest = "dim_noise",
+                        type = float, default = 1.0,
+                        help = "Set whether to diminish noise, and by what factor. Defaults to 1.0, no diminishing.")
+    
     parser.add_argument( '-i', '--initial',
                         action = "store", dest = "initial_val",
                         type = float, default = 0,
@@ -219,6 +223,7 @@ if __name__ == '__main__':
     survivors = args.survivors
     episodes = args.episodes
     noise = args.noise
+    dim_noise = args.dim_noise
     report_every = args.report_every
     initial_val = args.initial_val
     variance = args.variance
@@ -299,6 +304,7 @@ if __name__ == '__main__':
         write_controller(outfile, session_variables, "G" + str(x+1), features, start_controller, 
                         vars = tolerances)
         
+        noise = noise * dim_noise
         
     outfile.close()
     os.rename("runs/" + args.output_file + ".incomplete.tsv", "runs/" + args.output_file+".tsv")
