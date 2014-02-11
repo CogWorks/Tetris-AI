@@ -13,26 +13,40 @@
     #all printing options
     #
 
+
+## BEFORE OFFICIAL FIRST RUN ##
+
 #must be able to control game seed. needs changes in simulator.py for this to take effect
 
-
 #Need better randomization control
+
+#Need "diminishing noise" implementation
+
+#Optional: Need "convergence" value ; they allowed 80 generations for convergence; what do we do?
+
+#Optional: Need 2-piece look-ahead
+
+#MANDATORY: Need to add post-testing; FOR EACH ITERATION'S RESULTANT AVERAGE CONTROLLER
+    #i.e. Each "good" model must play a host of random games to verify its generalizability
+    #could just have parameter for number of games played per controller 
+    #maybe use a "criterion score"?
+    #!! careful! will multiplicatively increase runtime!!
+
+
+####
+
+
+
+
 
 #Need to add some ability to play overhangs.
 
 #Need to have some rudimentary constraints added in.
 
-#Need "diminishing noise" implementation
 
-#Need "convergence" value ; they allowed 80 generations for convergence; what do we do?
 
-#Need 2-piece look-ahead
 
-#Need to add post-testing; FOR EACH ITERATION'S RESULTANT AVERAGE CONTROLLER
-    #i.e. Each "good" model must play a host of random games to verify its generalizability
-    #could just have parameter for number of games played per controller 
-    #maybe use a "criterion score"?
-    #!! careful! will multiplicatively increase runtime!!
+
 
 from simulator import TetrisSimulator
 import random, numpy, argparse, os
