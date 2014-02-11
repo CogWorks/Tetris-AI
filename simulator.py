@@ -2,6 +2,13 @@
 # ability to control zoid sequences
 # proper dummy-redundency and/or 7-bag zoid selection
 
+"""
+to-do:
+
+ - fanning approach to move selection is quite possible.
+
+"""
+
 
 import sys, random, os, time, copy
 
