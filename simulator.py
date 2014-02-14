@@ -7,6 +7,8 @@ to-do:
 
  - fanning approach to move selection is quite possible.
 
+ - a system for taking old log files and outputting the NEW, better features per episode.
+
 """
 
 
@@ -568,12 +570,23 @@ class TetrisSimulator(object):
         features["mean_pit_depth"] = sum(pit_depths) / len(pit_depths)
         features["pit_rows"] = len(pit_rows)
         
+        #Literature additions
+        #Column differences (all 9 pairwise column differences)
+        #Height differences (Sum of Column differences)
+        #Height weighted cells (full cells weighted by height)
+        #Full cells (full cells on the board)
+        #Max height difference (maximum of the Column differences)
+        #Adjacent column holes (number of holes, where adjaced holes in a column count only once)
+        #Pattern diversity (number of difference transition patterns between adjacent columns)
+        
         #JKL additions - previous work
+        #placement matches (edges, etc)
+        #tetris progress
         
         #JKL additions - on the fly
         features["column_9"] = all_heights[-1]
         features["tetris"] = 1 if features["cleared"] == 4 else 0
-        
+        #score of the move
         
         return features
     
