@@ -9,6 +9,12 @@ to-do:
 
  - a system for taking old log files and outputting the NEW, better features per episode.
 
+
+ - innovation... equilibrium points? i.e. "1 well is allowed, deviation counts against"
+    - huh!
+    
+
+
 """
 
 
@@ -582,6 +588,7 @@ class TetrisSimulator(object):
         #JKL additions - previous work
         #placement matches (edges, etc)
         #tetris progress
+        #levelness
         
         #JKL additions - on the fly
         features["column_9"] = all_heights[-1]
