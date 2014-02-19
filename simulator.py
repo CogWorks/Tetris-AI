@@ -349,7 +349,7 @@ class TetrisSimulator(object):
             for c in range(0, len(space[0]) - len(self.shapes[zoid][r][0]) + 1):
                 row = self.find_drop(c,r,zoid,space)
                 simboard, ends_game = self.possible_board(c,r,row)
-                features = self.get_features(simboard)
+                features = self.get_features(simboard,prev_space = space)
                 opt = [c,r,row,simboard,features, ends_game]
                 options.append(opt)
                 
@@ -377,7 +377,7 @@ class TetrisSimulator(object):
         if printout:
             self.printspace(newboard)
         
-        return self.get_features(newboard)
+        return self.get_features(newboard, prev_space = board)
     
     def find_drop(self, col, rot, zoid, space):
         if not zoid:
@@ -537,7 +537,7 @@ class TetrisSimulator(object):
             newspace.append(row)
         return newspace
     
-    def get_features(self, space, convert = False):
+    def get_features(self, space, convert = False, prev_space = False, all = True):
         
         if convert:
             space = self.convert_space(space)
@@ -547,8 +547,8 @@ class TetrisSimulator(object):
         all_heights = self.get_heights(cleared_space)
         diffs = []
         for i in range(0,len(all_heights)-1):
-            diffs.append(all_heights[i] - all_heights[i+1])
-        all_pits, pit_rows = self.get_all_pits(cleared_space)
+            diffs.append(all_heights[i+1] - all_heights[i])
+        all_pits, pit_rows, lumped_pits = self.get_all_pits(cleared_space)
         pit_depths = self.get_pit_depths(cleared_space)
         col_trans = self.get_col_transitions(cleared_space)
         row_trans = self.get_row_transitions(cleared_space)
@@ -556,7 +556,8 @@ class TetrisSimulator(object):
         
         features = {}
         
-        features["mean_ht"] = sum(all_heights) / len(all_heights)
+        
+        features["mean_ht"] = sum(all_heights) * 1.0 / len(all_heights) * 1.0
         features["max_ht"] = max(all_heights)
         features["min_ht"] = min(all_heights)
         features["all_ht"] = sum(all_heights)
@@ -595,18 +596,36 @@ class TetrisSimulator(object):
         features["full_cells"] = self.get_full_cells(cleared_space)
         features["weighted_cells"] = self.get_full_cells(cleared_space, row_weighted = True)
         
-        #Adjacent column holes (number of holes, where adjaced holes in a column count only once)
-        #Pattern diversity (number of difference transition patterns between adjacent columns)
+        if prev_space:
+            prev_heights = self.get_heights(prev_space)
+            prev_pits = self.get_all_pits(prev_space)[0]
+            
+            features["d_max_ht"] = features["max_ht"] - max(prev_heights)
+            features["d_all_ht"] = features["all_ht"] - sum(prev_heights)
+            features["d_mean_ht"] = features["mean_ht"] - (sum(prev_heights) * 1.0 / len(prev_heights) * 1.0)
+            features["d_pits"] = features["pits"] - sum(prev_pits)
+        
+        else:
+            features["d_max_ht"] = None
+            features["d_all_ht"] = None
+            features["d_mean_ht"] = None
+            features["d_pits"] = None
+        
+        features["lumped_pits"] = lumped_pits
+        
+        features["pattern_div"] = self.get_col_diversity(cleared_space)
         
         #JKL additions - previous work
-        #placement matches (edges, etc)
-        #tetris progress
-        #levelness
-        
+        features["matches"] = self.get_matches(space)
+        tetris_progress, nine_filled = self.get_tetris_progress(cleared_space)
+        features["tetris_progress"] = tetris_progress
+        features["nine_filled"] = nine_filled
+        features["jaggedness"] = sum([abs(d) for d in diffs])
+
         #JKL additions - on the fly
         features["column_9"] = all_heights[-1]
         features["tetris"] = 1 if features["cleared"] == 4 else 0
-        #score of the move
+        features["move_score"] = features["cleared"] * (self.level + 1)
         
         return features
     
@@ -669,29 +688,66 @@ class TetrisSimulator(object):
     def get_pits(self, v):
         state = v[0]
         pits = 0
+        lumped_pits = 0
+        curr_pit = 0
         rows = []
         row = 18
         for i in v[1:]:
             if i != 0:
                 state = 1
-            if i == 0 and state == 1:
+                curr_pit = 0 #lumped pit ends.
+            if i == 0 and state == 1:   #top detected and found a pit
+                if curr_pit == 0:    #we hadn't seen a pit yet
+                    lumped_pits += 1    #so this is a new lumped pit
+                curr_pit = 1
                 pits += 1
                 rows.append(row)
             row -= 1
-        return rows
+        return rows, lumped_pits
     ###
+    
+    def get_matches(self, space):
+        matches = 0
+        for r in range(0,len(space)):
+            for c in range(0, len(space[r])):
+                if space[r][c] == 2:
+                    #down
+                    if r + 1 >= len(space):
+                        matches += 1
+                    else:
+                        if space[r+1][c] == 1:
+                            matches += 1
+                    #left
+                    if c - 1 < 0:
+                        matches += 1
+                    else:
+                        if space[r][c-1] == 1:
+                            matches += 1
+                    #right
+                    if c + 1 >= len(space[r]):
+                        matches += 1
+                    else:
+                        if space[r][c+1] == 1:
+                            matches += 1
+                    #up, rarely
+                    if r - 1 >= 0:
+                        if space[r-1][c] == 1:
+                            matches += 1
+        return matches
         
     def get_all_pits(self, space):
         space = self.get_cols(space)
-        out1 = []
-        out2 = []
+        col_pits = []
+        pit_rows = [] 
+        lumped_pits = 0
         for i in space:
-            pits = self.get_pits(i)
-            out1.append(len(pits))
+            pits, lumped = self.get_pits(i)
+            lumped_pits += lumped
+            col_pits.append(len(pits))
             for j in pits:
-                if j not in out2:
-                    out2.append(j)
-        return(out1, out2)
+                if j not in pit_rows:
+                    pit_rows.append(j)
+        return(col_pits, pit_rows, lumped_pits)
     ###
     
     def get_landing_height(self, space):
@@ -734,6 +790,23 @@ class TetrisSimulator(object):
     
     def get_row_transitions(self, space):
         return self.get_all_transitions(space, columns = False)
+    
+    def get_col_diversity(self, space):
+        space = self.get_cols(space)
+        patterns = []
+        for i in range(0,len(space)-1):
+            pattern = []
+            for j in range(0, len(space[i])):
+                pattern.append(space[i][j] - space[i+1][j])
+            
+            patterns.append(pattern)
+        
+        patterns2 = []
+        for i in patterns:
+            if i not in patterns2:
+                patterns2.append(i)
+        return len(patterns2)
+        
     
     def get_pit_depth(self, v):
         state = 0
@@ -783,9 +856,55 @@ class TetrisSimulator(object):
             for j in range(1,i+1):
                 out += j
         return out
-
-
-
+    
+    def nine_filled(self, row):
+        filled = 0
+        for i in range(0,len(row)):
+            if row[i] != 0:
+                filled += 1
+            if row[i] == 0:
+                ix = i
+        if filled == 9:
+            return ix
+        else:
+            return None
+    
+    def get_tetris_progress(self, space):
+        newspace = copy.deepcopy(space)
+        newspace.reverse()
+        
+        nine_count = 0
+                
+        progress = 0
+        prev_col = -1
+        #from the bottom up
+        for r in newspace:
+            col = self.nine_filled(r)
+            
+            #found a filled row
+            if col != None:
+                nine_count += 1
+                #new column, reset counter
+                if col != prev_col:
+                    progress = 1
+                    prev_col = col
+                    stagnated = False
+                #same column, increase counter
+                elif col == prev_col and not stagnated:
+                    progress += 1
+            
+            #no nine-count row detected
+            else:
+                #column is blocked, reset progress and column
+                if r[prev_col] != 0:
+                    progress = 0
+                    prev_col = -1
+                #otherwise, progress stagnates here
+                else:
+                    stagnated = True
+        
+        return progress, nine_count
+            
     ###### CONTROLLERS
     
     def evaluate(self, vars, opts):
@@ -1008,6 +1127,7 @@ class TetrisSimulator(object):
     
 def testboard():
     testboard = []
+    """
     testboard.append([0,0,0,0,0,0,0,0,0,0])
     testboard.append([0,0,0,0,0,0,0,0,0,0])
     testboard.append([0,0,0,0,0,0,0,0,0,0])
@@ -1017,8 +1137,6 @@ def testboard():
     testboard.append([0,0,0,0,0,0,0,0,0,0])
     testboard.append([0,0,0,0,0,0,0,0,0,0])
     testboard.append([0,0,0,0,0,0,0,0,0,0])
-    testboard.append([1,0,1,0,1,0,1,0,1,0])
-    testboard.append([0,20,0,1,0,1,0,1,0,1])
     testboard.append([1,0,1,0,1,0,1,0,1,0])
     testboard.append([0,1,0,1,0,1,0,1,0,1])
     testboard.append([1,0,1,0,1,0,1,0,1,0])
@@ -1028,6 +1146,31 @@ def testboard():
     testboard.append([1,0,1,0,1,0,1,0,1,0])
     testboard.append([0,1,0,1,0,1,0,1,0,1])
     testboard.append([1,0,1,0,1,0,1,0,1,0])
+    testboard.append([0,1,0,1,0,1,0,1,0,1])
+    testboard.append([1,0,1,0,1,0,1,0,1,0])
+    """
+    
+    testboard.append([0,0,0,0,0,0,0,0,0,0])
+    testboard.append([0,0,0,0,0,0,0,0,0,0])
+    testboard.append([0,0,0,0,0,0,0,0,0,0])
+    testboard.append([0,0,0,0,0,0,0,0,0,0])
+    testboard.append([0,0,0,0,0,0,0,0,0,0])
+    testboard.append([0,0,0,0,0,0,0,0,0,0])
+    testboard.append([0,0,0,0,0,0,0,0,0,0])
+    testboard.append([0,0,0,0,0,0,0,0,0,0])
+    testboard.append([0,0,0,0,0,0,0,0,0,0])
+    testboard.append([1,0,1,1,1,1,1,1,1,1])
+    testboard.append([0,1,1,1,1,1,1,1,1,1])
+    testboard.append([0,1,1,1,1,1,1,1,1,1])
+    testboard.append([0,1,1,1,1,1,1,1,1,1])
+    testboard.append([0,1,1,1,1,1,1,1,1,1])
+    testboard.append([0,1,1,1,1,1,1,1,1,1])
+    testboard.append([0,1,1,1,1,1,1,1,1,1])
+    testboard.append([0,1,1,1,1,1,1,1,1,1])
+    testboard.append([0,1,1,1,1,1,1,1,1,1])
+    testboard.append([0,1,1,1,1,1,1,1,1,1])
+    testboard.append([1,1,1,1,1,1,1,1,1,0])
+    
     return testboard
 
 
@@ -1072,9 +1215,10 @@ def main(argv):
                         )
     
     sim2 = TetrisSimulator(board = testboard(), curr = "Z", next = "S" )
+    sim2_feats = sim2.report_move_features(col = 1, row = 12, rot = 1, offset = 0, printout = True)
     
-    print(sim2.report_move_features(col = 1, row = 12, rot = 1))
-    
+    for k in sorted(sim2_feats.keys()):
+        print k, sim2_feats[k]
     
     #sim.run()
     
