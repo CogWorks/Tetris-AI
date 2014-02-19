@@ -545,6 +545,9 @@ class TetrisSimulator(object):
         cleared_space = self.clear_rows(space)
         
         all_heights = self.get_heights(cleared_space)
+        diffs = []
+        for i in range(0,len(all_heights)-1):
+            diffs.append(all_heights[i] - all_heights[i+1])
         all_pits, pit_rows = self.get_all_pits(cleared_space)
         pit_depths = self.get_pit_depths(cleared_space)
         col_trans = self.get_col_transitions(cleared_space)
@@ -577,11 +580,20 @@ class TetrisSimulator(object):
         features["pit_rows"] = len(pit_rows)
         
         #Literature additions
-        #Column differences (all 9 pairwise column differences)
-        #Height differences (Sum of Column differences)
+        features["cd_1"] = diffs[0]
+        features["cd_2"] = diffs[1]
+        features["cd_3"] = diffs[2]
+        features["cd_4"] = diffs[3]
+        features["cd_5"] = diffs[4]
+        features["cd_6"] = diffs[5]
+        features["cd_7"] = diffs[6]
+        features["cd_8"] = diffs[7]
+        features["cd_9"] = diffs[8]
+        features["all_diffs"] = sum(diffs)
+        features["max_diffs"] = max(diffs)
+        
         #Height weighted cells (full cells weighted by height)
         #Full cells (full cells on the board)
-        #Max height difference (maximum of the Column differences)
         #Adjacent column holes (number of holes, where adjaced holes in a column count only once)
         #Pattern diversity (number of difference transition patterns between adjacent columns)
         
