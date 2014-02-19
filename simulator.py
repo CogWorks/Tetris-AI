@@ -592,8 +592,9 @@ class TetrisSimulator(object):
         features["all_diffs"] = sum(diffs)
         features["max_diffs"] = max(diffs)
         
-        #Height weighted cells (full cells weighted by height)
-        #Full cells (full cells on the board)
+        features["full_cells"] = self.get_full_cells(cleared_space)
+        features["weighted_cells"] = self.get_full_cells(cleared_space, row_weighted = True)
+        
         #Adjacent column holes (number of holes, where adjaced holes in a column count only once)
         #Pattern diversity (number of difference transition patterns between adjacent columns)
         
@@ -651,6 +652,16 @@ class TetrisSimulator(object):
         return(out)
     ###
     
+    def get_full_cells(self, space, row_weighted = False):
+        total = 0
+        for i in range(0,len(space)):
+            val = len(space) - i if row_weighted else 1
+            for c in space[i]:
+                if c != 0:
+                    total += val
+        return total
+
+    
     #Pits
     
     #need to represent pits as a list of unique pits with a particular length;
@@ -669,7 +680,7 @@ class TetrisSimulator(object):
             row -= 1
         return rows
     ###
-    
+        
     def get_all_pits(self, space):
         space = self.get_cols(space)
         out1 = []
@@ -1060,11 +1071,12 @@ def main(argv):
                         seed = 1
                         )
     
-    #sim2 = TetrisSimulator(board = testboard(), curr = "Z", next = "S" )
-    #print(sim2.report_move_features(col = 1, row = 12, rot = 1))
+    sim2 = TetrisSimulator(board = testboard(), curr = "Z", next = "S" )
+    
+    print(sim2.report_move_features(col = 1, row = 12, rot = 1))
     
     
-    sim.run()
+    #sim.run()
     
 
 
