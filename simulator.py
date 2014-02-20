@@ -544,18 +544,80 @@ class TetrisSimulator(object):
         
         cleared_space = self.clear_rows(space)
         
-        all_heights = self.get_heights(cleared_space)
-        diffs = []
-        for i in range(0,len(all_heights)-1):
-            diffs.append(all_heights[i+1] - all_heights[i])
-        all_pits, pit_rows, lumped_pits = self.get_all_pits(cleared_space)
-        pit_depths = self.get_pit_depths(cleared_space)
-        col_trans = self.get_col_transitions(cleared_space)
-        row_trans = self.get_row_transitions(cleared_space)
-        wells = self.get_wells(all_heights)
+        
         
         features = {}
         
+        keys = self.controller.keys()
+        
+        """
+        dependencies = {
+                        "mean_ht":["HEIGHTS"],
+                        "max_ht":["HEIGHTS"],
+                        "min_ht":["HEIGHTS"],
+                        "all_ht":["HEIGHTS"],
+                        "max_ht_diff":["HEIGHTS","max_ht","mean_ht"],
+                        "min_ht_diff":["HEIGHTS","mean_ht","min_ht"],
+                        "column_9":["HEIGHTS"],
+                        "cleared":[],
+                        "cuml_cleared":["cleared"]
+                        "tetris":["cleared"],
+                        "move_score":["cleared"],
+                        "col_trans":[],
+                        "row_trans":[],
+                        "all_trans":["col_trans","row_trans"],
+                        "wells":["HEIGHTS","WELLS"],
+                        "cuml_wells":["HEIGHTS","WELLS"],
+                        "deep_wells":["HEIGHTS","WELLS"],
+                        "max_well":["HEIGHTS","WELLS"],
+                        "pits":["PITS"],
+                        "pit_rows":["PITS"],
+                        "lumped_pits":["PITS"],
+                        "pit_depth":["PIT_DEPTHS"],
+                        "mean_pit_depth":["PIT_DETHS"],
+                        "cd_1":["DIFFS"],
+                        "cd_2":["DIFFS"],
+                        "cd_3":["DIFFS"],
+                        "cd_4":["DIFFS"],
+                        "cd_5":["DIFFS"],
+                        "cd_6":["DIFFS"],
+                        "cd_7":["DIFFS"],
+                        "cd_8":["DIFFS"],
+                        "cd_9":["DIFFS"],
+                        "all_diffs":["DIFFS"],
+                        "max_diffs":["DIFFS"],
+                        "jaggedness":["DIFFS"],
+                        "d_max_ht":["max_ht"],
+                        "d_all_ht":["all_ht"],
+                        "d_mean_ht":["mean_ht"],
+                        "d_pits":["PITS","pits"],
+                        "landing_height":[],
+                        "pattern_div":[],
+                        "matches":[],
+                        "tetris_progress":["TETRIS"],
+                        "nine_filled":["TETRIS"],
+                        "full_cells":[],
+                        "weighted_cells":[],
+                        "eroded_cells":[],
+                        "cuml_eroded":
+                        }
+        """
+        
+        ##heavy calculations
+        
+        all_heights = self.get_heights(cleared_space)
+        
+        wells = self.get_wells(all_heights)
+        
+        diffs = []
+        for i in range(0,len(all_heights)-1):
+            diffs.append(all_heights[i+1] - all_heights[i])
+        
+        all_pits, pit_rows, lumped_pits = self.get_all_pits(cleared_space)
+        pit_depths = self.get_pit_depths(cleared_space)
+        
+        
+        #height dependent
         
         features["mean_ht"] = sum(all_heights) * 1.0 / len(all_heights) * 1.0
         features["max_ht"] = max(all_heights)
@@ -563,24 +625,36 @@ class TetrisSimulator(object):
         features["all_ht"] = sum(all_heights)
         features["max_ht_diff"] = features["max_ht"] - features["mean_ht"]
         features["min_ht_diff"] = features["mean_ht"] - features["min_ht"]
-        features["pits"] = sum(all_pits)
+        features["column_9"] = all_heights[-1]
+        
+        #cleared dependent
         features["cleared"] = self.filled_lines(space)
-        features["landing_height"] = self.get_landing_height(space)
-        features["eroded_cells"] = self.get_eroded_cells(space)
-        features["col_trans"] = sum(col_trans)
-        features["row_trans"] = sum(row_trans)
-        features["all_trans"] = sum(col_trans) + sum(row_trans)
+        features["cuml_cleared"] = self.accumulate([features["cleared"]])
+        features["tetris"] = 1 if features["cleared"] == 4 else 0
+        features["move_score"] = features["cleared"] * (self.level + 1)        
+        
+        #trans dependent
+        features["col_trans"] = sum(self.get_col_transitions(cleared_space))
+        features["row_trans"] = sum(self.get_row_transitions(cleared_space))
+        features["all_trans"] = features["col_trans"] + features["row_trans"]
+        
+        #well and height dependent
         features["wells"] = sum(wells)
         features["cuml_wells"] = self.accumulate(wells)
         features["deep_wells"] = sum([i for i in wells if i != 1])
         features["max_well"] = max(wells)
-        features["cuml_cleared"] = self.accumulate([features["cleared"]])
-        features["cuml_eroded"] = self.accumulate([features["eroded_cells"]])
-        features["pit_depth"] = sum(pit_depths)
-        features["mean_pit_depth"] = sum(pit_depths) / len(pit_depths)
-        features["pit_rows"] = len(pit_rows)
         
-        #Literature additions
+        #pit dependent
+        features["pits"] = sum(all_pits)
+        features["pit_rows"] = len(pit_rows)
+        features["lumped_pits"] = lumped_pits
+        
+        #pit depth dependent
+        features["pit_depth"] = sum(pit_depths)
+        features["mean_pit_depth"] = features["pit_depth"] * 1.0 / features["pits"] * 1.0
+        
+        
+        #diff and height dependent
         features["cd_1"] = diffs[0]
         features["cd_2"] = diffs[1]
         features["cd_3"] = diffs[2]
@@ -592,10 +666,9 @@ class TetrisSimulator(object):
         features["cd_9"] = diffs[8]
         features["all_diffs"] = sum(diffs)
         features["max_diffs"] = max(diffs)
+        features["jaggedness"] = sum([abs(d) for d in diffs])
         
-        features["full_cells"] = self.get_full_cells(cleared_space)
-        features["weighted_cells"] = self.get_full_cells(cleared_space, row_weighted = True)
-        
+        #previous space
         if prev_space:
             prev_heights = self.get_heights(prev_space)
             prev_pits = self.get_all_pits(prev_space)[0]
@@ -610,22 +683,24 @@ class TetrisSimulator(object):
             features["d_all_ht"] = None
             features["d_mean_ht"] = None
             features["d_pits"] = None
+
         
-        features["lumped_pits"] = lumped_pits
+        #independents
+        features["landing_height"] = self.get_landing_height(space)
         
         features["pattern_div"] = self.get_col_diversity(cleared_space)
         
-        #JKL additions - previous work
         features["matches"] = self.get_matches(space)
+        
         tetris_progress, nine_filled = self.get_tetris_progress(cleared_space)
         features["tetris_progress"] = tetris_progress
         features["nine_filled"] = nine_filled
-        features["jaggedness"] = sum([abs(d) for d in diffs])
-
-        #JKL additions - on the fly
-        features["column_9"] = all_heights[-1]
-        features["tetris"] = 1 if features["cleared"] == 4 else 0
-        features["move_score"] = features["cleared"] * (self.level + 1)
+        features["full_cells"] = self.get_full_cells(cleared_space)
+        
+        features["weighted_cells"] = self.get_full_cells(cleared_space, row_weighted = True)
+        
+        features["eroded_cells"] = self.get_eroded_cells(space)
+        features["cuml_eroded"] = self.accumulate([features["eroded_cells"]])
         
         return features
     
@@ -822,7 +897,6 @@ class TetrisSimulator(object):
                 curdepth += 1
             #found a pit! commit current depth to total
             elif state != 0 and i == 0:
-                state = 0
                 depth += curdepth
         return depth
             
@@ -877,6 +951,8 @@ class TetrisSimulator(object):
                 
         progress = 0
         prev_col = -1
+        
+        prev_row = []
         #from the bottom up
         for r in newspace:
             col = self.nine_filled(r)
@@ -886,9 +962,18 @@ class TetrisSimulator(object):
                 nine_count += 1
                 #new column, reset counter
                 if col != prev_col:
-                    progress = 1
-                    prev_col = col
-                    stagnated = False
+                    if prev_row == []:  #first row
+                        progress = 1
+                        prev_col = col
+                        stagnated = False
+                    else:
+                        if prev_row[col] != 0:  #if there's a block below, we can restart
+                            progress = 1
+                            prev_col = col
+                            stagnated = False
+                        else:
+                            progress = 0
+                            prev_col = -1
                 #same column, increase counter
                 elif col == prev_col and not stagnated:
                     progress += 1
@@ -902,7 +987,7 @@ class TetrisSimulator(object):
                 #otherwise, progress stagnates here
                 else:
                     stagnated = True
-        
+            prev_row = r
         return progress, nine_count
             
     ###### CONTROLLERS
@@ -1159,17 +1244,17 @@ def testboard():
     testboard.append([0,0,0,0,0,0,0,0,0,0])
     testboard.append([0,0,0,0,0,0,0,0,0,0])
     testboard.append([0,0,0,0,0,0,0,0,0,0])
+    testboard.append([0,0,0,0,0,0,0,0,0,0])
+    testboard.append([0,0,0,0,0,0,0,0,0,0])
+    testboard.append([0,0,0,0,0,0,0,0,0,0])
+    testboard.append([0,0,0,0,0,0,0,1,0,1])
+    testboard.append([0,0,0,0,0,0,1,1,1,1])
+    testboard.append([0,0,0,1,1,1,1,1,1,1])
+    testboard.append([0,1,1,1,1,1,1,1,1,1])
+    testboard.append([0,1,1,1,1,1,1,1,1,1])
+    testboard.append([1,0,1,1,1,1,1,0,1,1])
     testboard.append([1,0,1,1,1,1,1,1,1,1])
-    testboard.append([0,1,1,1,1,1,1,1,1,1])
-    testboard.append([0,1,1,1,1,1,1,1,1,1])
-    testboard.append([0,1,1,1,1,1,1,1,1,1])
-    testboard.append([0,1,1,1,1,1,1,1,1,1])
-    testboard.append([0,1,1,1,1,1,1,1,1,1])
-    testboard.append([0,1,1,1,1,1,1,1,1,1])
-    testboard.append([0,1,1,1,1,1,1,1,1,1])
-    testboard.append([0,1,1,1,1,1,1,1,1,1])
-    testboard.append([0,1,1,1,1,1,1,1,1,1])
-    testboard.append([1,1,1,1,1,1,1,1,1,0])
+    testboard.append([1,1,1,1,1,1,1,0,1,1])
     
     return testboard
 
@@ -1214,11 +1299,11 @@ def main(argv):
                         seed = 1
                         )
     
-    sim2 = TetrisSimulator(board = testboard(), curr = "Z", next = "S" )
-    sim2_feats = sim2.report_move_features(col = 1, row = 12, rot = 1, offset = 0, printout = True)
+    sim2 = TetrisSimulator(board = testboard(), curr = "S", next = "S" )
+    sim2_feats = sim2.report_move_features(col = 4, row = 7, rot = 0, offset = 0, printout = True)
     
-    for k in sorted(sim2_feats.keys()):
-        print k, sim2_feats[k]
+    for i, k in enumerate(sorted(sim2_feats.keys())):
+        print i, k, sim2_feats[k]
     
     #sim.run()
     
