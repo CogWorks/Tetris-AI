@@ -651,7 +651,10 @@ class TetrisSimulator(object):
         
         #pit depth dependent
         features["pit_depth"] = sum(pit_depths)
-        features["mean_pit_depth"] = features["pit_depth"] * 1.0 / features["pits"] * 1.0
+        if features["pits"] * 1.0 == 0:
+            features["mean_pit_depth"] = 0
+        else:
+            features["mean_pit_depth"] = features["pit_depth"] * 1.0 / features["pits"] * 1.0
         
         
         #diff and height dependent
