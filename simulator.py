@@ -90,7 +90,7 @@ class TetrisSimulator(object):
     
     
     def __init__(self,board = None, curr = None, next = None, controller = None, 
-                    show_scores = False, show_options = False, show_choice = False,
+                    show_scores = False, show_options = False, show_result = True, show_choice = False,
                     option_step = 0, choice_step = 0, name = "Controller", seed = time.time() * 10000000000000.0):
         """Generates object based on given board layout"""
         self.sequence = random.Random()
@@ -124,6 +124,7 @@ class TetrisSimulator(object):
                             "cuml_wells":-1}
         
         
+        self.show_result = show_result
         self.show_scores = show_scores
         self.show_options = show_options
         self.show_choice = show_choice
@@ -1201,11 +1202,13 @@ class TetrisSimulator(object):
               self.printscores()
             ep += 1 
         
-        print("\n\nGame Over\nFinal scores:")
-        print("Episodes: " + str(ep))
-        self.printscores()
-        self.printcontroller()
-        print("\n")
+        if self.show_result:
+            print("\n\nGame Over\nFinal scores:")
+            print("Episodes: " + str(ep))
+            self.printscores()
+            self.printcontroller()
+            print("\n")
+            
         return({"lines":self.lines,
                 "l1":self.l1,
                 "l2":self.l2,
