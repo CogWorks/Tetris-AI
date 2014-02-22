@@ -13,7 +13,14 @@ to-do:
  - innovation... equilibrium points? i.e. "1 well is allowed, deviation counts against"
     - huh!
     
-
+OPTIMIZATION: based on a 230 second run of depth 10, controllers 20, survivors 4, and episodes 100
+ X remove deep-copies where applicable (160 seconds)
+ X reduce use of get_cols() (deep copying)
+ - Switch to using numpy arrays, and stop using Append (7 seconds total)
+ - enable parallelization and graphics processing using opencl and cuda
+    - column-wise parallel summations
+    - possible_moves function (can look at different moves separately)
+ - make features only calculated when needed!!
 
 """
 
@@ -745,7 +752,7 @@ class TetrisSimulator(object):
         return 0
     ###
     
-    
+    #!# parallelize
     def get_heights(self, colspace):
         out = []
         for i in colspace:
@@ -816,7 +823,8 @@ class TetrisSimulator(object):
                         if space[r-1][c] == 1:
                             matches += 1
         return matches
-        
+    
+    #!# parallelize
     def get_all_pits(self, colspace):
         col_pits = []
         pit_rows = [] 
@@ -857,6 +865,7 @@ class TetrisSimulator(object):
         return trans
     ###
     
+    #!# parallelize
     def get_all_transitions(self, space):
         out = []
         for i in space:
