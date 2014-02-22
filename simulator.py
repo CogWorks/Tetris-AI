@@ -545,7 +545,7 @@ class TetrisSimulator(object):
         
         cleared_space = self.clear_rows(space)
         
-        
+        cleared_space_cols = self.get_cols(cleared_space)
         
         features = {}
         
@@ -607,7 +607,7 @@ class TetrisSimulator(object):
         
         ##heavy calculations
         
-        all_heights = self.get_heights(cleared_space)
+        all_heights = self.get_heights(cleared_space_cols)
         
         wells = self.get_wells(all_heights)
         
@@ -615,8 +615,8 @@ class TetrisSimulator(object):
         for i in range(0,len(all_heights)-1):
             diffs.append(all_heights[i+1] - all_heights[i])
         
-        all_pits, pit_rows, lumped_pits = self.get_all_pits(cleared_space)
-        pit_depths = self.get_pit_depths(cleared_space)
+        all_pits, pit_rows, lumped_pits = self.get_all_pits(cleared_space_cols)
+        pit_depths = self.get_pit_depths(cleared_space_cols)
         
         
         #height dependent
@@ -636,7 +636,7 @@ class TetrisSimulator(object):
         features["move_score"] = features["cleared"] * (self.level + 1)        
         
         #trans dependent
-        features["col_trans"] = sum(self.get_col_transitions(cleared_space))
+        features["col_trans"] = sum(self.get_col_transitions(cleared_space_cols))
         features["row_trans"] = sum(self.get_row_transitions(cleared_space))
         features["all_trans"] = features["col_trans"] + features["row_trans"]
         
@@ -675,8 +675,9 @@ class TetrisSimulator(object):
         
         #previous space
         if prev_space:
-            prev_heights = self.get_heights(prev_space)
-            prev_pits = self.get_all_pits(prev_space)[0]
+            prev_cols = self.get_cols(prev_space)
+            prev_heights = self.get_heights(prev_cols)
+            prev_pits = self.get_all_pits(prev_cols)[0]
             
             features["d_max_ht"] = features["max_ht"] - max(prev_heights)
             features["d_all_ht"] = features["all_ht"] - sum(prev_heights)
@@ -693,7 +694,7 @@ class TetrisSimulator(object):
         #independents
         features["landing_height"] = self.get_landing_height(space)
         
-        features["pattern_div"] = self.get_col_diversity(cleared_space)
+        features["pattern_div"] = self.get_col_diversity(cleared_space_cols)
         
         features["matches"] = self.get_matches(space)
         
@@ -743,11 +744,9 @@ class TetrisSimulator(object):
     ###
     
     
-    def get_heights(self, space, columns = True):
+    def get_heights(self, colspace):
         out = []
-        if columns:
-            space = self.get_cols(space)
-        for i in space:
+        for i in colspace:
             out.append(self.get_height(i))
         return(out)
     ###
@@ -816,12 +815,11 @@ class TetrisSimulator(object):
                             matches += 1
         return matches
         
-    def get_all_pits(self, space):
-        space = self.get_cols(space)
+    def get_all_pits(self, colspace):
         col_pits = []
         pit_rows = [] 
         lumped_pits = 0
-        for i in space:
+        for i in colspace:
             pits, lumped = self.get_pits(i)
             lumped_pits += lumped
             col_pits.append(len(pits))
@@ -857,28 +855,25 @@ class TetrisSimulator(object):
         return trans
     ###
     
-    def get_all_transitions(self, space, columns = False):
+    def get_all_transitions(self, space):
         out = []
-        if columns:
-            space = self.get_cols(space)
         for i in space:
             out.append(self.get_transitions(i))
         return(out)
     ###
     
-    def get_col_transitions(self, space):
-        return self.get_all_transitions(space, columns = True)
+    def get_col_transitions(self, colspace):
+        return self.get_all_transitions(colspace)
     
     def get_row_transitions(self, space):
-        return self.get_all_transitions(space, columns = False)
+        return self.get_all_transitions(space)
     
-    def get_col_diversity(self, space):
-        space = self.get_cols(space)
+    def get_col_diversity(self, colspace):
         patterns = []
-        for i in range(0,len(space)-1):
+        for i in range(0,len(colspace)-1):
             pattern = []
-            for j in range(0, len(space[i])):
-                pattern.append(space[i][j] - space[i+1][j])
+            for j in range(0, len(colspace[i])):
+                pattern.append(colspace[i][j] - colspace[i+1][j])
             
             patterns.append(pattern)
         
@@ -908,10 +903,9 @@ class TetrisSimulator(object):
             
         
     
-    def get_pit_depths(self, space):
-        space = self.get_cols(space)
+    def get_pit_depths(self, colspace):
         out = []
-        for i in space:
+        for i in colspace:
             out.append(self.get_pit_depth(i))
         return(out)
             
@@ -963,7 +957,6 @@ class TetrisSimulator(object):
         #from the bottom up
         for r in range(1,len(space)+1):
             r_ix = len(space)-r
-            print(r_ix)
             col = self.nine_filled(space[r_ix])
             
             #found a filled row
