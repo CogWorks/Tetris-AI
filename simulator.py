@@ -727,10 +727,12 @@ class TetrisSimulator(object):
     #!# Work to remove this entirely! Unnecessary processing!
     #transform the space to be column-wise, rather than rows
     def get_cols(self, space):
-        out = []
-        for i in range(0, len(space[0])):
-            out.append(self.get_col(i, space))
-        return out
+        
+        #out = []
+        #for i in range(0, len(space[0])):
+        #    out.append(self.get_col(i, space))
+        
+        return zip(*space)
     
     
     ### FEATURES
