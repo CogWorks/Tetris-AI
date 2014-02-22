@@ -551,6 +551,7 @@ class TetrisSimulator(object):
         keys = self.controller.keys()
         
         """
+        #working out a dependency tree.
         dependencies = {
                         "mean_ht":["HEIGHTS"],
                         "max_ht":["HEIGHTS"],
