@@ -723,6 +723,7 @@ class TetrisSimulator(object):
         return space[row]
     ###
     
+    #!# Wasting a lot of time transposing
     #transform the space to be column-wise, rather than rows
     def get_cols(self, space):
         out = []
@@ -948,9 +949,10 @@ class TetrisSimulator(object):
         else:
             return None
     
+    #eating a LOT of the processing
     def get_tetris_progress(self, space):
-        newspace = copy.deepcopy(space)
-        newspace.reverse()
+        #newspace = copy.deepcopy(space)
+        #newspace.reverse()
         
         nine_count = 0
                 
@@ -959,20 +961,22 @@ class TetrisSimulator(object):
         
         prev_row = []
         #from the bottom up
-        for r in newspace:
-            col = self.nine_filled(r)
+        for r in range(1,len(space)+1):
+            r_ix = len(space)-r
+            print(r_ix)
+            col = self.nine_filled(space[r_ix])
             
             #found a filled row
             if col != None:
                 nine_count += 1
                 #new column, reset counter
                 if col != prev_col:
-                    if prev_row == []:  #first row
+                    if r == 1:  #first row
                         progress = 1
                         prev_col = col
                         stagnated = False
                     else:
-                        if prev_row[col] != 0:  #if there's a block below, we can restart
+                        if space[r_ix+1][col] != 0:  #if there's a block below, we can restart
                             progress = 1
                             prev_col = col
                             stagnated = False
@@ -986,13 +990,12 @@ class TetrisSimulator(object):
             #no nine-count row detected
             else:
                 #column is blocked, reset progress and column
-                if r[prev_col] != 0:
+                if space[r_ix][prev_col] != 0:
                     progress = 0
                     prev_col = -1
                 #otherwise, progress stagnates here
                 else:
                     stagnated = True
-            prev_row = r
         return progress, nine_count
             
     ###### CONTROLLERS
@@ -1024,145 +1027,8 @@ class TetrisSimulator(object):
         
         return out
     
-    """
-    def prioritize(self, var, opts, func = min):
-        crit = None
-        
-        for i in opts:
-            if crit == None:
-                crit = i[4][var]
-            else:
-                crit = func(crit, i[4][var])
-        
-        opts2 = []
-        for i in opts:
-            if i[4][var] == crit:
-                opts2.append(i)
-        
-        return opts2
     
     
-    #random controller. "If I Only Had A Brain"
-    def choose_random(self, show = False):
-        
-        options = self.options
-        
-        choice = random.randint(0,len(options)-1)
-        
-        if show:
-            self.printopt(options[choice])
-        
-        self.move(options[choice])
-        
-    
-    #controller that minimizes the max-height. 
-    def choose_min_ht(self, show = False):
-        options = self.options
-        
-        min = 25
-        choice = -1
-        for i in range(0,len(options)):
-            it = options[i][4]["max_ht"]
-            if it < min:
-                min = it
-                choice = i
-                
-        if show:
-            self.printopt(options[choice])
-        
-        self.move(options[choice])
-    
-    #Controller that prioritizes pits above all, then decides based on max height
-    #
-    # The problem with this kind of hierarchical controller is that it fails
-        # to integrate the two values at the same time, maximizing one without
-        # any concern whatsoever for the other. 
-    def choose_min_ht_pits(self, show = False):
-        options = self.options
-        
-        #discover minimum pits
-        min_pits = 9999
-        for i in range(0,len(options)):
-            pits = options[i][4]["pits"]
-            if pits < min_pits:
-                min_pits = pits
-        
-        #reduce choices based on pits
-        choices = []
-        for i in options:
-            if i[4]["pits"] == min_pits:
-                choices.append(i)
-        
-        #decide based on min height
-        min_peak = 9999
-        choice = -1
-        for i in range(0,len(choices)):
-            it = choices[i][4]["max_ht"]
-            if it < min_peak:
-                min_peak = it
-                choice = i
-        
-        if show:
-            self.printopt(choices[choice])
-        
-        self.move(choices[choice])
-
-    def choose_min_ht_pits_cleared(self, show = False):
-        options = self.options
-        
-        options = self.prioritize("cleared",options,func = max)
-        options = self.prioritize("pits",options,func = min)
-        options = self.prioritize("all_ht",options, func = min)
-        options = self.prioritize("max_ht",options, func = min)
-        
-        #choose leftmost?
-        #choice = 0
-        
-        choice = random.randint(0, len(options)-1)
-        
-        if show:
-            self.printopt(options[choice])
-            
-            
-        self.move(options[choice])
-
-    ###
-    # BReaks on a non-illegal move. 
-    
-    #Traceback (most recent call last):
-    #  File "simulator.py", line 808, in <module>
-    #    main(sys.argv)
-    #  File "simulator.py", line 771, in main
-    #    sim.choose_Dellacherie(show = printout)
-    #  File "simulator.py", line 674, in choose_Dellacherie
-    #    options)
-    #  File "simulator.py", line 542, in evaluate
-    #    val += i[4][j[0]] * j[1]
-    #TypeError: unsupported operand type(s) for *: 'NoneType' and 'int'
-    
-    ###
-    def choose_Dellacherie(self):
-        options = self.options
-        
-        options = self.evaluate({"landing_height":-1,
-                            "eroded_cells":1,
-                            "row_trans":-1,
-                            "col_trans":-1,
-                            "pits":-4,
-                            "cuml_wells":-1}, 
-                            options)
-        
-        choice = random.randint(0, len(options)-1)
-        
-        if self.show_choice:
-            self.printopt(options[choice])
-            if self.choice_step > 0:
-                time.sleep(self.choice_step)
-            
-        self.move(options[choice])
-        
-    
-    """
     
     def control(self):
         options = self.options
