@@ -724,7 +724,7 @@ class TetrisSimulator(object):
         return space[row]
     ###
     
-    #!# Wasting a lot of time transposing
+    #!# Work to remove this entirely! Unnecessary processing!
     #transform the space to be column-wise, rather than rows
     def get_cols(self, space):
         out = []
