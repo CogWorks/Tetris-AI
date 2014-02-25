@@ -357,7 +357,7 @@ class TetrisSimulator(object):
             for c in range(0, len(space[0]) - len(self.shapes[zoid][r][0]) + 1):
                 row = self.find_drop(c,r,zoid,space)
                 simboard, ends_game = self.possible_board(c,r,row)
-                features = self.get_features(simboard,prev_space = space)
+                features = self.get_features(simboard,prev_space = space, all = False)
                 opt = [c,r,row,simboard,features, ends_game]
                 options.append(opt)
                 
@@ -705,9 +705,11 @@ class TetrisSimulator(object):
         
         features["matches"] = self.get_matches(space)
         
+        #if "tetris_progress" in keys or "nine_filled" in keys or all: 
         tetris_progress, nine_filled = self.get_tetris_progress(cleared_space)
         features["tetris_progress"] = tetris_progress
         features["nine_filled"] = nine_filled
+            
         features["full_cells"] = self.get_full_cells(cleared_space)
         
         features["weighted_cells"] = self.get_full_cells(cleared_space, row_weighted = True)

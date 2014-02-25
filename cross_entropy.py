@@ -95,15 +95,15 @@ def write_header(file, features):
     for i in features:
         vars.append(i + "_var")
     
-    outheader = header + ["test_game"] + features + vars + outputs
+    outheader = header + ["type"] + features + vars + outputs
     file.write("\t".join(outheader) + "\n")
     
-def write_controller(file, session_vars, name, features, controller, game_seed = "NIL", vars = False, outs = False, test_game = False):
+def write_controller(file, session_vars, name, features, controller, game_seed = "NIL", vars = False, outs = False, type = ""):
     outlist = []
     outlist = outlist + session_vars
     outlist.append(str(game_seed))
     outlist.append(name)
-    outlist.append(str(test_game))
+    outlist.append(type)
     
     for f in features:
         outlist.append(str(controller[f]))
@@ -280,7 +280,7 @@ if __name__ == '__main__':
         
     
     write_controller(outfile, session_variables, "G" + str(0), features, start_controller, 
-                        vars = tolerances)
+                        vars = tolerances, type = "base")
     
     for x in range (0, depth):
         
@@ -300,7 +300,7 @@ if __name__ == '__main__':
             
             #session_vars, name, features, controller, vars = False, outs = False
             write_controller(outfile, session_variables, controller_name, features, random_controller, 
-                            outs = sim_result, game_seed = game_seed)
+                            outs = sim_result, game_seed = game_seed, type = "search")
             
             results.append([random_controller, sim_result])
             
@@ -329,7 +329,8 @@ if __name__ == '__main__':
                 test_res = test_sim.run(eps = episodes, printstep = report_every)
                 
                 test_results.append(test_res)
-                write_controller(outfile, session_variables, test_name, features, start_controller, outs = test_res, game_seed = test_seed)
+                write_controller(outfile, session_variables, test_name, features, start_controller, outs = test_res, 
+                            game_seed = test_seed, type = "test")
             
         test_avg = {}
         
@@ -342,7 +343,7 @@ if __name__ == '__main__':
         
         #output resultant controller and its scores
         write_controller(outfile, session_variables, "G" + str(x+1), features, start_controller, 
-                        vars = tolerances, outs = test_avg)
+                        vars = tolerances, outs = test_avg, type = "result")
         
         noise = noise * dim_noise
         
