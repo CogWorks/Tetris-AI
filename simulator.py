@@ -224,8 +224,15 @@ class TetrisSimulator(object):
                 non_ending.append(i)
         self.options = non_ending
     
-    
-    #work all of these functions in here
+    #function that takes a board state and a zoid, and optionally the move made
+        #returns a choice (row, col, rot)
+    def predict(self, space, zoid):
+        self.space = self.convert_space(space)
+        self.curr_z = zoid
+        
+        self.get_options()
+        return self.control()
+        
     
     
     def do_move(self, col, rot, row):
@@ -1047,6 +1054,7 @@ class TetrisSimulator(object):
                 time.sleep(self.choice_step)
         
         self.move(options[choice])
+        return options[choice]
     
     
     def run(self, eps = -1, printstep = 500):
@@ -1183,6 +1191,8 @@ def main(argv):
     
     for i, k in enumerate(sorted(sim2_feats.keys())):
         print i, k, sim2_feats[k]
+    
+    print(sim.predict(testboard(), "Z"))
     
     #sim.run()
     
