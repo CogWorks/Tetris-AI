@@ -225,7 +225,7 @@ class TetrisSimulator(object):
         self.options = non_ending
     
     #function that takes a board state and a zoid, and optionally the move made
-        #returns a choice (row, col, rot)
+        #returns a choice (column, rotation, row)
     def predict(self, space, zoid):
         self.space = self.convert_space(space)
         self.curr_z = zoid
