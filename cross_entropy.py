@@ -56,8 +56,8 @@ def merge_controllers(controllers, noise):
 
 header = ["session","optimize","depth","controllers","survivors","episodes",
             "noise","initial_value","variance","session_seed",
-            "game_seed","name","type","generation"]
-outputs = ["lines","l1","l2","l3","l4","score","level"]
+            "game_seed","name","generation","type","game_num","repetition"]
+outputs = ["lines","l1","l2","l3","l4","score","level","eps"]
 
 def write_header(file, features):
     vars = []
@@ -71,13 +71,15 @@ def write_header(file, features):
     outheader = header + features + norms + vars + outputs
     file.write("\t".join(outheader) + "\n")
     
-def write_controller(file, session_vars, name, features, controller, game_seed = "NIL", vars = False, outs = False, type = "", gen = 0):
+def write_controller(file, session_vars, name, features, controller, game_seed = "NIL", vars = False, outs = False, type = "", gen = 0, num = 0, rep = 0):
     outlist = []
     outlist = outlist + session_vars
     outlist.append(str(game_seed))
     outlist.append(name)
-    outlist.append(type)
     outlist.append(str(gen))
+    outlist.append(type)
+    outlist.append(str(num))
+    outlist.append(str(rep))
     
     featlist = []
     #get features
@@ -306,7 +308,7 @@ if __name__ == '__main__':
             
             #session_vars, name, features, controller, vars = False, outs = False
             write_controller(outfile, session_variables, controller_name, features, random_controller, 
-                            outs = sim_result, game_seed = game_seed, type = "search", gen = x + 1)
+                            outs = sim_result, game_seed = game_seed, type = "search", gen = x + 1, num = a+1, rep = 1)
             
             results.append([random_controller, sim_result])
             
@@ -336,7 +338,7 @@ if __name__ == '__main__':
                 
                 test_results.append(test_res)
                 write_controller(outfile, session_variables, test_name, features, start_controller, outs = test_res, 
-                            game_seed = test_seed, type = "test", gen = x + 1)
+                            game_seed = test_seed, type = "test", gen = x + 1, num = g+1, rep = r+1)
             
         test_avg = {}
         
