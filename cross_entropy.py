@@ -2,45 +2,14 @@
 
 #File-reading
     #be able to read generated files to "pick up where we left off"
-    #may need some revisions to the logging structure (just a rough draft anyway)
-
-#should also track the BEST model's performance,
-    #i.e. keep a COMPLETE list of model runs and performances to be able to 
-        #report the best of all runs.
-        
-#need to be able to define in argparse the 
-    #base model values, base tolerance values, 
-    #all printing options
-    #
-
-
-## BEFORE OFFICIAL FIRST RUN ##
-
-
-#Need better randomization control
-
-#Need "diminishing noise" implementation
-
-#Optional: Need "convergence" value ; they allowed 80 generations for convergence; what do we do?
 
 #Optional: Need 2-piece look-ahead
 
-#MANDATORY: Need to add post-testing; FOR EACH ITERATION'S RESULTANT AVERAGE CONTROLLER
-    #i.e. Each "good" model must play a host of random games to verify its generalizability
-    #could just have parameter for number of games played per controller 
-    #maybe use a "criterion score"?
-    #!! careful! will multiplicatively increase runtime!!
-
-
-####
-
-
-
-
-
 #Need to add some ability to play overhangs.
 
-#Need to have some rudimentary constraints added in.
+#Need to have some rudimentary constraints added in. (may leave for multitetris proper)
+
+#
 
 
 
@@ -146,6 +115,11 @@ def write_controller(file, session_vars, name, features, controller, game_seed =
     file.write("\t".join(outlist) + "\n")
     
 
+def resume(file):
+    controller = {}
+    
+    return controller
+
 ###Script
 
 
@@ -246,6 +220,11 @@ if __name__ == '__main__':
                         type = str, default = "lines",
                         help = "Select what criterion to optimize via cross-entropy: lines, score, level, l1, l2, l3, l4. Defaults to 'lines'.")
     
+    parser.add_argument( '-res', '--resume',
+                        action = "store", dest = "resume_file",
+                        type = str, default = None,
+                        help = "Specify an incomplete session log to reconstruct and resume.")
+    
     parser.add_argument( '-f', '--features',
                         action = "store", dest = "features",
                         type = str, nargs = '+',
@@ -279,6 +258,7 @@ if __name__ == '__main__':
     test_games = args.test_games
     test_reps = args.test_reps
     show_result = not args.no_results
+    resume_file = args.resume_file
     
     random_seed = args.random_seed
     rng = random.Random()
