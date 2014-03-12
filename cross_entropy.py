@@ -87,7 +87,7 @@ def merge_controllers(controllers, noise):
 
 header = ["session","optimize","depth","controllers","survivors","episodes",
             "noise","initial_value","variance","session_seed",
-            "game_seed","name"]
+            "game_seed","name","type","generation"]
 outputs = ["lines","l1","l2","l3","l4","score","level"]
 
 def write_header(file, features):
@@ -95,23 +95,49 @@ def write_header(file, features):
     for i in features:
         vars.append(i + "_var")
     
-    outheader = header + ["type"] + features + vars + outputs
+    norms = []
+    for i in features:
+        norms.append(i + "_norm")
+    
+    outheader = header + features + norms + vars + outputs
     file.write("\t".join(outheader) + "\n")
     
-def write_controller(file, session_vars, name, features, controller, game_seed = "NIL", vars = False, outs = False, type = ""):
+def write_controller(file, session_vars, name, features, controller, game_seed = "NIL", vars = False, outs = False, type = "", gen = 0):
     outlist = []
     outlist = outlist + session_vars
     outlist.append(str(game_seed))
     outlist.append(name)
     outlist.append(type)
+    outlist.append(str(gen))
     
+    featlist = []
+    #get features
     for f in features:
-        outlist.append(str(controller[f]))
+        featlist.append(controller[f])
+    
+    #add raw values
+    outlist = outlist + map(str,featlist)
+    
+    #but also do those values normalized
+    avg_feat = sum(featlist) / len(featlist)
+    
+    
+    max_feat = max(map(abs,map(lambda a,b:a-b,featlist,[avg_feat]*len(featlist))))
+    if max_feat == 0:
+        max_feat = 1
+    
+    for f in featlist:
+        outlist.append(str( (f - avg_feat) / max_feat ))
+        
+    
+    #do the vars if present
     for f in features:
         if vars:
             outlist.append(str(vars[f]))
         else:
             outlist.append("")
+    
+    #do the outputs if present
     for o in outputs:
         if outs:
             outlist.append(str(outs[o]))
@@ -280,7 +306,7 @@ if __name__ == '__main__':
         
     
     write_controller(outfile, session_variables, "G" + str(0), features, start_controller, 
-                        vars = tolerances, type = "base")
+                        vars = tolerances, type = "base", gen = 0)
     
     for x in range (0, depth):
         
@@ -300,7 +326,7 @@ if __name__ == '__main__':
             
             #session_vars, name, features, controller, vars = False, outs = False
             write_controller(outfile, session_variables, controller_name, features, random_controller, 
-                            outs = sim_result, game_seed = game_seed, type = "search")
+                            outs = sim_result, game_seed = game_seed, type = "search", gen = x + 1)
             
             results.append([random_controller, sim_result])
             
@@ -330,7 +356,7 @@ if __name__ == '__main__':
                 
                 test_results.append(test_res)
                 write_controller(outfile, session_variables, test_name, features, start_controller, outs = test_res, 
-                            game_seed = test_seed, type = "test")
+                            game_seed = test_seed, type = "test", gen = x + 1)
             
         test_avg = {}
         
@@ -343,7 +369,7 @@ if __name__ == '__main__':
         
         #output resultant controller and its scores
         write_controller(outfile, session_variables, "G" + str(x+1), features, start_controller, 
-                        vars = tolerances, outs = test_avg, type = "result")
+                        vars = tolerances, outs = test_avg, type = "result", gen = x + 1)
         
         noise = noise * dim_noise
         

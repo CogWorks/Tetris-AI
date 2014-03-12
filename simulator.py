@@ -1095,7 +1095,9 @@ class TetrisSimulator(object):
                 "l3":self.l3,
                 "l4":self.l4,
                 "score":self.score,
-                "level":self.level})
+                "level":self.level,
+                "game_over":self.game_over,
+                "eps":ep})
     
 def testboard():
     testboard = []
