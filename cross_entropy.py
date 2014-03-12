@@ -9,7 +9,7 @@
 
 #Need to have some rudimentary constraints added in. (may leave for multitetris proper)
 
-#
+#Need to report how long a controller lived (particularly if it didn't survive the full episode number specified)
 
 
 
