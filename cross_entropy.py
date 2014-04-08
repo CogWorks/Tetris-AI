@@ -90,16 +90,16 @@ def write_controller(file, session_vars, name, features, controller, game_seed =
     outlist = outlist + map(str,featlist)
     
     #but also do those values normalized
-    avg_feat = sum(featlist) / len(featlist)
+    #avg_feat = sum(featlist) / len(featlist)
     
     
-    max_feat = max(map(abs,map(lambda a,b:a-b,featlist,[avg_feat]*len(featlist))))
+    max_feat = max(map(abs,featlist))
     if max_feat == 0:
         max_feat = 1
     
     for f in featlist:
-        outlist.append(str( (f - avg_feat) / max_feat ))
-        
+        #outlist.append(str( (f - avg_feat) / max_feat ))
+        outlist.append(str( f / max_feat ))
     
     #do the vars if present
     for f in features:
