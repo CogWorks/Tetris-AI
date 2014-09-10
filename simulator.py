@@ -94,11 +94,47 @@ class TetrisSimulator(object):
                     3: [[1,1],[1,0],[1,0]]
                     }
                 }
+    shape_bottoms =    {  
+                "O":{
+                    0: [0,0]
+                    },
+                "I":{
+                    0: [0,0,0,0],
+                    1: [0]
+                    },
+                "Z":{
+                    0: [1,0,0],
+                    1: [0,1]
+                    },
+                "S":{
+                    0: [0,0,1],
+                    1: [1,0]
+                    },
+                "T":{
+                    0: [1,0,1],
+                    1: [1,0],
+                    2: [0,0,0],
+                    3: [0,1]
+                    },
+                "L":{
+                    0: [0,1,1],
+                    1: [2,0],
+                    2: [0,0,0],
+                    3: [0,0]
+                    },
+                "J":{
+                    0: [1,1,0],
+                    1: [0,0],
+                    2: [0,0,0],
+                    3: [0,2]
+                    }
+                }
     
     
     def __init__(self,board = None, curr = None, next = None, controller = None, 
                     show_scores = False, show_options = False, show_result = True, show_choice = False,
-                    option_step = 0, choice_step = 0, name = "Controller", seed = time.time() * 10000000000000.0):
+                    option_step = 0, choice_step = 0, name = "Controller", seed = time.time() * 10000000000000.0,
+                    overhangs = False, force_legal = True):
         """Generates object based on given board layout"""
         self.sequence = random.Random()
         self.sequence.seed(seed)
@@ -119,6 +155,9 @@ class TetrisSimulator(object):
             self.next_z = self.pieces[self.sequence.randint(0,len(self.pieces)-1)]
         
         self.name = name
+        
+        self.overhangs = overhangs
+        self.force_legal = force_legal
         
         if controller:
             self.controller = controller
@@ -215,7 +254,10 @@ class TetrisSimulator(object):
         return self.get_move_features(self.space, col, rot, row + offset, self.curr_z, printout = printout)
     
     def get_options(self):
-        self.options = self.possible_moves()
+        if self.overhangs:
+            self.options = self.possible_moves_under()
+        else:
+            self.options = self.possible_moves()
         
         #cull game-ending options
         non_ending = []
@@ -363,7 +405,7 @@ class TetrisSimulator(object):
             #and each possible column for that rotation
             for c in range(0, len(space[0]) - len(self.shapes[zoid][r][0]) + 1):
                 row = self.find_drop(c,r,zoid,space)
-                simboard, ends_game = self.possible_board(c,r,row)
+                simboard, ends_game = self.possible_board(c,r,row,zoid=zoid)
                 features = self.get_features(simboard,prev_space = space, all = False)
                 opt = [c,r,row,simboard,features, ends_game]
                 options.append(opt)
@@ -372,6 +414,109 @@ class TetrisSimulator(object):
             self.printoptions(options)
         
         return options
+    
+    def possible_moves_under(self, zoid = None, space = None):
+        if not zoid:
+            zoid = self.curr_z
+        if not space:
+            space = self.space
+        
+        drop_points = self.get_drop_points(space)
+        
+        candidates = []
+        
+        for rot in range(0,len(self.shapes[zoid])):
+            candidates += self.drop_point_candidates(space, zoid, rot, drop_points)
+            
+        if self.force_legal:
+            candidates = self.legal_dp_candidates(candidates,zoid,space)
+        
+        options = []
+        
+        for cnd in candidates:
+            c,rt,r = cnd["c"],cnd["rot"],cnd["r"]
+            simboard, ends_game = self.possible_board(c,rt,r,zoid=zoid)
+            features = self.get_features(simboard,prev_space = space, all = False)
+            opt = [c,rt,r,simboard,features,ends_game]
+            options.append(opt)
+        
+        if self.show_options:
+            self.printoptions(options)
+        
+        return options
+                
+        
+    #get a list of drop points {"r":r,"c":c}
+    def get_drop_points(self, space):
+        points = []
+        
+        for c in range(0,len(space[0])):
+            for r in range(0,len(space)):
+                if self.get_cell(r,c,space) == 0:
+                    if r == 0:
+                        points.append({"c":c,"r":r})
+                    elif self.get_cell(r-1,c,space) != 0:
+                        points.append({"c":c,"r":r})
+        return points
+    
+    def get_cell(self, r, c, space):
+        return space[(len(space)-1)-r][c]
+    
+    def drop_point_candidates(self, space, zoid, rot, dps):
+        z = self.shapes[zoid][rot]
+        
+        cands = []
+        
+        for p in dps:
+            #for each column of the zoid
+            for i in range(0,len(z[0])):
+                c = p["c"]-i
+                r = p["r"]+len(z)-self.shape_bottoms[zoid][rot][i] - 1
+                if not (c < 0 or c + len(z[0]) > len(space[0])):
+                  if not self.detect_collision(c,rot,r,zoid,space,off=1):
+                    c = {"c":c,"rot":rot,"r":r}
+                    if c not in cands:
+                        cands.append(c)
+        return cands
+        
+    def legal_dp_candidates(self, cnds, zoid, space):
+        candidates = []
+        checked = []
+        rot = None
+        
+        def check(c,r,l=0,report = "start"):
+            checked.append([c,r])
+            #print " "*l,[c,r], report
+            if self.detect_collision(c,rot,r,zoid,space,off=1):
+                #print " "*l,report,"failed"
+                return False
+            elif r == len(space)-1:
+                #print " "*l,"LEGAL"
+                return True
+            else:
+                if [c-1,r] not in checked and c-1 >= 0:
+                    left = check(c-1,r,l+1,"left")
+                else:
+                    left = False
+                if [c+1,r] not in checked and c+1 < len(space[0]) - len(self.shapes[zoid][rot][0]) - 1:
+                    right = check(c+1,r,l+1,"right")
+                else:
+                    right = False
+                if [c,r+1] not in checked and r+1 < len(space):
+                    up = check(c,r+1,l+1,"up")
+                else:
+                    up = False
+            
+                return left or right or up
+            
+        for cnd in cnds:
+            rot = cnd["rot"]
+            checked = []
+            if check(cnd["c"],cnd["r"]):
+                candidates.append(cnd)
+        
+        return candidates
+    
     
     def possible_board(self, col, rot, row, zoid = None):
         if not zoid:
@@ -407,7 +552,7 @@ class TetrisSimulator(object):
                 return z_h - i
         return None
     
-    def detect_collision(self, col, rot, row, zoid = False, space = False):
+    def detect_collision(self, col, rot, row, zoid = False, space = False, off = 0):
         if not zoid:
             zoid = self.curr_z
         if not space:
@@ -417,7 +562,7 @@ class TetrisSimulator(object):
         
         #set column and row to start checking
         x = col
-        y = len(space) - row
+        y = (len(space)-off) - row
         
         #begin iteration
         ix = x
@@ -527,6 +672,30 @@ class TetrisSimulator(object):
             numline += str(j) + " "
         print(numline)
     ###
+    
+    #prints the board with a "drop candidate" position
+        #takes a drop point of the format {"r":r,"c",c}
+    def printdrop(self, space, drop):
+        print("+" + "-"*len(space[0])*2 + "+")
+        for i in range(0, len(space)):
+         out = "|"
+         for jj,j in enumerate(space[i]):
+            if j == 0:
+             if jj == drop["c"] and i == (len(space)-1)-drop["r"]:
+              out = out + "XX"
+             else:
+              out = out + "  "
+            elif j == 1:
+             out = out + u"\u2BDD "
+            elif j == 2:
+             out = out + u"\u2b1c "
+         print(out + "|" + str(len(space)-i-1))
+        print("+" + "-"*len(space[i])*2 + "+")
+        numline = " "
+        for j in range(0, len(space[0])):
+            numline += str(j) + " "
+        print(numline)
+        
     
     #u"\u2b1c"
     #u"\u2b1c"
@@ -1133,16 +1302,16 @@ def testboard():
     testboard.append([0,0,0,0,0,0,0,0,0,0])
     testboard.append([0,0,0,0,0,0,0,0,0,0])
     testboard.append([0,0,0,0,0,0,0,0,0,0])
-    testboard.append([0,0,0,0,0,0,0,0,0,0])
-    testboard.append([0,0,0,0,0,0,0,0,0,0])
-    testboard.append([0,0,0,0,0,0,0,1,0,1])
+    testboard.append([0,0,0,0,0,0,0,0,0,1])
+    testboard.append([0,0,0,0,0,0,0,0,1,1])
+    testboard.append([0,0,0,0,0,0,1,0,0,1])
     testboard.append([0,0,0,0,0,0,1,1,1,1])
     testboard.append([0,0,0,1,1,1,1,1,1,1])
-    testboard.append([0,1,1,1,1,1,1,1,1,1])
-    testboard.append([0,1,1,1,1,1,1,1,1,1])
-    testboard.append([1,0,1,1,1,1,1,0,1,1])
-    testboard.append([1,0,1,1,1,1,1,1,1,1])
-    testboard.append([1,1,1,1,1,1,1,0,1,1])
+    testboard.append([0,0,1,1,1,1,1,1,1,1])
+    testboard.append([0,0,1,1,1,1,1,1,1,1])
+    testboard.append([0,0,1,1,1,0,0,0,1,1])
+    testboard.append([0,0,0,1,0,0,0,1,1,1])
+    testboard.append([0,1,1,0,0,0,0,0,1,1])
     
     return testboard
 
@@ -1179,24 +1348,57 @@ def main(argv):
                 "pits":1,
                 "cuml_wells":-1}
     
-    sim = TetrisSimulator(controller = controller1, 
+    sim = TetrisSimulator(controller = controller1,
+                        board = testboard(), curr="L", next = "S",
                         show_choice = True, 
                         show_options = True, 
-                        option_step = .02, 
+                        option_step = .1, 
                         choice_step = .5,
                         seed = 1
                         )
+    #print(sim.predict(testboard(), "L"))
     
-    sim2 = TetrisSimulator(board = testboard(), curr = "S", next = "S" )
-    sim2_feats = sim2.report_move_features(col = 4, row = 7, rot = 0, offset = 0, printout = True)
     
-    for i, k in enumerate(sorted(sim2_feats.keys())):
-        print i, k, sim2_feats[k]
+    sim2 = TetrisSimulator(board = testboard(), curr = "L", next = "S", 
+                            show_choice = True, 
+                            show_options = True, 
+                            option_step = .1, 
+                            choice_step = .6,
+                            seed = 1)
     
-    print(sim.predict(testboard(), "Z"))
+                            
+    #sim2_feats = sim2.report_move_features(col = 4, row = 7, rot = 0, offset = 0, printout = True)
     
-    #sim.run()
+    #for i, k in enumerate(sorted(sim2_feats.keys())):
+    #    print i, k, sim2_feats[k]
     
+    
+    ## Introducing overhangs
+    
+    osim = TetrisSimulator(controller = controller1,
+                board = testboard(), curr="L", next = "S",
+                show_choice = True, 
+                show_options = True, 
+                option_step = .1, 
+                choice_step = .5,
+                seed = 1
+                )
+    
+    ## enable for speed test
+    osim.show_options = False
+    osim.choice_step = 0
+    
+    ##normal
+    osim.overhangs, osim.force_legal = False, False
+    osim.run()
+    
+    ##overhangs allowed, but legality not enforced
+    #osim.overhangs, osim.force_legal = True, False
+    #osim.run()
+    
+    ##legality enforced
+    #osim.overhangs, osim.force_legal = True, True
+    #osim.run()
 
 
 if __name__ == "__main__":
