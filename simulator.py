@@ -1379,8 +1379,8 @@ def main(argv):
                 board = testboard(), curr="L", next = "S",
                 show_choice = True, 
                 show_options = True, 
-                option_step = .1, 
-                choice_step = .5,
+                option_step = .3, 
+                choice_step = 1,
                 seed = 1
                 )
     
@@ -1389,16 +1389,16 @@ def main(argv):
     osim.choice_step = 0
     
     ##normal
-    osim.overhangs, osim.force_legal = False, False
-    osim.run()
+    #osim.overhangs, osim.force_legal = False, False
+    #osim.run()
     
     ##overhangs allowed, but legality not enforced
     #osim.overhangs, osim.force_legal = True, False
     #osim.run()
     
     ##legality enforced
-    #osim.overhangs, osim.force_legal = True, True
-    #osim.run()
+    osim.overhangs, osim.force_legal = True, True
+    osim.run()
 
 
 if __name__ == "__main__":
