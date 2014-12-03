@@ -1,4 +1,4 @@
-import sys, math
+import sys, math, copy
 
 import _helpers
 
@@ -94,7 +94,7 @@ class tetris_cow(object):
 
     def get_cow(self):
         """Get a copy-on-write copy of the board."""
-        new = type(self)(cols=self._cols,max_rows=self._max_rows)
+        new = copy.copy(self)
         new._board = list(self._board)
         new._cow_list = [True]*len(self._board)
         return new
