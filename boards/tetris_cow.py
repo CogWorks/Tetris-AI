@@ -71,6 +71,7 @@ class tetris_cow(object):
         if len(self._board)+rows > self._max_rows: raise IndexError('row limit exceeded')
         self._board += [self._default_row() for _ in range(rows)]
         self._cow_list += [False]*rows
+        self._profile = None
 
     def fill_max(self):
         """Add rows until the board is at its maximum size."""
