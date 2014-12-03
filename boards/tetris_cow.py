@@ -1,4 +1,4 @@
-import sys, math, copy
+import sys, math
 
 import _helpers
 
@@ -114,7 +114,7 @@ class tetris_cow(object):
     def imprint_zoid(self,zoid,pos=None,value=None,orient=None,check=False):
         """Imprint a zoid on the board. Position specifies bottom left of zoid."""
         if not all((pos is None,value is None,orient is None)):
-            zoid = copy.copy(zoid)
+            zoid = zoid.get_copy()
             if pos is not None: zoid.set_pos(pos)
             if value is not None: zoid.set_value(value)
             if orient is not None: zoid.set_orient(orient)
