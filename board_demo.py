@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import sys, random
+import sys, random, time
 
 from boards import *
 
@@ -92,3 +92,6 @@ if __name__ == '__main__':
 
         #print the board for fun
         print_board(main_board,all=True)
+
+        #slow it down so it looks like a game
+        time.sleep(0.1)
