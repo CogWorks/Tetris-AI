@@ -128,7 +128,7 @@ class tetris_cow(object):
 
     def get_cow_mask(self):
         """Get copy-on-write mask of board rows."""
-        return list(self._cow_list)
+        return tuple(self._cow_list)
 
     #<<<<< COPY-ON-WRITE
 
