@@ -18,8 +18,8 @@ def print_board(board,output=sys.stderr,all=False):
     try: rows = [r for r in board.rows(reverse=True,all=all)]
     except TypeError: rows = [r for r in board.rows(reverse=True)]
 
-    try: row_format = '[%%c%%.%ud] '%int(math.ceil(math.log(rows[0],10)))
-    except (ValueError, IndexError): row_format = '[%%c%d] '
+    if rows and rows[0] > 1: row_format = '[%%s%%.%ud] '%int(math.ceil(math.log(rows[0],10)))
+    else: row_format = '[%s%.1d] '
 
     for r in rows:
         if r >= board.get_dims()[0]: modifier = '@'
