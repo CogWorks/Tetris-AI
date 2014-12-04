@@ -8,7 +8,7 @@ from boards import *
 #a class to manage board creation and temporary boards using copy-on-write
 
 class board_manager_cow(object):
-    #put board creation in one place so it can be globally changed
+    #create a new board
     @staticmethod
     def new_board(*args,**kwds): return tetris_cow(*args,**kwds)
 
@@ -24,6 +24,29 @@ class board_manager_cow(object):
     @staticmethod
     def copy_board_hide(board):
         cleared_board = board.get_cow()
+        cleared_board.del_rows(cleared_board.check_rows(full=True))
+        return cleared_board
+
+
+#a class to manage board creation and temporary boards using deep copies
+
+class board_manager_deep(object):
+    #create a new board
+    @staticmethod
+    def new_board(*args,**kwds): return tetris_cow(*args,**kwds)
+
+    #create a copy of the board with a zoid
+    @staticmethod
+    def copy_board_zoid(board,*args,**kwds):
+        zoid_board = board.get_clone()
+        #'check': check for cell collisions
+        zoid_board.imprint_zoid(*args,check=True,**kwds)
+        return zoid_board
+
+    #create a copy of the board with rows hidden
+    @staticmethod
+    def copy_board_hide(board):
+        cleared_board = board.get_clone()
         cleared_board.del_rows(cleared_board.check_rows(full=True))
         return cleared_board
 
