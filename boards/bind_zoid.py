@@ -14,6 +14,9 @@ class bind_zoid(object):
         self._hide_rows()
 
 
+    def get_copy(self): return copy.copy(self)
+
+
     #ELEMENT ACCESS >>>>>
 
     def get_dims(self,max=False,*args,**kwds):

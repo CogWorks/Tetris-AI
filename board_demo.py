@@ -5,8 +5,32 @@ import sys, random, time
 from boards import *
 
 
-#put board creation in one place so it can be globally changed
-def new_board(*args,**kwds): return tetris_cow(*args,**kwds)
+#a class to manage board creation and temporary boards using copy-on-write
+
+class board_manager_cow(object):
+    #put board creation in one place so it can be globally changed
+    @staticmethod
+    def new_board(*args,**kwds): return tetris_cow(*args,**kwds)
+
+    #create a copy of the board with a zoid
+    @staticmethod
+    def copy_board_zoid(board,*args,**kwds):
+        zoid_board = board.get_cow()
+        #'check': check for cell collisions
+        zoid_board.imprint_zoid(*args,check=True,**kwds)
+        return zoid_board
+
+    #create a copy of the board with rows hidden
+    @staticmethod
+    def copy_board_hide(board):
+        cleared_board = board.get_cow()
+        cleared_board.del_rows(cleared_board.check_rows(full=True))
+        return cleared_board
+
+
+#select the board manager
+board_manager = board_manager_cow
+
 
 #pretend to score the board
 def score_board(board,board2=None):
@@ -17,7 +41,7 @@ if __name__ == '__main__':
     cleared_lines = 0
 
     #new 20x10 board (zero rows by default; use 'rows=n' to start with n writable rows)
-    main_board = new_board(max_rows=20,cols=10)
+    main_board = board_manager.new_board(max_rows=20,cols=10)
 
     #(print all of the zoids, just to make sure orientation works properly)
     for zoid_name,zoid in all_zoids.items():
@@ -57,26 +81,23 @@ if __name__ == '__main__':
 
             for c in main_board.cols():
                 #don't check positions past the end of the board
-                if c+zoid.get_dims()[1] > main_board.get_dims()[1]: break
+                if c+zoid.col_count() > main_board.col_count(): break
 
                 #determine how low the zoid rests relative to the top of the pile
                 heights = tuple(board_profile[cc+c]+zoid_profile[cc] for cc in xrange(len(zoid_profile)))
                 r = main_board.pile_height()-min(heights)
 
                 #skip it if it will be too high up
-                if r+zoid.get_dims()[0] > main_board.get_dims(max=True)[0]: continue
+                if r+zoid.row_count() > main_board.get_dims(max=True)[0]: continue
 
                 #copy the board and imprint the zoid
                 #'pos' and 'value' are properties of the zoid that are overridden when imprinting it
                 #'pos': position of the bottom left of the zoid's bounding box
                 #'value': value to multiply the cells by
-                #'check': make sure the zoid doesn't overlap with the pile
-                zoid_board = main_board.get_cow()
-                zoid_board.imprint_zoid(zoid,pos=(r,c),value=2,check=True)
+                zoid_board = board_manager.copy_board_zoid(main_board,zoid,pos=(r,c),value=2)
 
                 #copy the imprinted board and remove full rows
-                cleared_board = zoid_board.get_cow()
-                cleared_board.del_rows(cleared_board.check_rows(full=True))
+                cleared_board = board_manager.copy_board_hide(zoid_board)
 
                 #pretend to score the board
                 score = score_board(zoid_board,cleared_board)
@@ -88,15 +109,15 @@ if __name__ == '__main__':
 
         #determine the best move
         scores = sorted(scores.items(),key=lambda x: x[1],reverse=True)
-        best_move = scores[0]
+        best_move = scores[0][0]
 
         #imprint the zoid and clear rows if necessary
-        main_board.imprint_zoid(zoid,pos=best_move[0][1],orient=best_move[0][0],check=True)
+        main_board.imprint_zoid(zoid,orient=best_move[0],pos=best_move[1],check=True)
         full_rows = main_board.check_rows(full=True)
         cleared_lines += len(full_rows)
         main_board.del_rows(full_rows)
 
-        print >> sys.stderr, 'you placed "%s" at %s, clearing %i line(s)'%(zoid_name,best_move[0][1],len(full_rows))
+        print >> sys.stderr, 'you placed "%s" at %s, clearing %i line(s)'%(zoid_name,best_move[1],len(full_rows))
 
         #print the board for fun
         print_board(main_board,all=True)
