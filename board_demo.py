@@ -57,7 +57,7 @@ board_manager = board_manager_cow
 
 #pretend to score the board
 def score_board(board,board2=None):
-    return -(board2.pile_height() if board2 else board.pile_height())
+    return -(board2.pile_height() if board2 else board.pile_height())-random.random()
 
 
 if __name__ == '__main__':
@@ -89,7 +89,7 @@ if __name__ == '__main__':
         print >> sys.stderr, 'you must now deal with "%s"!'%zoid_name
 
         #some hasty scoring nonsense...
-        scores = {}
+        scores = []
 
         #check all of the orientations
         for orient in xrange(4):
@@ -126,21 +126,21 @@ if __name__ == '__main__':
                 score = score_board(zoid_board,cleared_board)
 
                 #record the score
-                scores[orient,(r,c)] = score
+                scores.append((score,orient,(r,c)))
 
         if not scores: raise RuntimeError('OMG you lost with %i lines'%cleared_lines)
 
         #determine the best move
-        scores = sorted(scores.items(),key=lambda x: x[1],reverse=True)
-        best_move = scores[0][0]
+        scores.sort(key=lambda x: x[0],reverse=True)
+        best_move = scores[0]
 
         #imprint the zoid and clear rows if necessary
-        main_board.imprint_zoid(zoid,orient=best_move[0],pos=best_move[1],check=True)
+        main_board.imprint_zoid(zoid,orient=best_move[1],pos=best_move[2],check=True)
         full_rows = main_board.check_rows(full=True)
         cleared_lines += len(full_rows)
         main_board.del_rows(full_rows)
 
-        print >> sys.stderr, 'you placed "%s" at %s, clearing %i line(s)'%(zoid_name,best_move[1],len(full_rows))
+        print >> sys.stderr, 'you placed "%s" at %s, clearing %i line(s)'%(zoid_name,best_move[2],len(full_rows))
 
         #print the board for fun
         print_board(main_board,all=True)
