@@ -22,7 +22,7 @@ def print_board(board,output=sys.stderr,all=False):
     else: row_format = '[%s%.1d] '
 
     for r in rows:
-        if r >= board.get_dims()[0]: modifier = '@'
+        if r >= board.row_count(): modifier = '@'
         elif cow_mask and r < len(cow_mask) and cow_mask[r]: modifier = '*'
         else: modifier = ' '
 

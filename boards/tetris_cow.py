@@ -1,4 +1,4 @@
-import sys, math, copy
+import copy
 
 import _helpers
 
@@ -32,7 +32,15 @@ class tetris_cow(object):
 
     def get_dims(self,max=False):
         """Get board dimensions (use 'max=True' for max size)."""
-        return (self._max_rows if max else len(self._board),self._cols)
+        return (self.row_count(max=max),self.col_count())
+
+    def row_count(self,max=False):
+        """Get the number of rows in the zoid."""
+        return self._max_rows if max else len(self._board)
+
+    def col_count(self):
+        """Get the number of columns in the zoid."""
+        return self._cols
 
     def rows(self,reverse=False,all=False):
         """Get a generator for the rows of the zoid in its current position and orientation. Optional: reverse order."""
@@ -40,7 +48,7 @@ class tetris_cow(object):
 
     def cols(self):
         """Get a generator for the cols of the zoid in its current position and orientation."""
-        return xrange(self.get_dims()[1])
+        return xrange(self.col_count())
 
     def get_top_profile(self):
         """Get the profile of the top of the board."""
@@ -86,7 +94,7 @@ class tetris_cow(object):
 
     def pile_height(self):
         """Get the height of the pile, in terms of the top row of the board."""
-        return self.get_dims()[0]
+        return self.row_count()
 
     #<<<<< ROW MANIPULATION
 

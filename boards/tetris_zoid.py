@@ -1,4 +1,4 @@
-import sys, math, copy
+import copy
 
 import _helpers
 
@@ -9,7 +9,7 @@ class tetris_zoid(object):
         """Initialize zoid: pass 2d array of values, dims of array, and orientation."""
 
         #shared among copies
-        self._values = tuple(values[len(values)-r-1] for r in range(len(values)))
+        self._values = [tuple(values[len(values)-r-1] for r in range(len(values)))]+[None]*3
         self._dims = dims
         self._profiles = [None]*4
 
@@ -53,40 +53,40 @@ class tetris_zoid(object):
     def __getitem__(self,(row,col)):
         """Get a cell value (row first), e.g., 'myzoid[0,0]'."""
 
+        if not self._values[self._orient]: self._generate_orientation()
+
         row -= self._pos[0]
         col -= self._pos[1]
 
-        if self._orient == 0: pass
-        elif self._orient == 1: #90deg clockwise
-            row,col = col,self._dims[1]-row-1
-        elif self._orient == 2: #180deg
-            row,col = self._dims[0]-row-1,self._dims[1]-col-1
-        elif self._orient == 3: #270deg clockwise
-            row,col = self._dims[0]-col-1,row
-        else: raise IndexError
+        if not (0 <= row < self.row_count()): return 0
+        if not (0 <= col < self.col_count()): return 0
 
-        if not (0 <= row < self._dims[0]): return 0
-        if not (0 <= col < self._dims[1]): return 0
-
-        return self._value*self._values[row][col]
+        return self._value*self._values[self._orient][row][col]
 
     def get_dims(self,orient=None):
         """Get zoid dimensions for current orientation. Optional: provide orientation."""
-        if orient is None: orient = self._orient
-        if self._orient%2: return (self._dims[1],self._dims[0])
-        else: return self._dims
+        return (self.row_count(),self.col_count())
 
-    def rows(self,reverse=False):
+    def row_count(self):
+        """Get the number of rows in the zoid."""
+        return self._dims[1] if self._orient%2 else self._dims[0]
+
+    def col_count(self):
+        """Get the number of columns in the zoid."""
+        return self._dims[0] if self._orient%2 else self._dims[1]
+
+    def rows(self,reverse=False,absolute=True):
         """Get a generator for the rows of the zoid in its current position and orientation. Optional: reverse order for printing."""
-        return xrange(self.get_dims()[0]+self._pos[0]-1,-1,-1) if reverse else xrange(self.get_dims()[0]+self._pos[0])
+        offset = self._pos[0] if absolute else 0
+        return xrange(self.row_count()+offset-1,-1,-1) if reverse else xrange(self.row_count()+offset)
 
-    def cols(self):
+    def cols(self,absolute=True):
         """Get a generator for the cols of the zoid in its current position and orientation."""
-        return xrange(self.get_dims()[1]+self._pos[1])
+        return xrange(self.col_count()+(self._pos[1] if absolute else 0))
 
     def max_row(self):
         """Get the row number of the top of the zoid in its current position and orientation."""
-        return self._pos[0]+self.get_dims()[0]-1
+        return self._pos[0]+self.row_count()-1
 
     def get_bottom_profile(self):
         """Get the profile of the bottom of the zoid."""
@@ -109,6 +109,29 @@ class tetris_zoid(object):
 
     def _generate_profile(self):
         self._profiles[self._orient] = tuple(_helpers._find_outline(self,False))
+
+    def _generate_orientation(self):
+        if not self._values[0]: raise AttributeError('original zoid orientation not defined')
+
+        cells = [[0]*self.col_count() for _ in xrange(self.row_count())]
+
+        for r in self.rows():
+            for c in self.cols():
+                row,col = r,c
+
+                if self._orient == 0: pass
+                elif self._orient == 1: #90deg clockwise
+                    row,col = col,self._dims[1]-row-1
+                elif self._orient == 2: #180deg
+                    row,col = self._dims[0]-row-1,self._dims[1]-col-1
+                elif self._orient == 3: #270deg clockwise
+                    row,col = self._dims[0]-col-1,row
+                else: raise IndexError
+
+                cells[r][c] = self._values[0][row][col]
+
+        self._values[self._orient] = tuple(tuple(x) for x in cells)
+
 
     #<<<<< HELPERS
 

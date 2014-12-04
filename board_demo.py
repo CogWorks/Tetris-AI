@@ -19,6 +19,14 @@ if __name__ == '__main__':
     #new 20x10 board (zero rows by default; use 'rows=n' to start with n writable rows)
     main_board = new_board(max_rows=20,cols=10)
 
+    #(print all of the zoids, just to make sure orientation works properly)
+    for zoid_name,zoid in all_zoids.items():
+        for orient in xrange(4):
+            print >> sys.stderr, 'zoid "%s/%i":'%(zoid_name,orient)
+            zoid = zoid.get_copy()
+            zoid.set_orient(orient)
+            print_board(zoid)
+
     #simulate a random game
     for _ in xrange(100):
         #get the profile of the top of the board (# open cells below the top of the pile, per col)
@@ -52,7 +60,7 @@ if __name__ == '__main__':
                 if c+zoid.get_dims()[1] > main_board.get_dims()[1]: break
 
                 #determine how low the zoid rests relative to the top of the pile
-                heights = tuple(board_profile[cc+c]+zoid_profile[cc] for cc in zoid.cols())
+                heights = tuple(board_profile[cc+c]+zoid_profile[cc] for cc in xrange(len(zoid_profile)))
                 r = main_board.pile_height()-min(heights)
 
                 #skip it if it will be too high up
