@@ -72,7 +72,7 @@ class board_manager_full(object):
     @staticmethod
     def score_board(board,board2=None):
         score_me = board2 if board2 else board
-        highest = 0
+        highest = -1
         for c in score_me.cols():
             for r in score_me.rows(reverse=True):
                 if r <= highest: break
