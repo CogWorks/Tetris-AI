@@ -5,12 +5,16 @@ import sys, random, time
 from boards import *
 
 
-#a class to manage board creation and temporary boards using copy-on-write
+#a class to manage board creation and temporary boards using copy-on-write and partial boards
 
 class board_manager_cow(object):
     #create a new board
     @staticmethod
     def new_board(*args,**kwds): return tetris_cow(*args,**kwds)
+
+    #delete rows
+    @staticmethod
+    def delete_rows(board,*args,**kwds): board.del_rows(*args,**kwds)
 
     #create a copy of the board with a zoid
     @staticmethod
@@ -27,13 +31,27 @@ class board_manager_cow(object):
         cleared_board.del_rows(cleared_board.check_rows(full=True))
         return cleared_board
 
+    #score the board (pile height only)
+    @staticmethod
+    def score_board(board,board2=None):
+        return -(board2.pile_height() if board2 else board.pile_height())-random.random()
 
-#a class to manage board creation and temporary boards using deep copies
 
-class board_manager_deep(object):
+#a class to manage board creation and temporary boards using deep copies and full boards
+#(this is just for comparison purposes; this is similar to the current deep-copy code)
+
+class board_manager_full(object):
     #create a new board
     @staticmethod
-    def new_board(*args,**kwds): return tetris_cow(*args,**kwds)
+    def new_board(*args,**kwds):
+        if 'max_rows' in kwds: kwds['rows'] = kwds['max_rows']
+        return tetris_cow(*args,**kwds)
+
+    #delete rows
+    @staticmethod
+    def delete_rows(board,*args,**kwds):
+        board.del_rows(*args,**kwds)
+        board.new_rows(board.row_count(max=True)-board.row_count())
 
     #create a copy of the board with a zoid
     @staticmethod
@@ -47,17 +65,26 @@ class board_manager_deep(object):
     @staticmethod
     def copy_board_hide(board):
         cleared_board = board.get_clone()
-        cleared_board.del_rows(cleared_board.check_rows(full=True))
+        board_manager_full.delete_rows(cleared_board,cleared_board.check_rows(full=True))
         return cleared_board
+
+    #score the board (pile height only)
+    @staticmethod
+    def score_board(board,board2=None):
+        score_me = board2 if board2 else board
+        highest = 0
+        for c in score_me.cols():
+            for r in score_me.rows(reverse=True):
+                if r <= highest: break
+                if score_me[r,c]:
+                    highest = r
+                    break
+        return -(highest+1)-random.random()
 
 
 #select the board manager
 board_manager = board_manager_cow
-
-
-#pretend to score the board
-def score_board(board,board2=None):
-    return -(board2.pile_height() if board2 else board.pile_height())-random.random()
+#board_manager = board_manager_full
 
 
 if __name__ == '__main__':
@@ -111,7 +138,7 @@ if __name__ == '__main__':
                 r = main_board.pile_height()-min(heights)
 
                 #skip it if it will be too high up
-                if r+zoid.row_count() > main_board.get_dims(max=True)[0]: continue
+                if r+zoid.row_count() > main_board.row_count(max=True): continue
 
                 #copy the board and imprint the zoid
                 #'pos' and 'value' are properties of the zoid that are overridden when imprinting it
@@ -122,8 +149,8 @@ if __name__ == '__main__':
                 #copy the imprinted board and remove full rows
                 cleared_board = board_manager.copy_board_hide(zoid_board)
 
-                #pretend to score the board
-                score = score_board(zoid_board,cleared_board)
+                #score the board
+                score = board_manager.score_board(zoid_board,cleared_board)
 
                 #record the score
                 scores.append((score,orient,(r,c)))
@@ -138,7 +165,7 @@ if __name__ == '__main__':
         main_board.imprint_zoid(zoid,orient=best_move[1],pos=best_move[2],check=True)
         full_rows = main_board.check_rows(full=True)
         cleared_lines += len(full_rows)
-        main_board.del_rows(full_rows)
+        board_manager.delete_rows(main_board,full_rows)
 
         print >> sys.stderr, 'you placed "%s" at %s, clearing %i line(s)'%(zoid_name,best_move[2],len(full_rows))
 
