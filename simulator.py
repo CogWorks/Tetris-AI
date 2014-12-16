@@ -952,6 +952,8 @@ class TetrisSimulator(object):
     
     #need to represent pits as a list of unique pits with a particular length;
     
+    
+    """isolating"""
     def get_pits(self, v):
         state = v[0]
         pits = 0
@@ -1002,6 +1004,8 @@ class TetrisSimulator(object):
                             matches += 1
         return matches
     
+    
+    """isolating"""
     #!# parallelize
     def get_all_pits(self, colspace):
         col_pits = []

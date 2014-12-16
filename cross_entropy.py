@@ -16,6 +16,17 @@
 
 
 
+## Ideas from Kevin.
+
+# FOCUS on the WORST player, and TERMINATE CALCULATION when they're DEAD. Only the top ten survive. 
+
+# Multithreading within a single CERL run; execute 16 times faster!
+# parallel-exec ; takes 100 command lines and makes sure N of them are running on N threads at any time.
+    #link to page on CogWorks site inside email. 
+
+
+
+
 from simulator import TetrisSimulator
 import random, numpy, argparse, os, time
 from time import gmtime, strftime
