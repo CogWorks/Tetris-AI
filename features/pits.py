@@ -72,7 +72,12 @@ if __name__ == '__main__':
                 ]
     
     board = tetris_cow.convert_old_board(boardrows)
-    print_board(board)
+    print_board(board, all=True)
+    
+    
+    for cell in board.col_iter(0): print cell, #iterate cells in column 0 of the board
+    for cell in board.col_iter(0,reverse=True): print cell, #...from top to bottom
+    
     
     #print get_all_pits(board)
     
