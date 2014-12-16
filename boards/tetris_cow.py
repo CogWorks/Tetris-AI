@@ -14,14 +14,14 @@ class tetris_cow(object):
         self._profile = None
 
     @staticmethod
-    def convert_old_board(board,cols=10,clear=True):
+    def convert_old_board(board,cols=10,clear=True,cow=True):
         """Create a new board from a "list-of-rows" board."""
         all_cols = tuple(len(row) for row in board)
         if all_cols:
             if max(all_cols) != min(all_cols): raise ValueError('rows are not all the same length')
             cols = all_cols[0]
         new_board = tetris_cow(max_rows=len(board),cols=cols)
-        new_board.new_rows(data=board)
+        new_board.new_rows(data=board,cow=cow)
         if clear: new_board.del_rows(new_board.check_rows(full=False))
         return new_board
 
