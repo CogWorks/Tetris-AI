@@ -84,6 +84,14 @@ class tetris_zoid(object):
         """Get a generator for the cols of the zoid in its current position and orientation."""
         return xrange(self.col_count()+(self._pos[1] if absolute else 0))
 
+    def row_iter(self,row,*args,**kwds):
+        """Iterate a particular row of cells. (Generates cell indices.)"""
+        for col in self.cols(*args,**kwds): yield (row,col)
+
+    def col_iter(self,col,*args,**kwds):
+        """Iterate a particular col of cells. (Generates cell indices.)"""
+        for row in self.rows(*args,**kwds): yield (row,col)
+
     def max_row(self):
         """Get the row number of the top of the zoid in its current position and orientation."""
         return self._pos[0]+self.row_count()-1

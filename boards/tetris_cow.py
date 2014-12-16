@@ -62,6 +62,14 @@ class tetris_cow(object):
         """Get a generator for the cols of the zoid in its current position and orientation."""
         return xrange(self.col_count())
 
+    def row_iter(self,row,*args,**kwds):
+        """Iterate a particular row of cells. (Generates cell indices.)"""
+        for col in self.cols(*args,**kwds): yield (row,col)
+
+    def col_iter(self,col,*args,**kwds):
+        """Iterate a particular col of cells. (Generates cell indices.)"""
+        for row in self.rows(*args,**kwds): yield (row,col)
+
     def get_top_profile(self):
         """Get the profile of the top of the board."""
         if not self._profile: self._generate_profile()
@@ -97,7 +105,7 @@ class tetris_cow(object):
             if len(self._board)+len(data) > self._max_rows: raise IndexError('row limit exceeded')
             for row in data:
                 if len(row) != self._cols: raise ValueError('row is the wrong length')
-            self._board += [row for row in data]
+            self._board += [data[r] for r in xrange(len(data)-1,-1,-1)]
             self._cow_list += [cow]*len(data)
         self._profile = None
 
