@@ -64,11 +64,11 @@ class tetris_cow(object):
 
     def row_iter(self,row,*args,**kwds):
         """Iterate a particular row of cells. (Generates cell indices.)"""
-        for col in self.cols(*args,**kwds): yield (row,col)
+        for col in self.cols(*args,**kwds): yield self[row,col]
 
     def col_iter(self,col,*args,**kwds):
         """Iterate a particular col of cells. (Generates cell indices.)"""
-        for row in self.rows(*args,**kwds): yield (row,col)
+        for row in self.rows(*args,**kwds): yield self[row,col]
 
     def get_top_profile(self):
         """Get the profile of the top of the board."""
