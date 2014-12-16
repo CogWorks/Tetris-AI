@@ -21,7 +21,7 @@ class tetris_cow(object):
             if max(all_cols) != min(all_cols): raise ValueError('rows are not all the same length')
             cols = all_cols[0]
         new_board = tetris_cow(max_rows=len(board),cols=cols)
-        new_board.new_rows(data=board,cow=cow)
+        new_board.new_rows(data=board,cow=cow,reverse=True)
         if clear: new_board.del_rows(new_board.check_rows(full=False))
         return new_board
 
@@ -93,7 +93,7 @@ class tetris_cow(object):
         rows = sorted(list(frozenset(rows)),reverse=True)
         for r in rows: self.del_row(r)
 
-    def new_rows(self,rows=None,data=None,cow=True):
+    def new_rows(self,rows=None,data=None,cow=True,reverse=False):
         """Add rows to the top of the board. Use 'rows' for blank rows, 'data' for a list of prefilled rows."""
         if not data:
             if rows is None: rows = 1
@@ -105,7 +105,7 @@ class tetris_cow(object):
             if len(self._board)+len(data) > self._max_rows: raise IndexError('row limit exceeded')
             for row in data:
                 if len(row) != self._cols: raise ValueError('row is the wrong length')
-            self._board += [data[r] for r in xrange(len(data)-1,-1,-1)]
+            self._board += [data[r] for r in (xrange(len(data)-1,-1,-1) if reverse else xrange(len(data)))]
             self._cow_list += [cow]*len(data)
         self._profile = None
 
