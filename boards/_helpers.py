@@ -5,8 +5,8 @@ def _find_outline(board,down=False):
     """Find the outline of the top or bottom of the board."""
     counts = [0]*board.get_dims()[1]
     for c in board.cols():
-        for r in board.rows(reverse=down):
-            if not board[r,c]: counts[c] += 1
+        for cell in board.col_iter(c,reverse=down):
+            if not cell: counts[c] += 1
             else: break
     return counts
 
