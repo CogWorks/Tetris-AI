@@ -13,6 +13,18 @@ class tetris_cow(object):
         self._cow_list = [False]*len(self._board)
         self._profile = None
 
+    @staticmethod
+    def convert_old_board(board,cols=10,clear=True):
+        """Create a new board from a "list-of-rows" board."""
+        all_cols = tuple(len(row) for row in board)
+        if all_cols:
+            if max(all_cols) != min(all_cols): raise ValueError('rows are not all the same length')
+            cols = all_cols[0]
+        new_board = tetris_cow(max_rows=len(board),cols=cols)
+        new_board.new_rows(data=board)
+        if clear: new_board.del_rows(new_board.check_rows(full=False))
+        return new_board
+
 
     #ELEMENT ACCESS >>>>>
 
@@ -73,12 +85,20 @@ class tetris_cow(object):
         rows = sorted(list(frozenset(rows)),reverse=True)
         for r in rows: self.del_row(r)
 
-    def new_rows(self,rows=1):
-        """Add blank rows to the top of the board."""
-        if rows <= 0: return
-        if len(self._board)+rows > self._max_rows: raise IndexError('row limit exceeded')
-        self._board += [self._default_row() for _ in range(rows)]
-        self._cow_list += [False]*rows
+    def new_rows(self,rows=None,data=None,cow=True):
+        """Add rows to the top of the board. Use 'rows' for blank rows, 'data' for a list of prefilled rows."""
+        if not data:
+            if rows is None: rows = 1
+            if rows <= 0: return
+            if len(self._board)+rows > self._max_rows: raise IndexError('row limit exceeded')
+            self._board += [self._default_row() for _ in range(rows)]
+            self._cow_list += [False]*rows
+        else:
+            if len(self._board)+len(data) > self._max_rows: raise IndexError('row limit exceeded')
+            for row in data:
+                if len(row) != self._cols: raise ValueError('row is the wrong length')
+            self._board += [row for row in data]
+            self._cow_list += [cow]*len(data)
         self._profile = None
 
     def fill_max(self):
