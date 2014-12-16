@@ -27,7 +27,7 @@ def print_board(board,output=sys.stderr,all=False):
         else: modifier = ' '
 
         print >> output, row_format%(modifier,r), '|',
-        for c in board.cols(): print >> output, board[r,c] if board[r,c] else ' ',
+        for cell in board.row_iter(r): print >> output, cell if cell else ' ',
         print >> output, '|'
 
     #(a bit of a hack, for spacing)
