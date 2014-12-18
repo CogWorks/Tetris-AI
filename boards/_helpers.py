@@ -3,7 +3,7 @@ import sys, math
 
 def _find_outline(board,down=False):
     """Find the outline of the top or bottom of the board."""
-    counts = [0]*board.get_dims()[1]
+    counts = [0]*board.col_count()
     for c in board.cols():
         for cell in board.col_iter(c,reverse=down):
             if not cell: counts[c] += 1
@@ -13,8 +13,6 @@ def _find_outline(board,down=False):
 
 def print_board(board,output=sys.stderr,all=False):
     """Print a Tetris board."""
-    cow_mask = board.get_cow_mask() if hasattr(board,'get_cow_mask') and callable(board.get_cow_mask) else None
-
     try: rows = [r for r in board.rows(reverse=True,all=all)]
     except TypeError: rows = [r for r in board.rows(reverse=True)]
 
@@ -22,9 +20,17 @@ def print_board(board,output=sys.stderr,all=False):
     else: row_format = '[%s%.1d] '
 
     for r in rows:
-        if r >= board.row_count(): modifier = '@'
-        elif cow_mask and r < len(cow_mask) and cow_mask[r]: modifier = '*'
-        else: modifier = ' '
+        modifier = None
+
+        try:
+          if not modifier and board.is_fake_row(r): modifier = '@'
+        except AttributeError: pass
+
+        try:
+          if not modifier and board.is_mirrored_row(r): modifier = '*'
+        except AttributeError: pass
+
+        if not modifier: modifier = ' '
 
         print >> output, row_format%(modifier,r), '|',
         for cell in board.row_iter(r): print >> output, cell if cell else ' ',
