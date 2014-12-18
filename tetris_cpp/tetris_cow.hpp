@@ -24,9 +24,7 @@ public:
   //cache of rows to use, number of initial rows
   tetris_cow_base(const row_cache_pointer &p = row_cache_pointer(),
     size_t r = 0, size_t c = 0) :
-  rows(r), cols(c), used_rows(0), cache(p), board(r) {
-    assert(used_rows < this->row_count());
-  }
+  rows(r), cols(c), used_rows(0), cache(p), board(r) {}
 
   void clear_all() {}
 
@@ -82,9 +80,7 @@ public:
   typedef typename row_cache::row_pointer board_rows[Rows];
 
   //cache of rows to use, number of initial rows
-  tetris_cow_base(const row_cache_pointer &p = row_cache_pointer()) : used_rows(0), cache(p) {
-    assert(used_rows < this->row_count());
-  }
+  tetris_cow_base(const row_cache_pointer &p = row_cache_pointer()) : used_rows(0), cache(p) {}
 
   void clear_all() {}
 
