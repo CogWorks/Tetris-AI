@@ -72,17 +72,17 @@ static PyObject *name##_function(PyObject *self, PyObject *args, PyObject *kwds)
 #define GLOBAL_BINDING_END(name) } \
 static PyMethodDef name##_binding = {#name, (PyCFunction) &name##_function, METH_KEYWORDS, name##_doc};
 
-#define METHOD_BINDING_START(name, doc) \
-const char python_tetris_20_10_##name##_doc[] = doc; \
-static PyObject *python_tetris_20_10_##name##_function(python_tetris_20_10 *self, PyObject *args, PyObject *kwds) {
+#define METHOD_BINDING_START(type, name, doc) \
+const char python_##type##_##name##_doc[] = doc; \
+static PyObject *python_##type##_##name##_function(python_##type *self, PyObject *args, PyObject *kwds) {
 
-#define METHOD_BINDING_END(name) }
+#define METHOD_BINDING_END(type, name) }
 
-#define METHOD_BINDING(name) \
-METHOD_BINDING2(name, name)
+#define METHOD_BINDING(type, name) \
+METHOD_BINDING2(type, name, name)
 
-#define METHOD_BINDING2(name, name2) \
-{ #name2, (PyCFunction) python_tetris_20_10_##name##_function, METH_VARARGS, python_tetris_20_10_##name##_doc }
+#define METHOD_BINDING2(type, name, name2) \
+{ #name2, (PyCFunction) python_##type##_##name##_function, METH_VARARGS, python_##type##_##name##_doc }
 
 
 //global functions for getting/setting the cache size
@@ -132,7 +132,7 @@ static void python_tetris_20_10_dealloc_function(python_tetris_20_10 *self) {
   self->obj = NULL;
 }
 
-METHOD_BINDING_START(clone, "clone another board")
+METHOD_BINDING_START(tetris_20_10, clone, "clone another board")
   if (!self->obj) return auto_exception(PyExc_RuntimeError, "");
   python_tetris_20_10 *other = NULL;
   if (!PyArg_ParseTuple(args, "O!", &python_tetris_20_10_type, &other)) return NULL;
@@ -142,7 +142,7 @@ METHOD_BINDING_START(clone, "clone another board")
   }
   *self->obj = *other->obj;
   return Py_BuildValue("");
-METHOD_BINDING_END(row_count)
+METHOD_BINDING_END(tetris_20_10, clone)
 
 PyObject *python_tetris_20_10_getitem_function(python_tetris_20_10 *self, PyObject *key) {
   if (!self->obj) return auto_exception(PyExc_RuntimeError, "");
@@ -165,90 +165,90 @@ int python_tetris_20_10_setitem_function(python_tetris_20_10 *self, PyObject *ke
   return 0;
 }
 
-METHOD_BINDING_START(row_count, "get the number of rows")
+METHOD_BINDING_START(tetris_20_10, row_count, "get the number of rows")
   if (!self->obj) return auto_exception(PyExc_RuntimeError, "");
   if (!PyArg_ParseTuple(args, "")) return NULL;
   return Py_BuildValue("i", (int) self->obj->row_count());
-METHOD_BINDING_END(row_count)
+METHOD_BINDING_END(tetris_20_10, row_count)
 
-METHOD_BINDING_START(col_count, "get the number of cols")
+METHOD_BINDING_START(tetris_20_10, col_count, "get the number of cols")
   if (!self->obj) return auto_exception(PyExc_RuntimeError, "");
   if (!PyArg_ParseTuple(args, "")) return NULL;
   return Py_BuildValue("i", (int) self->obj->col_count());
-METHOD_BINDING_END(col_count)
+METHOD_BINDING_END(tetris_20_10, col_count)
 
-METHOD_BINDING_START(pile_height, "get the pile height")
+METHOD_BINDING_START(tetris_20_10, pile_height, "get the pile height")
   if (!self->obj) return auto_exception(PyExc_RuntimeError, "");
   if (!PyArg_ParseTuple(args, "")) return NULL;
   return Py_BuildValue("i", (int) self->obj->pile_height());
-METHOD_BINDING_END(pile_height)
+METHOD_BINDING_END(tetris_20_10, pile_height)
 
-METHOD_BINDING_START(add_rows, "add rows to the pile")
+METHOD_BINDING_START(tetris_20_10, add_rows, "add rows to the pile")
   if (!self->obj) return auto_exception(PyExc_RuntimeError, "");
   int count = 0;
   if(!PyArg_ParseTuple(args, "i", &count)) return NULL;
   return Py_BuildValue("i", (int) self->obj->add_rows(count));
-METHOD_BINDING_END(add_rows)
+METHOD_BINDING_END(tetris_20_10, add_rows)
 
-METHOD_BINDING_START(is_fake_row, "check if a row is faked")
+METHOD_BINDING_START(tetris_20_10, is_fake_row, "check if a row is faked")
   if (!self->obj) return auto_exception(PyExc_RuntimeError, "");
   int r = 0;
   if(!PyArg_ParseTuple(args, "i", &r)) return NULL;
   if (r < 0 || r >= (signed) self->obj->row_count()) return auto_exception(PyExc_IndexError, "index out of range");
   return use_object(self->obj->is_fake_row(r)? Py_True : Py_False);
-METHOD_BINDING_END(is_fake_row)
+METHOD_BINDING_END(tetris_20_10, is_fake_row)
 
-METHOD_BINDING_START(is_mirrored_row, "check if a row is mirrored")
+METHOD_BINDING_START(tetris_20_10, is_mirrored_row, "check if a row is mirrored")
   if (!self->obj) return auto_exception(PyExc_RuntimeError, "");
   int r = 0;
   if(!PyArg_ParseTuple(args, "i", &r)) return NULL;
   if (r < 0 || r >= (signed) self->obj->row_count()) return auto_exception(PyExc_IndexError, "index out of range");
   return use_object(self->obj->is_mirrored_row(r)? Py_True : Py_False);
-METHOD_BINDING_END(is_mirrored_row)
+METHOD_BINDING_END(tetris_20_10, is_mirrored_row)
 
-METHOD_BINDING_START(check_full, "check if any rows are full, optionally removing them")
+METHOD_BINDING_START(tetris_20_10, check_full, "check if any rows are full, optionally removing them")
   if (!self->obj) return auto_exception(PyExc_RuntimeError, "");
   PyObject *clear = Py_False;
   if(!PyArg_ParseTuple(args, "|O", &clear)) return NULL;
   return Py_BuildValue("i", (int) self->obj->check_full(PyObject_IsTrue(clear)));
-METHOD_BINDING_END(check_full)
+METHOD_BINDING_END(tetris_20_10, check_full)
 
-METHOD_BINDING_START(check_empty, "check if any rows are empty, optionally removing them")
+METHOD_BINDING_START(tetris_20_10, check_empty, "check if any rows are empty, optionally removing them")
   if (!self->obj) return auto_exception(PyExc_RuntimeError, "");
   PyObject *clear = Py_False;
   if(!PyArg_ParseTuple(args, "|O", &clear)) return NULL;
   return Py_BuildValue("i", (int) self->obj->check_empty(PyObject_IsTrue(clear)));
-METHOD_BINDING_END(check_empty)
+METHOD_BINDING_END(tetris_20_10, check_empty)
 
-METHOD_BINDING_START(set_tamper_seal, "set the state of the tamper seal")
+METHOD_BINDING_START(tetris_20_10, set_tamper_seal, "set the state of the tamper seal")
   if (!self->obj) return auto_exception(PyExc_RuntimeError, "");
   PyObject *state = Py_True;
   if(!PyArg_ParseTuple(args, "|O", &state)) return NULL;
   self->obj->set_tamper_seal(PyObject_IsTrue(state));
   return Py_BuildValue("");
-METHOD_BINDING_END(pile_height)
+METHOD_BINDING_END(tetris_20_10, pile_height)
 
-METHOD_BINDING_START(get_tamper_seal, "get the state of the tamper seal")
+METHOD_BINDING_START(tetris_20_10, get_tamper_seal, "get the state of the tamper seal")
   if (!self->obj) return auto_exception(PyExc_RuntimeError, "");
   if (!PyArg_ParseTuple(args, "")) return NULL;
   return use_object(self->obj->get_tamper_seal()? Py_True : Py_False);
-METHOD_BINDING_END(pile_height)
+METHOD_BINDING_END(tetris_20_10, pile_height)
 
 
 //list of all 'tetris_20_10' member functions
 
 static PyMethodDef python_tetris_20_10_methods[] = {
-  METHOD_BINDING(clone),
-  METHOD_BINDING(row_count),
-  METHOD_BINDING(col_count),
-  METHOD_BINDING(pile_height),
-  METHOD_BINDING(add_rows),
-  METHOD_BINDING(is_fake_row),
-  METHOD_BINDING(is_mirrored_row),
-  METHOD_BINDING(check_full),
-  METHOD_BINDING(check_empty),
-  METHOD_BINDING(set_tamper_seal),
-  METHOD_BINDING(get_tamper_seal)
+  METHOD_BINDING(tetris_20_10, clone),
+  METHOD_BINDING(tetris_20_10, row_count),
+  METHOD_BINDING(tetris_20_10, col_count),
+  METHOD_BINDING(tetris_20_10, pile_height),
+  METHOD_BINDING(tetris_20_10, add_rows),
+  METHOD_BINDING(tetris_20_10, is_fake_row),
+  METHOD_BINDING(tetris_20_10, is_mirrored_row),
+  METHOD_BINDING(tetris_20_10, check_full),
+  METHOD_BINDING(tetris_20_10, check_empty),
+  METHOD_BINDING(tetris_20_10, set_tamper_seal),
+  METHOD_BINDING(tetris_20_10, get_tamper_seal)
 };
 
 
