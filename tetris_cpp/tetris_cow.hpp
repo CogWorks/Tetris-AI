@@ -28,7 +28,7 @@ public:
 
   tetris_cow_base &operator = (const tetris_cow_base &other) {
     if (&other == this) return *this;
-    for (size_t r = 0; r < rows; r++) {
+    if (cache) for (size_t r = 0; r < rows; r++) {
       cache->reclaim_row(board[r]);
     }
     rows      = other.rows;
@@ -52,7 +52,7 @@ public:
   }
 
   ~tetris_cow_base() {
-    for (size_t r = 0; r < rows; r++) {
+    if (cache) for (size_t r = 0; r < rows; r++) {
       cache->reclaim_row(board[r]);
     }
   }
@@ -82,7 +82,7 @@ public:
 
   tetris_cow_base &operator = (const tetris_cow_base &other) {
     if (&other == this) return *this;
-    for (size_t r = 0; r < Rows; r++) {
+    if (cache) for (size_t r = 0; r < Rows; r++) {
       cache->reclaim_row(board[r]);
     }
     used_rows = other.used_rows;
@@ -94,7 +94,7 @@ public:
   }
 
   ~tetris_cow_base() {
-    for (size_t r = 0; r < Rows; r++) {
+    if (cache) for (size_t r = 0; r < Rows; r++) {
       cache->reclaim_row(board[r]);
     }
   }
