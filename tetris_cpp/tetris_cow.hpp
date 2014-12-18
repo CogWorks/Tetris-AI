@@ -28,11 +28,11 @@ public:
     assert(used_rows < this->row_count());
   }
 
+  void clear_all() {}
+
   tetris_cow_base &operator = (const tetris_cow_base &other) {
     if (&other == this) return *this;
-    if (cache) for (size_t r = 0; r < rows; r++) {
-      cache->reclaim_row(board[r]);
-    }
+    this->clear_all();
     rows      = other.rows;
     cols      = other.cols;
     used_rows = other.used_rows;
@@ -59,9 +59,7 @@ public:
   }
 
   ~tetris_cow_base() {
-    if (cache) for (size_t r = 0; r < rows; r++) {
-      cache->reclaim_row(board[r]);
-    }
+    this->clear_all();
   }
 
 protected:
@@ -89,11 +87,11 @@ public:
     assert(used_rows < this->row_count());
   }
 
+  void clear_all() {}
+
   tetris_cow_base &operator = (const tetris_cow_base &other) {
     if (&other == this) return *this;
-    if (cache) for (size_t r = 0; r < Rows; r++) {
-      cache->reclaim_row(board[r]);
-    }
+    this->clear_all();
     used_rows = other.used_rows;
     cache     = other.cache;
     for (size_t r = 0; r < Rows; r++) {
@@ -122,9 +120,7 @@ public:
   }
 
   ~tetris_cow_base() {
-    if (cache) for (size_t r = 0; r < Rows; r++) {
-      cache->reclaim_row(board[r]);
-    }
+    this->clear_all();
   }
 
 protected:
@@ -144,6 +140,16 @@ public:
   using tetris_cow_base <Type> ::board;
 
   tetris_cow_logic() : tamper(false) {}
+
+  //clear all rows of the board
+  void clear_all() {
+    for (size_t r = 0; r < this->row_count(); r++) {
+      if (cache && cache->reclaim_row(board[r])) /*nothing*/;
+      else board[r].reset();
+    }
+    this->set_tamper_seal(false);
+    used_rows = 0;
+  }
 
   //get a cell value
   //NOTE: this isn't a reference, in case the cell value needs to be faked

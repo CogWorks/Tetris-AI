@@ -1,5 +1,6 @@
 //TODO: this file needs a whole lot of comments!
 
+#include <stack>
 #include <memory>
 
 #include <stdlib.h>
@@ -8,10 +9,11 @@
 
 #include "tetris_cow.hpp"
 
-#define DEFAULT_CACHE_SIZE 1000
+#define DEFAULT_ROW_CACHE_SIZE   500
+#define DEFAULT_BOARD_CACHE_SIZE 25
 
 
-//typedefs for the 20x10 statically-sized board
+//typedefs for the 20x10 board
 
 #ifndef DYNAMIC
 typedef tetris_cow <int[20][10]>         tetris_20_10;
@@ -37,6 +39,43 @@ const row_cache_pointer &get_row_cache(ssize_t limit = -1) {
   else if (limit >= 0) cache->set_limit(limit);
 
   return cache;
+}
+
+
+//cache for board objects
+
+typedef std::unique_ptr <tetris_20_10>   tetris_20_10_cached;
+typedef std::stack <tetris_20_10_cached> tetris_20_10_cache;
+
+static tetris_20_10_cache board_cache;
+static size_t board_cache_limit = DEFAULT_BOARD_CACHE_SIZE;
+
+static void cache_board(tetris_20_10_pointer board) {
+  if (!board) return;
+  if (board_cache.size() >= board_cache_limit) {
+    delete board;
+  }
+  else {
+    board->clear_all();
+    board_cache.push(tetris_20_10_cached());
+    board_cache.top().reset(board);
+  }
+}
+
+static tetris_20_10_pointer uncache_board(size_t count = 0) {
+  if (board_cache.size()) {
+    tetris_20_10_pointer board = board_cache.top().release();
+    board_cache.pop();
+    assert(board);
+    board->add_rows(count);
+    return board;
+  } else {
+#ifndef DYNAMIC
+    return new tetris_20_10(get_row_cache(), count);
+#else
+    return new tetris_20_10(get_row_cache(), 20, 10, count);
+#endif
+  }
 }
 
 
@@ -93,21 +132,38 @@ METHOD_BINDING2(type, name, name)
 { #name2, (PyCFunction) python_##type##_##name##_function, METH_VARARGS, python_##type##_##name##_doc }
 
 
-//global functions for getting/setting the cache size
+//global functions for getting/setting the cache sizes
 
-GLOBAL_BINDING_START(set_cache_size, "set the size of the row cache")
+GLOBAL_BINDING_START(set_row_cache_size, "set the size of the row cache")
   int count = 0;
   static char *keywords[] = { "max", NULL };
   if(!PyArg_ParseTupleAndKeywords(args, kwds, "i", keywords, &count)) return NULL;
   if (count < 0) return auto_exception(PyExc_ValueError, "value must be a positive integer");
   get_row_cache(count);
   return Py_BuildValue("");
-GLOBAL_BINDING_END(set_cache_size)
+GLOBAL_BINDING_END(set_row_cache_size)
 
-GLOBAL_BINDING_START(get_cache_size, "get the size of the row cache")
+GLOBAL_BINDING_START(get_row_cache_size, "get the size of the row cache")
   if (!PyArg_ParseTuple(args, "")) return NULL;
   return Py_BuildValue("i", (int) (get_row_cache()? get_row_cache()->get_limit() : 0));
-GLOBAL_BINDING_END(get_cache_size)
+GLOBAL_BINDING_END(get_row_cache_size)
+
+GLOBAL_BINDING_START(set_board_cache_size, "set the size of the board cache")
+  int count = 0;
+  static char *keywords[] = { "max", NULL };
+  if(!PyArg_ParseTupleAndKeywords(args, kwds, "i", keywords, &count)) return NULL;
+  if (count < 0) return auto_exception(PyExc_ValueError, "value must be a positive integer");
+  board_cache_limit = count;
+  while (board_cache.size() > count) {
+    board_cache.pop();
+  }
+  return Py_BuildValue("");
+GLOBAL_BINDING_END(set_board_cache_size)
+
+GLOBAL_BINDING_START(get_board_cache_size, "get the size of the board cache")
+  if (!PyArg_ParseTuple(args, "")) return NULL;
+  return Py_BuildValue("i", (int) board_cache_limit);
+GLOBAL_BINDING_END(get_board_cache_size)
 
 
 //the 'tetris_20_10' class
@@ -129,11 +185,7 @@ static int python_tetris_20_10_init_function(python_tetris_20_10 *self, PyObject
   static char *keywords[] = { "rows", NULL };
   if(!PyArg_ParseTupleAndKeywords(args, kwds, "|i", keywords, &count)) return -1;
   if (!self->obj) {
-#ifndef DYNAMIC
-    self->obj = new tetris_20_10(get_row_cache(), count);
-#else
-    self->obj = new tetris_20_10(get_row_cache(), 20, 10, count);
-#endif
+    self->obj = uncache_board(count);
     if (!self->obj) return auto_exception2(PyExc_RuntimeError, "could not allocate board");
   }
   if (count < 0 || count > 20) return auto_exception2(PyExc_ValueError, "invalid number of rows");
@@ -142,8 +194,10 @@ static int python_tetris_20_10_init_function(python_tetris_20_10 *self, PyObject
 }
 
 static void python_tetris_20_10_dealloc_function(python_tetris_20_10 *self) {
-  delete self->obj;
-  self->obj = NULL;
+  if (self->obj) {
+    cache_board(self->obj);
+    self->obj = NULL;
+  }
 }
 
 METHOD_BINDING_START(tetris_20_10, clone, "clone another board")
@@ -151,11 +205,7 @@ METHOD_BINDING_START(tetris_20_10, clone, "clone another board")
   python_tetris_20_10 *other = NULL;
   if (!PyArg_ParseTuple(args, "O!", &python_tetris_20_10_type, &other)) return NULL;
   if (!other->obj) {
-#ifndef DYNAMIC
-    other->obj = new tetris_20_10(get_row_cache());
-#else
-    other->obj = new tetris_20_10(get_row_cache(), 20, 10);
-#endif
+    other->obj = uncache_board();
     if (!other->obj) return auto_exception(PyExc_ValueError, "");
   }
   *self->obj = *other->obj;
@@ -315,8 +365,10 @@ PyMODINIT_FUNC init_tetris_cpp(void) {
   if (PyModule_AddObject(module, "tetris_20_10", (PyObject*) &python_tetris_20_10_type) < 0) return;
 
   //set the initial cache size
-  get_row_cache(DEFAULT_CACHE_SIZE);
+  get_row_cache(DEFAULT_ROW_CACHE_SIZE);
 
-  add_global_binding(&set_cache_size_binding);
-  add_global_binding(&get_cache_size_binding);
+  add_global_binding(&set_row_cache_size_binding);
+  add_global_binding(&get_row_cache_size_binding);
+  add_global_binding(&set_board_cache_size_binding);
+  add_global_binding(&get_board_cache_size_binding);
 }

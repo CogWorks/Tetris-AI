@@ -9,6 +9,8 @@ class abstract_board {
 public:
   typedef Type cell_type;
 
+  virtual void clear_all() = 0;
+
   virtual cell_type get_cell(size_t r, size_t c) const = 0;
 
   virtual const cell_type &set_cell(size_t r, size_t c, const cell_type &val) = 0;
