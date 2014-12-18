@@ -206,7 +206,7 @@ METHOD_BINDING_START(tetris_20_10, clone, "clone another board")
   if (!PyArg_ParseTuple(args, "O!", &python_tetris_20_10_type, &other)) return NULL;
   if (!other->obj) {
     other->obj = uncache_board();
-    if (!other->obj) return auto_exception(PyExc_ValueError, "");
+    if (!other->obj) return auto_exception(PyExc_RuntimeError, "could not allocate board");
   }
   *self->obj = *other->obj;
   return Py_BuildValue("");
