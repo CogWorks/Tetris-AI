@@ -51,6 +51,11 @@ public:
     return cols;
   }
 
+  //get the number of rows in the pile
+  size_t pile_height() const {
+    return used_rows;
+  }
+
   ~tetris_cow_base() {
     if (cache) for (size_t r = 0; r < rows; r++) {
       cache->reclaim_row(board[r]);
@@ -93,12 +98,6 @@ public:
     return *this;
   }
 
-  ~tetris_cow_base() {
-    if (cache) for (size_t r = 0; r < Rows; r++) {
-      cache->reclaim_row(board[r]);
-    }
-  }
-
 private:
   tetris_cow_base(const tetris_cow_base&) {}
 
@@ -116,6 +115,12 @@ public:
   //get the number of rows in the pile
   size_t pile_height() const {
     return used_rows;
+  }
+
+  ~tetris_cow_base() {
+    if (cache) for (size_t r = 0; r < Rows; r++) {
+      cache->reclaim_row(board[r]);
+    }
   }
 
 protected:
