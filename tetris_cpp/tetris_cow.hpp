@@ -23,8 +23,8 @@ public:
 
   //cache of rows to use, number of initial rows
   tetris_cow_base(const row_cache_pointer &p = row_cache_pointer(),
-    size_t r = 0, size_t c = 0, size_t r2 = 0) :
-  rows(r), cols(c), used_rows(r2), cache(p), board(r) {
+    size_t r = 0, size_t c = 0) :
+  rows(r), cols(c), used_rows(0), cache(p), board(r) {
     assert(used_rows < this->row_count());
   }
 
@@ -82,8 +82,7 @@ public:
   typedef typename row_cache::row_pointer board_rows[Rows];
 
   //cache of rows to use, number of initial rows
-  tetris_cow_base(const row_cache_pointer &p = row_cache_pointer(),
-    size_t r = 0) : used_rows(r), cache(p) {
+  tetris_cow_base(const row_cache_pointer &p = row_cache_pointer()) : used_rows(0), cache(p) {
     assert(used_rows < this->row_count());
   }
 
@@ -285,11 +284,8 @@ struct tetris_cow : virtual public tetris_cow_base <Type>, public tetris_cow_log
   using tetris_cow_base <Type> ::board;
 
   tetris_cow(const row_cache_pointer &p, size_t r, size_t c, size_t r2 = 0) :
-  tetris_cow_base <Type> (p, r, c, r2) {
-    if (used_rows) assert(cache.get());
-    for (size_t i = 0; i < used_rows; i++) {
-      board[i] = cache->new_row();
-    }
+  tetris_cow_base <Type> (p, r, c) {
+    this->add_rows(r2);
   }
 };
 
@@ -304,11 +300,8 @@ struct tetris_cow <Type[Rows][Cols]> : virtual public tetris_cow_base <Type[Rows
   using tetris_cow_base <Type[Rows][Cols]> ::board;
 
   tetris_cow(const row_cache_pointer &p, size_t r = 0) :
-  tetris_cow_base <Type[Rows][Cols]> (p, r) {
-    if (used_rows) assert(cache.get());
-    for (size_t i = 0; i < used_rows; i++) {
-      board[i] = cache->new_row();
-    }
+  tetris_cow_base <Type[Rows][Cols]> (p) {
+    this->add_rows(r);
   }
 };
 
