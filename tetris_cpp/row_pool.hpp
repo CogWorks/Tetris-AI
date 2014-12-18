@@ -71,7 +71,7 @@ public:
   //set the size limit of the pool
   void set_limit(size_t l) {
     limit = l;
-    while (this->get_count() > this->get_count()) free_rows.pop();
+    while (this->get_count() > this->get_limit()) free_rows.pop();
   }
 
   //get a reference to the default element

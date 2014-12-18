@@ -13,7 +13,11 @@
 
 //typedefs for the 20x10 statically-sized board
 
+#ifndef DYNAMIC
 typedef tetris_cow <int[20][10]>         tetris_20_10;
+#else
+typedef tetris_cow <int>                 tetris_20_10;
+#endif
 typedef tetris_20_10                    *tetris_20_10_pointer;
 typedef tetris_20_10::row_cache          row_cache;
 typedef tetris_20_10::row_cache_pointer  row_cache_pointer;
@@ -21,12 +25,16 @@ typedef tetris_20_10::row_cache_pointer  row_cache_pointer;
 
 //a cache for storing rows that have been discarded
 
-const row_cache_pointer &get_row_cache(size_t limit = 0) {
+const row_cache_pointer &get_row_cache(ssize_t limit = -1) {
+#ifndef DYNAMIC
   static tetris_20_10::row_type default_row = {0,0,0,0,0,0,0,0,0,0};
+#else
+  static tetris_20_10::row_type default_row(10);
+#endif
   static row_cache_pointer cache;
 
-  if (!cache) cache.reset(new row_cache(limit, default_row));
-  else if (limit) cache->set_limit(limit);
+  if (!cache) cache.reset(new row_cache((limit < 0)? 0 : limit, default_row));
+  else if (limit >= 0) cache->set_limit(limit);
 
   return cache;
 }
@@ -89,7 +97,8 @@ METHOD_BINDING2(type, name, name)
 
 GLOBAL_BINDING_START(set_cache_size, "set the size of the row cache")
   int count = 0;
-  if(!PyArg_ParseTuple(args, "i", &count)) return NULL;
+  static char *keywords[] = { "max", NULL };
+  if(!PyArg_ParseTupleAndKeywords(args, kwds, "i", keywords, &count)) return NULL;
   if (count < 0) return auto_exception(PyExc_ValueError, "value must be a positive integer");
   get_row_cache(count);
   return Py_BuildValue("");
@@ -117,9 +126,14 @@ static PyTypeObject python_tetris_20_10_type = {
 
 static int python_tetris_20_10_init_function(python_tetris_20_10 *self, PyObject *args, PyObject *kwds) {
   int count = 0;
-  if(!PyArg_ParseTuple(args, "|i", &count)) return -1;
+  static char *keywords[] = { "rows", NULL };
+  if(!PyArg_ParseTupleAndKeywords(args, kwds, "|i", keywords, &count)) return -1;
   if (!self->obj) {
+#ifndef DYNAMIC
     self->obj = new tetris_20_10(get_row_cache(), count);
+#else
+    self->obj = new tetris_20_10(get_row_cache(), 20, 10, count);
+#endif
     if (!self->obj) return auto_exception2(PyExc_RuntimeError, "could not allocate board");
   }
   if (count < 0 || count > 20) return auto_exception2(PyExc_ValueError, "invalid number of rows");
@@ -137,7 +151,11 @@ METHOD_BINDING_START(tetris_20_10, clone, "clone another board")
   python_tetris_20_10 *other = NULL;
   if (!PyArg_ParseTuple(args, "O!", &python_tetris_20_10_type, &other)) return NULL;
   if (!other->obj) {
+#ifndef DYNAMIC
     other->obj = new tetris_20_10(get_row_cache());
+#else
+    other->obj = new tetris_20_10(get_row_cache(), 20, 10);
+#endif
     if (!other->obj) return auto_exception(PyExc_ValueError, "");
   }
   *self->obj = *other->obj;
@@ -186,14 +204,16 @@ METHOD_BINDING_END(tetris_20_10, pile_height)
 METHOD_BINDING_START(tetris_20_10, add_rows, "add rows to the pile")
   if (!self->obj) return auto_exception(PyExc_RuntimeError, "");
   int count = 0;
-  if(!PyArg_ParseTuple(args, "i", &count)) return NULL;
+  static char *keywords[] = { "rows", NULL };
+  if(!PyArg_ParseTupleAndKeywords(args, kwds, "i", keywords, &count)) return NULL;
   return Py_BuildValue("i", (int) self->obj->add_rows(count));
 METHOD_BINDING_END(tetris_20_10, add_rows)
 
 METHOD_BINDING_START(tetris_20_10, is_fake_row, "check if a row is faked")
   if (!self->obj) return auto_exception(PyExc_RuntimeError, "");
   int r = 0;
-  if(!PyArg_ParseTuple(args, "i", &r)) return NULL;
+  static char *keywords[] = { "r", NULL };
+  if(!PyArg_ParseTupleAndKeywords(args, kwds, "i", keywords, &r)) return NULL;
   if (r < 0 || r >= (signed) self->obj->row_count()) return auto_exception(PyExc_IndexError, "index out of range");
   return use_object(self->obj->is_fake_row(r)? Py_True : Py_False);
 METHOD_BINDING_END(tetris_20_10, is_fake_row)
@@ -201,7 +221,8 @@ METHOD_BINDING_END(tetris_20_10, is_fake_row)
 METHOD_BINDING_START(tetris_20_10, is_mirrored_row, "check if a row is mirrored")
   if (!self->obj) return auto_exception(PyExc_RuntimeError, "");
   int r = 0;
-  if(!PyArg_ParseTuple(args, "i", &r)) return NULL;
+  static char *keywords[] = { "r", NULL };
+  if(!PyArg_ParseTupleAndKeywords(args, kwds, "i", keywords, &r)) return NULL;
   if (r < 0 || r >= (signed) self->obj->row_count()) return auto_exception(PyExc_IndexError, "index out of range");
   return use_object(self->obj->is_mirrored_row(r)? Py_True : Py_False);
 METHOD_BINDING_END(tetris_20_10, is_mirrored_row)
@@ -209,21 +230,24 @@ METHOD_BINDING_END(tetris_20_10, is_mirrored_row)
 METHOD_BINDING_START(tetris_20_10, check_full, "check if any rows are full, optionally removing them")
   if (!self->obj) return auto_exception(PyExc_RuntimeError, "");
   PyObject *clear = Py_False;
-  if(!PyArg_ParseTuple(args, "|O", &clear)) return NULL;
+  static char *keywords[] = { "clear", NULL };
+  if(!PyArg_ParseTupleAndKeywords(args, kwds, "|O", keywords, &clear)) return NULL;
   return Py_BuildValue("i", (int) self->obj->check_full(PyObject_IsTrue(clear)));
 METHOD_BINDING_END(tetris_20_10, check_full)
 
 METHOD_BINDING_START(tetris_20_10, check_empty, "check if any rows are empty, optionally removing them")
   if (!self->obj) return auto_exception(PyExc_RuntimeError, "");
   PyObject *clear = Py_False;
-  if(!PyArg_ParseTuple(args, "|O", &clear)) return NULL;
+  static char *keywords[] = { "clear", NULL };
+  if(!PyArg_ParseTupleAndKeywords(args, kwds, "|O", keywords, &clear)) return NULL;
   return Py_BuildValue("i", (int) self->obj->check_empty(PyObject_IsTrue(clear)));
 METHOD_BINDING_END(tetris_20_10, check_empty)
 
 METHOD_BINDING_START(tetris_20_10, set_tamper_seal, "set the state of the tamper seal")
   if (!self->obj) return auto_exception(PyExc_RuntimeError, "");
   PyObject *state = Py_True;
-  if(!PyArg_ParseTuple(args, "|O", &state)) return NULL;
+  static char *keywords[] = { "state", NULL };
+  if(!PyArg_ParseTupleAndKeywords(args, kwds, "|O", keywords, &state)) return NULL;
   self->obj->set_tamper_seal(PyObject_IsTrue(state));
   return Py_BuildValue("");
 METHOD_BINDING_END(tetris_20_10, pile_height)

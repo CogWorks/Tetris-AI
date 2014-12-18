@@ -14,7 +14,7 @@ ext_modules = [
     distutils.core.Extension(name = '_tetris_cpp',
         sources = ['board_python.cpp'],
         include_dirs = ['.'],
-        extra_compile_args=['-std=c++11'])]
+        extra_compile_args=['-std=c++11','-O0','-g'])]
 
 
 distutils.core.setup(name = package_base, version = package_version, packages = ['tetris_cpp'],

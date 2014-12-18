@@ -24,7 +24,9 @@ public:
   //cache of rows to use, number of initial rows
   tetris_cow_base(const row_cache_pointer &p = row_cache_pointer(),
     size_t r = 0, size_t c = 0, size_t r2 = 0) :
-  rows(r), cols(c), cache(p), board(r) {}
+  rows(r), cols(c), used_rows(r2), cache(p), board(r) {
+    assert(used_rows < this->row_count());
+  }
 
   tetris_cow_base &operator = (const tetris_cow_base &other) {
     if (&other == this) return *this;
@@ -83,7 +85,9 @@ public:
 
   //cache of rows to use, number of initial rows
   tetris_cow_base(const row_cache_pointer &p = row_cache_pointer(),
-    size_t r = 0) : used_rows(r), cache(p) {}
+    size_t r = 0) : used_rows(r), cache(p) {
+    assert(used_rows < this->row_count());
+  }
 
   tetris_cow_base &operator = (const tetris_cow_base &other) {
     if (&other == this) return *this;
