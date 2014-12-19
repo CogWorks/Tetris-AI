@@ -56,10 +56,6 @@ public:
     return used_rows;
   }
 
-  ~tetris_cow_base() {
-    this->clear_all();
-  }
-
 protected:
   size_t            rows, cols; //NOTE: not 'const' so assignment will work!
   size_t            used_rows;
@@ -112,10 +108,6 @@ public:
   //get the number of rows in the pile
   size_t pile_height() const {
     return used_rows;
-  }
-
-  ~tetris_cow_base() {
-    this->clear_all();
   }
 
 protected:
@@ -220,6 +212,10 @@ public:
 
   bool get_tamper_seal() const {
     return tamper;
+  }
+
+  ~tetris_cow_logic() {
+    this->clear_all();
   }
 
 private:
