@@ -13,7 +13,7 @@
 //dynamically-sized board
 
 template <class Type>
-class tetris_cow_base : public abstract_board <Type> {
+class tetris_cow_storage : public abstract_board <Type> {
 public:
   using typename abstract_board <Type>                ::cell_type;
   typedef std::vector <cell_type>                       row_type;
@@ -22,13 +22,13 @@ public:
   typedef std::vector <typename row_cache::row_pointer> board_rows;
 
   //cache of rows to use, number of initial rows
-  tetris_cow_base(const row_cache_pointer &p = row_cache_pointer(),
+  tetris_cow_storage(const row_cache_pointer &p = row_cache_pointer(),
     size_t r = 0, size_t c = 0) :
   rows(r), cols(c), used_rows(0), cache(p), board(r) {}
 
   void clear_all() {}
 
-  tetris_cow_base &operator = (const tetris_cow_base &other) {
+  tetris_cow_storage &operator = (const tetris_cow_storage &other) {
     if (&other == this) return *this;
     this->clear_all();
     rows      = other.rows;
@@ -67,7 +67,7 @@ protected:
 //statically-sized board
 
 template <class Type, size_t Rows, size_t Cols>
-class tetris_cow_base <Type[Rows][Cols]> : public abstract_board <Type> {
+class tetris_cow_storage <Type[Rows][Cols]> : public abstract_board <Type> {
 public:
   using typename abstract_board <Type>  ::cell_type;
   typedef cell_type                       row_type[Cols];
@@ -76,11 +76,11 @@ public:
   typedef typename row_cache::row_pointer board_rows[Rows];
 
   //cache of rows to use, number of initial rows
-  tetris_cow_base(const row_cache_pointer &p = row_cache_pointer()) : used_rows(0), cache(p) {}
+  tetris_cow_storage(const row_cache_pointer &p = row_cache_pointer()) : used_rows(0), cache(p) {}
 
   void clear_all() {}
 
-  tetris_cow_base &operator = (const tetris_cow_base &other) {
+  tetris_cow_storage &operator = (const tetris_cow_storage &other) {
     if (&other == this) return *this;
     this->clear_all();
     used_rows = other.used_rows;
@@ -92,7 +92,7 @@ public:
   }
 
 private:
-  tetris_cow_base(const tetris_cow_base&) {}
+  tetris_cow_storage(const tetris_cow_storage&) {}
 
 public:
   //get the number of rows
@@ -118,13 +118,13 @@ protected:
 
 
 template <class Type>
-class tetris_cow_logic : virtual public tetris_cow_base <Type> {
+class tetris_cow_logic : virtual public tetris_cow_storage <Type> {
 public:
-  using typename tetris_cow_base <Type> ::cell_type;
-  using typename tetris_cow_base <Type> ::row_type;
-  using tetris_cow_base <Type> ::used_rows;
-  using tetris_cow_base <Type> ::cache;
-  using tetris_cow_base <Type> ::board;
+  using typename tetris_cow_storage <Type> ::cell_type;
+  using typename tetris_cow_storage <Type> ::row_type;
+  using tetris_cow_storage <Type> ::used_rows;
+  using tetris_cow_storage <Type> ::cache;
+  using tetris_cow_storage <Type> ::board;
 
   tetris_cow_logic() : tamper(false) {}
 
@@ -269,14 +269,14 @@ private:
 //dynamically-sized board
 
 template <class Type>
-struct tetris_cow : virtual public tetris_cow_base <Type>, public tetris_cow_logic <Type> {
-  using typename tetris_cow_base <Type> ::row_cache_pointer;
-  using tetris_cow_base <Type> ::used_rows;
-  using tetris_cow_base <Type> ::cache;
-  using tetris_cow_base <Type> ::board;
+struct tetris_cow : virtual public tetris_cow_storage <Type>, public tetris_cow_logic <Type> {
+  using typename tetris_cow_storage <Type> ::row_cache_pointer;
+  using tetris_cow_storage <Type> ::used_rows;
+  using tetris_cow_storage <Type> ::cache;
+  using tetris_cow_storage <Type> ::board;
 
   tetris_cow(const row_cache_pointer &p, size_t r, size_t c, size_t r2 = 0) :
-  tetris_cow_base <Type> (p, r, c) {
+  tetris_cow_storage <Type> (p, r, c) {
     this->add_rows(r2);
   }
 };
@@ -285,14 +285,14 @@ struct tetris_cow : virtual public tetris_cow_base <Type>, public tetris_cow_log
 //statically-sized board
 
 template <class Type, size_t Rows, size_t Cols>
-struct tetris_cow <Type[Rows][Cols]> : virtual public tetris_cow_base <Type[Rows][Cols]>, public tetris_cow_logic <Type[Rows][Cols]> {
-  using typename tetris_cow_base <Type[Rows][Cols]> ::row_cache_pointer;
-  using tetris_cow_base <Type[Rows][Cols]> ::used_rows;
-  using tetris_cow_base <Type[Rows][Cols]> ::cache;
-  using tetris_cow_base <Type[Rows][Cols]> ::board;
+struct tetris_cow <Type[Rows][Cols]> : virtual public tetris_cow_storage <Type[Rows][Cols]>, public tetris_cow_logic <Type[Rows][Cols]> {
+  using typename tetris_cow_storage <Type[Rows][Cols]> ::row_cache_pointer;
+  using tetris_cow_storage <Type[Rows][Cols]> ::used_rows;
+  using tetris_cow_storage <Type[Rows][Cols]> ::cache;
+  using tetris_cow_storage <Type[Rows][Cols]> ::board;
 
   tetris_cow(const row_cache_pointer &p, size_t r = 0) :
-  tetris_cow_base <Type[Rows][Cols]> (p) {
+  tetris_cow_storage <Type[Rows][Cols]> (p) {
     this->add_rows(r);
   }
 };
