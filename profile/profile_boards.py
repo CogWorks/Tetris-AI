@@ -2,7 +2,8 @@
 
 import sys, time, random, cProfile, pstats
 
-boards = __import__('boards',level=1)
+sys.path.append('..')
+import boards
 
 board_type = boards.tetris_cow
 
@@ -39,7 +40,7 @@ class access_test(object):
                 self.run_test_access(new_board)
 
     def run_test_board(self,board):
-        for name,zoid in all_zoids.items():
+        for name,zoid in boards.all_zoids.items():
             self.run_test_zoid(board,zoid)
 
     def run_test_all(self,max_rows,cols,rows=None):
@@ -67,7 +68,7 @@ if __name__ == '__main__':
     times=int(sys.argv[3]) if len(sys.argv) > 3 else None
 
     if method[-1] == '2':
-        board_type = tetris_cow2
+        board_type = boards.tetris_cow2
         method = method[:-1]
 
     #if uppercase is passed for 'method', use full boards

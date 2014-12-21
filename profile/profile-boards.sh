@@ -7,7 +7,6 @@ methods='deep cow deep2 cow2'
 # per_cell=1
 # times=1
 
-
 echo "method,per_cell,rep,times,num_calls,call_time,time_per_call,cum_time,cum_per_call,call"
 
 for p in $per_cell; do
