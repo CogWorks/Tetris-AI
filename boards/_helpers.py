@@ -11,9 +11,9 @@ def _find_outline(board,down=False):
     return counts
 
 
-def print_board(board,output=sys.stderr,all=False):
+def print_board(board,output=sys.stderr,entire=False,show_full=False):
     """Print a Tetris board."""
-    try: rows = [r for r in board.rows(reverse=True,all=all)]
+    try: rows = [r for r in board.rows(reverse=True,all=entire)]
     except TypeError: rows = [r for r in board.rows(reverse=True)]
 
     if rows and rows[0] > 1: row_format = '[%%s%%.%ud] '%int(math.ceil(math.log(rows[0],10)))
@@ -21,6 +21,9 @@ def print_board(board,output=sys.stderr,all=False):
 
     for r in rows:
         modifier = None
+        fill = None
+
+        if show_full and all(cell for cell in board.row_iter(r)): fill = '~'
 
         try:
           if not modifier and board.is_fake_row(r): modifier = '@'
@@ -33,7 +36,7 @@ def print_board(board,output=sys.stderr,all=False):
         if not modifier: modifier = ' '
 
         print >> output, row_format%(modifier,r), '|',
-        for cell in board.row_iter(r): print >> output, cell if cell else ' ',
+        for cell in board.row_iter(r): print >> output, fill if fill else (cell if cell else ' '),
         print >> output, '|'
 
     #(a bit of a hack, for spacing)

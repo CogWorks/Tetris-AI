@@ -114,13 +114,18 @@ if __name__ == '__main__':
 
         #imprint the zoid and clear rows if necessary
         main_board.imprint_zoid(zoid,orient=best_move[1],pos=best_move[2],check=True)
-        full_rows = main_board.check_full(True)
+        #('False' means full rows aren't cleared here; just counted)
+        full_rows = main_board.check_full(False)
         cleared_lines += full_rows
 
         print >> sys.stderr, 'you placed "%s" at %s, clearing %i line(s)'%(zoid_name,best_move[2],full_rows)
 
         #print the board for fun
-        print_board(main_board,all=True)
+        print_board(main_board,entire=True,show_full=True)
+        time.sleep(0.1)
 
         #slow it down so it looks like a game
+        #('True' means full rows are cleared here)
+        main_board.check_full(True)
+        print_board(main_board,entire=True)
         time.sleep(0.1)

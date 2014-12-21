@@ -72,7 +72,7 @@ if __name__ == '__main__':
                 ]
     
     board = tetris_cow.convert_old_board(boardrows)
-    print_board(board, all=True)
+    print_board(board, entire=True)
     
     
     for cell in board.col_iter(0): print cell, #iterate cells in column 0 of the board
