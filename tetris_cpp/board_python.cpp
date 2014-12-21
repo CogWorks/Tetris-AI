@@ -129,7 +129,7 @@ static PyObject *python_##type##_##name##_function(python_##type *self, PyObject
 METHOD_BINDING2(type, name, name)
 
 #define METHOD_BINDING2(type, name, name2) \
-{ #name2, (PyCFunction) python_##type##_##name##_function, METH_VARARGS, python_##type##_##name##_doc }
+{ #name2, (PyCFunction) python_##type##_##name##_function, METH_KEYWORDS, python_##type##_##name##_doc }
 
 
 //global functions for getting/setting the cache sizes
@@ -307,13 +307,13 @@ METHOD_BINDING_START(tetris_20_10, set_tamper_seal, "set the state of the tamper
   if(!PyArg_ParseTupleAndKeywords(args, kwds, "|O", keywords, &state)) return NULL;
   self->obj->set_tamper_seal(PyObject_IsTrue(state));
   return Py_BuildValue("");
-METHOD_BINDING_END(tetris_20_10, pile_height)
+METHOD_BINDING_END(tetris_20_10, set_tamper_seal)
 
 METHOD_BINDING_START(tetris_20_10, get_tamper_seal, "get the state of the tamper seal")
   if (!self->obj) return auto_exception(PyExc_RuntimeError, "");
   if (!PyArg_ParseTuple(args, "")) return NULL;
   return use_object(self->obj->get_tamper_seal()? Py_True : Py_False);
-METHOD_BINDING_END(tetris_20_10, pile_height)
+METHOD_BINDING_END(tetris_20_10, get_tamper_seal)
 
 
 //list of all 'tetris_20_10' member functions
@@ -330,7 +330,8 @@ static PyMethodDef python_tetris_20_10_methods[] = {
   METHOD_BINDING(tetris_20_10, check_full),
   METHOD_BINDING(tetris_20_10, check_empty),
   METHOD_BINDING(tetris_20_10, set_tamper_seal),
-  METHOD_BINDING(tetris_20_10, get_tamper_seal)
+  METHOD_BINDING(tetris_20_10, get_tamper_seal),
+  NULL
 };
 
 
