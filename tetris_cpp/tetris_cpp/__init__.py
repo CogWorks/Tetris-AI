@@ -70,8 +70,14 @@ class tetris_cow2(tetris_20_10):
 
     def get_cow(self):
         """Get a copy-on-write copy of the board."""
-        new = tetris_cow2()
-        new.clone(self)
+        new = type(self)()
+        new.mirror(self)
+        return new
+
+    def get_clone(self):
+        """Get a deep copy of the board."""
+        new = self.get_cow()
+        new.uncow_all()
         return new
 
     def imprint_zoid(self,zoid,pos=None,value=None,orient=None,check=False):

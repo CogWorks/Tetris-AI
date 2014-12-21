@@ -200,18 +200,6 @@ static void python_tetris_20_10_dealloc_function(python_tetris_20_10 *self) {
   }
 }
 
-METHOD_BINDING_START(tetris_20_10, clone, "clone another board")
-  if (!self->obj) return auto_exception(PyExc_RuntimeError, "");
-  python_tetris_20_10 *other = NULL;
-  if (!PyArg_ParseTuple(args, "O!", &python_tetris_20_10_type, &other)) return NULL;
-  if (!other->obj) {
-    other->obj = uncache_board();
-    if (!other->obj) return auto_exception(PyExc_RuntimeError, "could not allocate board");
-  }
-  *self->obj = *other->obj;
-  return Py_BuildValue("");
-METHOD_BINDING_END(tetris_20_10, clone)
-
 PyObject *python_tetris_20_10_getitem_function(python_tetris_20_10 *self, PyObject *key) {
   if (!self->obj) return auto_exception(PyExc_RuntimeError, "");
   int r = 0, c = 0;
@@ -232,6 +220,25 @@ int python_tetris_20_10_setitem_function(python_tetris_20_10 *self, PyObject *ke
   self->obj->set_cell(r, c, value);
   return 0;
 }
+
+METHOD_BINDING_START(tetris_20_10, mirror, "mirror another board")
+  if (!self->obj) return auto_exception(PyExc_RuntimeError, "");
+  python_tetris_20_10 *other = NULL;
+  if (!PyArg_ParseTuple(args, "O!", &python_tetris_20_10_type, &other)) return NULL;
+  if (!other->obj) {
+    other->obj = uncache_board();
+    if (!other->obj) return auto_exception(PyExc_RuntimeError, "could not allocate board");
+  }
+  *self->obj = *other->obj;
+  return Py_BuildValue("");
+METHOD_BINDING_END(tetris_20_10, mirror)
+
+METHOD_BINDING_START(tetris_20_10, uncow_all, "copy all copy-on-write rows")
+  if (!self->obj) return auto_exception(PyExc_RuntimeError, "");
+  if (!PyArg_ParseTuple(args, "")) return NULL;
+  self->obj->uncow_all();
+  return Py_BuildValue("");
+METHOD_BINDING_END(tetris_20_10, uncow_all)
 
 METHOD_BINDING_START(tetris_20_10, row_count, "get the number of rows")
   if (!self->obj) return auto_exception(PyExc_RuntimeError, "");
@@ -312,7 +319,8 @@ METHOD_BINDING_END(tetris_20_10, pile_height)
 //list of all 'tetris_20_10' member functions
 
 static PyMethodDef python_tetris_20_10_methods[] = {
-  METHOD_BINDING(tetris_20_10, clone),
+  METHOD_BINDING(tetris_20_10, mirror),
+  METHOD_BINDING(tetris_20_10, uncow_all),
   METHOD_BINDING(tetris_20_10, row_count),
   METHOD_BINDING(tetris_20_10, col_count),
   METHOD_BINDING(tetris_20_10, pile_height),

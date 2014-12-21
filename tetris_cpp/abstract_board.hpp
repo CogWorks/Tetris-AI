@@ -15,6 +15,8 @@ public:
 
   virtual const cell_type &set_cell(size_t r, size_t c, const cell_type &val) = 0;
 
+  virtual void uncow_all() = 0;
+
   virtual size_t row_count() const = 0;
 
   virtual size_t col_count() const = 0;

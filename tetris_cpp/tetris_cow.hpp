@@ -161,6 +161,14 @@ public:
     return (*board[r])[c] = val;
   }
 
+  //copy all copy-on-write rows
+  void uncow_all() {
+    if (this->pile_height()) assert(cache.get());
+    for (size_t r = 0; r < this->pile_height(); r++) {
+      board[r] = cache->copy_row(*board[r]);
+    }
+  }
+
   //add one or more default rows
   //NOTE: the argument is signed so that negative values can be passsed!
   size_t add_rows(ssize_t rows) {
