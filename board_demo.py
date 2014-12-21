@@ -16,7 +16,7 @@ class board_manager_cow(object):
     #create a copy of the board with a zoid
     @staticmethod
     def copy_board_zoid(board,*args,**kwds):
-        zoid_board = board.get_cow()
+        zoid_board = board.get_clone()
         #'check': check for cell collisions
         zoid_board.imprint_zoid(*args,check=True,**kwds)
         return zoid_board
@@ -24,7 +24,7 @@ class board_manager_cow(object):
     #create a copy of the board with rows hidden
     @staticmethod
     def copy_board_hide(board):
-        cleared_board = board.get_cow()
+        cleared_board = board.get_clone()
         cleared_board.check_full(True)
         return cleared_board
 

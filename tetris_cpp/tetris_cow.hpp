@@ -165,7 +165,8 @@ public:
   void uncow_all() {
     if (this->pile_height()) assert(cache.get());
     for (size_t r = 0; r < this->pile_height(); r++) {
-      board[r] = cache->copy_row(*board[r]);
+      assert(board[r].get());
+      if (!board[r].unique()) board[r] = cache->copy_row(*board[r]);
     }
   }
 
