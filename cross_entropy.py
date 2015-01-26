@@ -117,11 +117,6 @@ def write_controller(file, session_vars, name, features, controller, game_seed =
     file.write("\t".join(outlist) + "\n")
     
 
-def resume(file):
-    controller = {}
-    
-    return controller
-
 ###Script
 
 
@@ -244,7 +239,9 @@ if __name__ == '__main__':
     
     if not os.path.exists("runs"):
         os.makedirs("runs")
-    outfile = open("runs/" + args.output_file + ".incomplete.tsv", "w")
+
+    if args.resume_file == None:
+        outfile = open("runs/" + args.output_file + ".incomplete.tsv", "w")
         
     depth = args.depth
     controllers = args.controllers
@@ -273,24 +270,89 @@ if __name__ == '__main__':
     v_step = args.visual_step
     
     
-    #log headers
     
-    session_variables = [args.output_file, optimize, str(depth), str(controllers), str(survivors), str(episodes),
+    if resume_file != None:
+	directory = os.path.dirname(os.path.realpath(__file__))
+	input_file = open(directory + '/runs/' + resume_file + '.incomplete.tsv', 'r')
+	input_lines = list(input_file)
+
+	for x in range(0,len(input_lines)):
+	    input_lines[x] = input_lines[x].split()
+	
+	last_gen = 0
+
+	for y in range(len(input_lines)-1, 0, -1):
+	    if input_lines[y][13] == 'result':
+		last_gen = y
+		break
+
+	
+	optimize = input_lines[1][1]	
+	depth = int(input_lines[1][2])
+    	controllers = int(input_lines[1][3])
+    	survivors = int(input_lines[1][4])
+    	episodes = int(input_lines[1][5])
+    	noise = float(input_lines[1][6])
+    	initial_val = int(input_lines[1][7])
+    	variance = float(input_lines[1][8])
+
+	session_variables = [args.resume_file, optimize, str(depth), str(controllers), str(survivors), str(episodes),
+                       str(noise), str(initial_val), str(variance), str(random_seed)]
+
+	outfile = open("runs/" + args.resume_file + ".resumed.incomplete.tsv", "w")
+	for c in range(0,last_gen):
+	    outfile.write("\t".join(input_lines[c]) + "\n")
+	
+
+	features = []
+	feature_stuff = []
+    	for z in range(16, len(input_lines[0])-8):
+	    feature_stuff.append(input_lines[0][z])   
+	for a in range(0, len(feature_stuff)/3):
+	    features.append(feature_stuff[a])
+
+	last_gen_features = []
+	last_feature_vals = []
+	last_feature_tols = []
+
+	for q in range(16, len(input_lines[last_gen])-8):
+	    last_gen_features.append(input_lines[last_gen][q])   
+	for a in range(0, len(last_gen_features)/3):
+	    last_feature_vals.append(last_gen_features[a])
+	for b in range(2*len(last_gen_features)/3, len(last_gen_features)):
+	    last_feature_tols.append(last_gen_features[b])
+
+	start_controller = {}
+	tolerances = {}
+	for f in range(0, len(features)):
+	    start_controller[features[f]] = float(last_feature_vals[f])
+	    tolerances[features[f]] = float(last_feature_tols[f])
+
+	write_controller(outfile, session_variables, "G" + str(input_lines[last_gen][12]), features, start_controller, 
+                        vars = tolerances, type = "result", gen = input_lines[last_gen][12])
+	
+	start_depth = int(input_lines[last_gen][12])
+
+    else:
+	#log headers
+        session_variables = [args.output_file, optimize, str(depth), str(controllers), str(survivors), str(episodes),
                         str(noise), str(initial_val), str(variance), str(random_seed)]
     
-    write_header(outfile, features)
+        write_header(outfile, features)
     
-    start_controller = {}
-    tolerances = {}
-    for f in features:
-        start_controller[f] = initial_val
-        tolerances[f] = variance
+        start_controller = {}
+        tolerances = {}
+        for f in features:
+            start_controller[f] = initial_val
+            tolerances[f] = variance
         
     
-    write_controller(outfile, session_variables, "G" + str(0), features, start_controller, 
+        write_controller(outfile, session_variables, "G" + str(0), features, start_controller, 
                         vars = tolerances, type = "base", gen = 0)
+	
+	start_depth = 0
     
-    for x in range (0, depth):
+    for x in range (start_depth, depth):
         
         #session_vars, name, features, controller, vars = False, outs = False
         
@@ -356,5 +418,8 @@ if __name__ == '__main__':
         noise = noise * dim_noise
         
     outfile.close()
-    os.rename("runs/" + args.output_file + ".incomplete.tsv", "runs/" + args.output_file+".tsv")
+    if args.resume_file == None:
+        os.rename("runs/" + args.output_file + ".incomplete.tsv", "runs/" + args.output_file+".tsv")
+    else:
+        os.rename("runs/" + args.resume_file + ".resumed.incomplete.tsv", "runs/" + args.resume_file + ".tsv")
     
