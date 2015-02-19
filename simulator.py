@@ -30,12 +30,14 @@ import sys, random, os, time, copy
 class TetrisSimulator(object):
     """A board object that supports assessment metrics and future simulations"""
     
+    #modifiers for the run
     show_scores = False
     show_options = False
     option_step = .1
     show_choice = False
     choice_step = .5
     
+    #saved state variables
     space = []
     heights = []
     pits = []
@@ -44,6 +46,7 @@ class TetrisSimulator(object):
     ridge = []
     matches = []
     
+    #score values for the run
     lines = 0
     l1 = 0
     l2 = 0
@@ -52,13 +55,18 @@ class TetrisSimulator(object):
     score = 0
     level = 0
     
+    
     game_over = False
+    
+    #possible piece names, in order of representation as per Meta-T
     pieces = ["I", "O", "T", "S", "Z", "J", "L"]
     
+    #pieces from the PENTIX variant of Tetris.
     #pieces = ["BIG_T","BIG_I","BIG_J","BIG_L","BIG_S","BIG_Z",
     #              "PLUS","U","BIG_V","D","B","W",
     #              "J_DOT","L_DOT","J_STILT","L_STILT","LONG_S","LONG_Z"]
     
+    #shapes of all zoids
     shapes =    {  
                 "O":{
                     0: [[1,1],[1,1]]
@@ -94,6 +102,8 @@ class TetrisSimulator(object):
                     3: [[1,1],[1,0],[1,0]]
                     }
                 }
+    
+    #bottom ridge shape of zoids, for use in determining viable positions
     shape_bottoms =    {  
                 "O":{
                     0: [0,0]
@@ -130,7 +140,7 @@ class TetrisSimulator(object):
                     }
                 }
     
-    
+    #Initialization functions
     def __init__(self,board = None, curr = None, next = None, controller = None, 
                     show_scores = False, show_options = False, show_result = True, show_choice = False,
                     option_step = 0, choice_step = 0, name = "Controller", seed = time.time() * 10000000000000.0,
@@ -975,6 +985,7 @@ class TetrisSimulator(object):
         return rows, lumped_pits
     ###
     
+    """isolating"""
     def get_matches(self, space):
         matches = 0
         for r in range(0,len(space)):
@@ -1021,6 +1032,7 @@ class TetrisSimulator(object):
         return(col_pits, pit_rows, lumped_pits)
     ###
     
+    """isolating"""
     def get_landing_height(self, space):
         for i in range(0,len(space)):
             if 2 in space[len(space)-1-i]:
@@ -1183,6 +1195,11 @@ class TetrisSimulator(object):
                 else:
                     stagnated = True
         return progress, nine_count
+            
+            
+            
+            
+            
             
     ###### CONTROLLERS
     
@@ -1360,7 +1377,7 @@ def main(argv):
                         choice_step = .5,
                         seed = 1
                         )
-    #print(sim.predict(testboard(), "L"))
+    print(sim.predict(testboard(), "L"))
     
     
     sim2 = TetrisSimulator(board = testboard(), curr = "L", next = "S", 
@@ -1389,8 +1406,8 @@ def main(argv):
                 )
     
     ## enable for speed test
-    osim.show_options = False
-    osim.choice_step = 0
+    #osim.show_options = False
+    #osim.choice_step = 0
     
     ##normal
     #osim.overhangs, osim.force_legal = False, False
@@ -1401,8 +1418,8 @@ def main(argv):
     #osim.run()
     
     ##legality enforced
-    osim.overhangs, osim.force_legal = True, True
-    osim.run()
+    #osim.overhangs, osim.force_legal = True, True
+    #osim.run()
 
 
 if __name__ == "__main__":
@@ -1411,737 +1428,5 @@ if __name__ == "__main__":
   
   
   
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-###
-
-
-"""
-Requirements:
-
-Take arbitrary board.
-Generate random zoids appropriately. (7bag? default? pure random? What did they use?)
-
-Generate all possible (simple) moves.
-    -with and without line clears
-
-Execute moves:
-    Be able to clear lines (easy, check filled, pop them out)
-    Keep track of lines cleared.
-
-For classic controllers:
-Generate HOST of features for a given board state.
-
-"""
-
-
-#sim.do_move(0,0,19)
-  #sim.printboard()
-  #print(sim.game_over)
-  
-  #board.report()
-  
-  
-  #sim.printboard()
-  #options = sim.possible_moves()
-  #sim.printoptions(options, timestep = 1)
-  
-  
-  
-  
-  #randboard = TetrisBoardStats(get_random_space(10,20,12))
-  #randboard.set_random_pieces()
-  #randboard.report()
-
-
     
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-"""
-######################################################################
-
-######################################################################
-
-######################################################################
-
-######################################################################
-    def set_zoids(self, curr, next):
-        self.curr_z = curr
-        self.next_z = next
-    ###
-    
-    def set_board(self, board):
-        self.space = self.convert_board(board)
-    ###
-    
-    def convert_board(self, board):
-        reboard = []
-        for i in board:
-            line = []
-            for j in i:
-                if j == 0:
-                    line.append(0)
-                else:
-                    line.append(1)
-            reboard.append(line)
-        return reboard
-    ###
-    
-    def print_stats(self):
-        for i in self.stats_dict:
-            print(i, self.stats_dict[i])
-        print()
-    ###
-    
-    def set_random_zoids(self):
-        self.curr_z = self.pieces[random.randint(0,6)]
-        self.next_z = self.pieces[random.randint(0,6)]
-    ###
-        
-    stats_header =[
-    "height", 
-    "avgheight", 
-    "pits", 
-    "roughness", 
-    "ridge_len", 
-    "ridge_len_sqr", 
-    "tetris_available",
-    "tetris_progress",
-    "filled_rows_covered",
-    "tetrises_covered",
-    "good_pos_curr",
-    "good_pos_next",
-    "good_pos_any"
-    ]
-    
-    def get_stats(self):
-        stats = {}
-        stats["height"] = sum(self.heights)
-        stats["avgheight"] = sum(self.heights)/10
-        stats["pits"] = sum(self.pits)
-        stats["roughness"] = sum(self.row_roughs)
-        stats["ridge_len"] = self.get_ridge_jag(self.ridge)
-        stats["ridge_len_sqr"] = self.get_ridge_jag(self.ridge, fun = lambda a:a*a)
-        
-        tetrisop = self.tetris_status(self.space)
-        stats["tetris_available"] = tetrisop[0]
-        stats["tetris_progress"] = tetrisop[1]
-        stats["filled_rows_covered"] = sum(tetrisop[2])
-        tetrises_covered = 0
-        for i in tetrisop[2]:
-            tetrises_covered += i / 4
-        stats["tetrises_covered"] = tetrises_covered
-        
-        curr_matches = self.match_piece(self.ridge, self.curr_z)
-        next_matches = self.match_piece(self.ridge, self.next_z)
-        all_matches = self.match_piece(self.ridge, "all")
-        
-        stats["curr_matches"] = curr_matches
-        
-        curr_nopits = self.filter_matches(curr_matches, pits = 0)
-        next_nopits = self.filter_matches(next_matches, pits = 0)
-        all_nopits = self.filter_matches(all_matches, pits = 0)
-        
-        stats["good_pos_curr"] = len(curr_nopits)
-        stats["good_pos_next"] = len(next_nopits)
-        stats["good_pos_any"] = len(all_nopits)
-        
-        self.stats_dict = stats
-        
-        return stats
-    ###
-    
-    def report(self):
-        print("Board:")
-        self.printspace(self.space)
-        #printspace(self.get_cols(space))
-        
-        print("CurrZoid",self.curr_z,"NextZoid",self.next_z)
-        
-        print("Heights:")
-        print(self.heights , " => " , sum(self.heights), "Avg:", sum(self.heights)/10 )
-        
-        print("Pits:")
-        print(self.pits , " => " , sum(self.pits) )
-        
-        print("Column Roughness:")
-        print(self.col_roughs , " => " , sum(self.col_roughs) )
-        print("Row Roughness:")
-        print(self.row_roughs , " => " , sum(self.row_roughs) )
-        print("Total roughness = " , sum(self.col_roughs) + sum(self.row_roughs) )
-        
-        
-        print("Ridge:")
-        print(self.ridge)
-        print("Ridge-len= ", self.get_ridge_length(self.ridge))
-        print("Ridge-jag: abs=", self.get_ridge_jag(self.ridge), " sqr=", self.get_ridge_jag(self.ridge, fun = lambda a:a*a) )
-        print("Height-jag: abs=",  self.get_height_jag(self.heights),  " sqr=" , self.get_height_jag(self.heights, fun = lambda a:a*a) )
-        
-        print("Tetris opportunities:")
-        tetris_stat = self.tetris_status(self.space)
-        print("Status:    " , tetris_stat)
-        print("Progress:  ", self.stats_dict["tetris_progress"])
-        print("Available: ", self.stats_dict["tetris_available"])
-        print("Filled rows covered: ", self.stats_dict["filled_rows_covered"])
-        
-        print("Piecewise matches:")
-        print("Pitless: Current ", self.curr_z, self.stats_dict["good_pos_curr"])
-        print("Pitless: Next    ", self.next_z, self.stats_dict["good_pos_next"])
-        print("Pitless: Any     ", self.stats_dict["good_pos_any"])
-        
-        matchstr = "Type\tRot\tRow\tCol\tPit\tLt\tRt\tCont\tProfile\n"
-        for i in self.stats_dict["curr_matches"]:
-            for j in i:
-                matchstr += str(j) + "\t"
-            matchstr += "\n"
-        print(matchstr)
-            
-"""
-"""
-        #self.check_match_quality(ridge, self.get_piece_ridge("I", 0))
-        #match_pieces(ridge, all = True)
-        #match_pieces(ridge, p1 = "L")
-        print("Current Piece:", self.curr_z)
-        curmatch = self.match_piece(self.ridge, self.curr_z)
-        print("  Num possible:", len(curmatch))
-        
-        curfilt = self.filter_matches(curmatch, ldiff = 0, rdiff = 0, pits = 0)
-        print("  Perfects:", len(curfilt))
-        self.printlist(curfilt)
-        
-        curfilt = self.filter_matches(curmatch, pits = 0)
-        print("  Bottoms:", len(curfilt))
-        self.printlist(curfilt)
-        
-        
-        print("Next Piece:", self.next_z)
-        nextmatch = self.match_piece(self.ridge, self.next_z)
-        print("  Num possible:", len(nextmatch))
-        #self.printlist(nextmatch)
-        
-        nextfilt = self.filter_matches(nextmatch, ldiff = 0, rdiff = 0, pits = 0)
-        print("  Perfects:", len(nextfilt))
-        self.printlist(nextfilt)
-        
-        nextfilt = self.filter_matches(nextmatch, pits = 0)
-        print("  Bottoms:", len(nextfilt))
-        self.printlist(nextfilt)
-        
-        print("All Pieces:")
-        allmatch = self.match_piece(self.ridge, "all")
-        self.printlist(self.filter_matches(allmatch, pits = 0))
-"""
-"""
-    ###
-    def update_stats(self):
-        
-        self.heights = self.get_heights(self.space)
-        self.pits = self.get_all_pits(self.space)
-        self.col_roughs = self.get_roughs(self.space, columns = True)
-        self.row_roughs = self.get_roughs(self.space, columns = False)
-        self.ridge = self.get_ridge(self.space)
-        self.matches = []
-        
-        self.get_stats()
-    ###
-    
-    #Roughness
-    def get_roughness(self, v):
-        state = v[0]
-        rough = 0
-        for i in v[1:]:
-         if i != state:
-             rough += 1
-             state = i
-        return rough
-    ###
-    
-    def get_roughs(self, space, columns = False):
-        out = []
-        if columns:
-            space = self.get_cols(space)
-        for i in space:
-            out.append(self.get_roughness(i))
-        return(out)
-    ###
-    
-    
-    #Pits
-    
-    #need to represent pits as a list of unique pits with a particular length;
-    
-    def get_pits(self, v):
-        state = v[0]
-        pits = 0
-        for i in v[1:]:
-            if i == 1:
-                state = 1
-            if i == 0 and state == 1:
-                pits += 1
-        return pits
-    ###
-    
-    def get_all_pits(self, space):
-        space = self.get_cols(space)
-        out = []
-        for i in space:
-            out.append(self.get_pits(i))
-        return(out)
-    ###
-    
-    def get_filled(self, vect):
-        sum = 0
-        for i in vect:
-            if i != 0:
-                sum += 1
-        return sum
-    ###
-    
-    
-    def find_empty(self, vect):
-        for i in range(0, len(vect)):
-            if vect[i] == 0:
-                return i
-    ###
-    
-    
-    
-    
-    def get_ridge(self, space):
-        heights = self.get_heights(space)
-        out = []
-        out.append(heights[0] - len(space))
-        for i in range(0, len(heights)-1):
-            out.append(heights[i+1] - heights[i])
-        out.append(len(space) - heights[-1])
-        return out
-    ###
-    
-    def get_ridge_length(self, ridge):
-        ridge = ridge[1:-1]
-        return(sum(map(abs, ridge)) + 10)
-    
-    def get_ridge_jag(self, ridge, fun = abs):
-        ridge = ridge[1:-1]
-        return(sum(map(fun, ridge)))
-    ###
-    
-    def get_height_jag(self, heights, fun = abs):
-        avg = sum(heights) * 1.0 / len(heights) * 1.0
-        errs = map(lambda a:a-avg, heights)
-        return sum(map(fun,errs))
-    ###
-    
-    
-    
-    #put this into a hash table, you dolt. 
-    def get_piece(self, p, r):
-        ridge = False
-        shape = []
-        if p == "O":
-            if r == 0:
-                ridge = [-2,0,2]
-                shape.append([1,1])
-                shape.append([1,1])
-                
-        if p == "I":
-            if r == 0:
-                ridge = [-1,0,0,0,1]
-                shape.append([1,1,1,1])
-            if r == 1:
-                ridge = [-4, 4]
-                shape.append([1])
-                shape.append([1])
-                shape.append([1])
-                shape.append([1])
-        if p == "Z":
-            if r == 0:
-                ridge = [-1, -1, 0, 1]
-                shape.append([1, 1, 0])
-                shape.append([0, 1, 1])
-            if r == 1:
-                ridge = [-2, 1, 2]
-                shape.append([0, 1])
-                shape.append([1, 1])
-                shape.append([1, 0])
-        if p == "S":
-            if r == 0:
-                ridge = [-1, 0, 1, 1]
-                shape.append([0, 1, 1])
-                shape.append([1, 1, 0])
-            if r == 1:
-                ridge = [-2, -1, 2]
-                shape.append([1, 0])
-                shape.append([1, 1])
-                shape.append([0, 1])
-        if p == "T":
-            if r == 0:
-                ridge = [-1, -1, 1, 1]
-                shape.append([1, 1, 1])
-                shape.append([0, 1, 0])
-            if r == 1:
-                ridge = [-3, 1, 1]
-                shape.append([0, 1])
-                shape.append([1, 1])
-                shape.append([0, 1])
-            if r == 2:
-                ridge = [-1, 0, 0, 1]
-                shape.append([0, 1, 0])
-                shape.append([1, 1, 1])
-            if r == 3:
-                ridge = [-1, -1, 3]
-                shape.append([1, 0])
-                shape.append([1, 1])
-                shape.append([1, 0])
-        if p == "L":
-            if r == 0:
-                ridge = [-2, 1, 0, 1]
-                shape.append([1, 1, 1])
-                shape.append([1, 0, 0])
-            if r == 1:
-                ridge = [-1, -2, 3]
-                shape.append([1, 1])
-                shape.append([0, 1])
-                shape.append([0, 1])
-            if r == 2:
-                ridge = [-1, 0, 0, 2]
-                shape.append([0, 0, 1])
-                shape.append([1, 1, 1])
-            if r == 3:
-                ridge = [-3, 0, 1]
-                shape.append([1, 0])
-                shape.append([1, 0])
-                shape.append([1, 1])
-        if p == "J":
-            if r == 0:
-                ridge = [-1, 0, -1, 2]
-                shape.append([1, 1, 1])
-                shape.append([0, 0, 1])
-            if r == 1:
-                ridge = [-1, 0, 3]
-                shape.append([0, 1])
-                shape.append([0, 1])
-                shape.append([1, 1])
-            if r == 2:
-                ridge = [-2, 0, 0, 1]
-                shape.append([1, 0, 0])
-                shape.append([1, 1, 1])
-            if r == 3:
-                ridge = [-3, 2, 1]
-                shape.append([1, 1])
-                shape.append([1, 0])
-                shape.append([1, 0])
-        if ridge:
-            return [shape, ridge]
-        else:
-            return False
-    ###
-    
-    def get_piece_shape(self, p, r):
-        return self.get_piece(p,r)[0]
-    ###
-    
-    def get_piece_ridge(self, p, r):
-        return self.get_piece(p,r)[1]
-    ###
-    
-    ##Use to select viable piece positions
-    # !! Cannot handle overhangs!
-    #match structure = [column, pits, left, right, contour, [profile]]
-    
-    # !! Broken for T and J blocks (leftmost column containing pit)
-    def check_match_quality(self, vect, trgt):
-        matches = []
-        
-        #vector is zoid ridge, target is subset ridge
-        for i in range(0, len(vect) - len(trgt) + 1):
-            profile = []
-            
-            #leftside match
-            profile.append(trgt[0] - vect[i])
-            
-            #middle and right matches
-            v_hts = [0]
-            t_hts = [0]
-            v_ht = 0
-            t_ht = 0
-            profile.append(0)
-            for j in range(1, len(trgt)):
-                v_ht += vect[i+j]
-                t_ht += trgt[j]
-                v_hts.append(v_ht)
-                t_hts.append(t_ht)
-                profile.append(v_ht - t_ht)
-            
-            pits = 0
-            mid = profile[1:-1]
-            if mid:
-                if max(mid) > 0:
-                    for k in range(0, len(profile)):
-                        profile[k] -= max(mid)
-                    for k in range(0, len(t_hts)):
-                        t_hts[k] += max(mid)
-                pits = sum(map(abs, mid))
-            
-            left = profile[0] 
-            right = profile[-1]
-            
-            contours = self.matched_contours(vect, trgt, v_hts[:-1], t_hts[:-1], i)
-            
-            matches.append([i, pits, left, right, contours, profile])
-            #print(matches[-1])
-        return matches
-    ###
-    
-    
-    #!#!# Not working correctly; doesn't account for split-level problem
-    ###        working better, but needs extensive bug testing
-    def matched_contours(self, vect, trgt, v_hts, t_hts, pos):
-        sides = 0
-        slice = vect[pos:pos+len(trgt)]
-        
-        if slice[0] <= 0 and t_hts[0] >= v_hts[0]:
-            leftside = v_hts[0] + abs(slice[0]) - t_hts[0]
-            if leftside < 0:
-                leftside = 0
-            if leftside > abs(trgt[0]):
-                leftside = abs(trgt[0])
-            sides += leftside
-            
-        for i in range(1, len(slice) - 1):
-            if t_hts[i-1] >= v_hts[i-1]:
-                if t_hts[i-1] == v_hts[i-1]:
-                    sides += 1
-                if t_hts[i] >= v_hts[i] and slice[i] == trgt[i]:
-                    sides += abs(trgt[i])
-        
-        if t_hts[-1] == v_hts[-1]:
-            sides += 1
-            
-        if slice[-1] >= 0 and t_hts[-1] >= v_hts[-1]:
-            rightside = v_hts[-1] + abs(slice[-1]) - t_hts[-1]
-            if rightside < 0:
-                rightside = 0
-            if rightside > abs(trgt[-1]):
-                rightside = abs(trgt[-1])
-            sides += rightside
-        return sides
-    ###
-            
-    #output: type, rotation, row, column, pits, ldiff, rdiff, contours, [profile]
-    def match_piece(self, ridge, piece):
-        pieces = ["O","I","Z","S","T","L","J"]
-        
-        out = []
-        
-        for p in pieces:
-            if p == piece or piece == "all":
-                for i in range(0,4):
-                    p_ridge = self.get_piece(p, i)
-                    if p_ridge:
-                        matches = self.check_match_quality(ridge, p_ridge[1])
-                        for match in matches:
-                            p_ht = len(p_ridge[0])
-                            col_ht = self.heights[match[0]]
-                            row = p_ht + col_ht - 1
-                            out.append([p,i,row] + match)
-        return out
-     
-    ###
-    
-    #good for filtering categorically, and for using arbitrary piece sizes
-    def filter_matches(self, matches, ldiff = -1000, rdiff = -1000, pits = 1000, mode = ""):
-        out = []
-        
-        for m in matches:
-            if m[4] <= pits and m[5] >= ldiff and m[6] >= rdiff:
-                out.append(m)
-        
-        return out
-    ###
-    
-    
-    
-    
-    
-    #outputs [position, row, height, is-available?]
-    # Not working for left side; entering debug mode
-    def tetris_opps(self, space):
-        out = [] #all candidates
-        heights = self.get_heights(space)
-        
-        #get the workspace and reverse it, checking bottom to top
-        workspace = []
-        for i in space:
-            workspace.append(i)
-        workspace.reverse()
-        
-        prev_pos = -1
-        run = 1
-        
-        #if this row is filled with all-but-one, set the "pos" to that column
-        if self.get_filled(workspace[0]) == len(workspace[0])-1:
-            prev_pos = self.find_empty(workspace[0])
-        
-        #start the run and check the rest of the workspace
-        for i in range(1, len(workspace)):
-            #failcase: found a non-full row heading up.
-            if self.get_filled(workspace[i]) != len(workspace[i])-1: #found non-full row
-                if(run > 0 and prev_pos > -1):
-                    out.append([prev_pos, i - run, run])
-                run = 1
-                prev_pos = -1
-            #otherwise, found a good row to add
-            else: 						    #found full row
-                pos = self.find_empty(workspace[i])
-                
-                #if filled row changed...
-                if pos != prev_pos:			        #if position differs, revert
-                    if(run > 0 and prev_pos > -1):
-                        out.append([prev_pos, i - run, run])
-                    run = 1
-                    prev_pos = pos
-                
-                #otherwise increment the run
-                else:							#increment
-                    run += 1
-        
-        #truncate current run after iterating through whole board.
-        if(run > 0 and prev_pos > -1):
-            out.append([prev_pos, i - run, run])
-        
-        #compute coveredness using height values. 
-        for i in range(0, len(out)):
-            if heights[out[i][0]] <= out[i][1]:
-                out[i].append(True)
-            else:
-                out[i].append(False)
-        
-        #return: list of opps, [column, start-height, runlength, open-top?]
-        return out
-    ###
-    
-    
-    #need to be able to detect if the block below is filled, i.e. tetris-able
-    
-    def tetris_status(self, space):
-        candidates = self.tetris_opps(space)
-        heights = self.get_heights(space) #allow "truth" status only if height is equivalent for the operative column
-        #print(candidates)
-        out = 0
-        failed = []
-        onground = False #check for "floating" tetrises
-        for cand in candidates:
-            #if top open, update
-            if cand[3]:
-                #and this is the highest "progress" so far
-                if out < cand[2]:
-                    out = cand[2]
-                    onground = heights[cand[0]] == cand[1]
-            #otherwise, append to failed
-            else:
-                failed.append(cand[2])
-        return [out>=4 and onground, out, failed]
-    ###
-    
-    def get_random_space(self, x,y,height):
-        space = []
-        for i in range(0, y):
-            row = []
-            if i >= y - height:
-                for j in range(0, x):
-                    row.append(random.randint(0,1))
-                space.append(row)
-            else:
-                space.append([0]*x)
-        return space
-    ###
-
-
-
-
-
-
-    
-#gets the leftmost board column the piece occupies
-def zoid_x(diff_board):
-    for j in range(0, len(diff_board[0])):
-        for i in range(0, len(diff_board)):
-            if diff_board[i][j] != 0: #found a non-empty column
-                return j
-    return -1
-
-#gets the topmost board row the piece occupies
-def zoid_y(diff_board):
-    for i in range(0, len(diff_board)):
-        for j in range(0, len(diff_board[0])):
-            if diff_board[i][j] != 0: #found a non-empty row
-                return len(diff_board) - i
-    return -1
-        
-
-def get_zoid_loc(board, prev_board, top_offset = 0):
-    diff = board_diff(board, prev_board, top_offset)
-    return [zoid_x(diff), zoid_y(diff)]
-    
-    
-###########################################################
-##################################
-##############
-######
-###
-##
-#
-#
-
-
-"""
-
 
