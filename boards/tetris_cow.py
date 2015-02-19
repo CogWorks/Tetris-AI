@@ -21,8 +21,8 @@ class tetris_cow(object):
             if max(all_cols) != min(all_cols): raise ValueError('rows are not all the same length')
             cols = all_cols[0]
         new_board = tetris_cow(max_rows=len(board),cols=cols)
-        new_board.new_rows(data=board,cow=cow)
-        if clear: new_board.del_rows(new_board.check_rows(full=False))
+        new_board.add_rows(data=board,cow=cow,reverse=True)
+        if clear: new_board.check_empty(True)
         return new_board
 
 
@@ -42,13 +42,9 @@ class tetris_cow(object):
         self._profile = None
         return val
 
-    def get_dims(self,max=False):
-        """Get board dimensions (use 'max=True' for max size)."""
-        return (self.row_count(max=max),self.col_count())
-
-    def row_count(self,max=False):
+    def row_count(self):
         """Get the number of rows in the zoid."""
-        return self._max_rows if max else len(self._board)
+        return self._max_rows
 
     def col_count(self):
         """Get the number of columns in the zoid."""
@@ -56,18 +52,19 @@ class tetris_cow(object):
 
     def rows(self,reverse=False,all=False):
         """Get a generator for the rows of the zoid in its current position and orientation. Optional: reverse order."""
-        return xrange(self.get_dims(max=all)[0]-1,-1,-1) if reverse else xrange(self.get_dims(max=all)[0])
+        count = self.row_count() if all else self.pile_height()
+        return xrange(count-1,-1,-1) if reverse else xrange(count)
 
     def cols(self):
         """Get a generator for the cols of the zoid in its current position and orientation."""
         return xrange(self.col_count())
 
     def row_iter(self,row,*args,**kwds):
-        """Iterate a particular row of cells. (Generates cell indices.)"""
+        """Iterate a particular row of cells. (Generates cell values.)"""
         for col in self.cols(*args,**kwds): yield self[row,col]
 
     def col_iter(self,col,*args,**kwds):
-        """Iterate a particular col of cells. (Generates cell indices.)"""
+        """Iterate a particular col of cells. (Generates cell values.)"""
         for row in self.rows(*args,**kwds): yield self[row,col]
 
     def get_top_profile(self):
@@ -93,7 +90,7 @@ class tetris_cow(object):
         rows = sorted(list(frozenset(rows)),reverse=True)
         for r in rows: self.del_row(r)
 
-    def new_rows(self,rows=None,data=None,cow=True):
+    def add_rows(self,rows=None,data=None,cow=True,reverse=False):
         """Add rows to the top of the board. Use 'rows' for blank rows, 'data' for a list of prefilled rows."""
         if not data:
             if rows is None: rows = 1
@@ -105,13 +102,13 @@ class tetris_cow(object):
             if len(self._board)+len(data) > self._max_rows: raise IndexError('row limit exceeded')
             for row in data:
                 if len(row) != self._cols: raise ValueError('row is the wrong length')
-            self._board += [data[r] for r in xrange(len(data)-1,-1,-1)]
+            self._board += [data[r] for r in (xrange(len(data)-1,-1,-1) if reverse else xrange(len(data)))]
             self._cow_list += [cow]*len(data)
         self._profile = None
 
     def fill_max(self):
         """Add rows until the board is at its maximum size."""
-        self.new_rows(self._max_rows-len(self._board))
+        self.add_rows(self._max_rows-len(self._board))
 
     def check_rows(self,rows=None,full=None):
         """Check for full or empty rows. ('full' is None: empty/full (default), True: full, False: empty.)"""
@@ -120,9 +117,21 @@ class tetris_cow(object):
         if full: return tuple(r for r in rows if all(self._board[r]))
         else: return tuple(r for r in rows if not any(self._board[r]))
 
+    def check_full(self,clear=False):
+        """Check for full rows. Optionally, clear them."""
+        rows = tuple(r for r in self.rows() if all(self._board[r]))
+        if clear: self.del_rows(rows)
+        return len(rows)
+
+    def check_empty(self,clear=False):
+        """Check for empty rows. Optionally, clear them."""
+        rows = tuple(r for r in self.rows() if not any(self._board[r]))
+        if clear: self.del_rows(rows)
+        return len(rows)
+
     def pile_height(self):
         """Get the height of the pile, in terms of the top row of the board."""
-        return self.row_count()
+        return len(self._board)
 
     #<<<<< ROW MANIPULATION
 
@@ -155,16 +164,22 @@ class tetris_cow(object):
             if pos is not None: zoid.set_pos(pos)
             if value is not None: zoid.set_value(value)
             if orient is not None: zoid.set_orient(orient)
-        self.new_rows(rows=zoid.max_row()-len(self._board)+1)
+        self.add_rows(rows=zoid.max_row()-self.pile_height()+1)
         for r in zoid.rows():
             for c in zoid.cols():
                 if zoid[r,c]:
                     if check and self[r,c]: raise ValueError('board cell not empty')
                     self[r,c] = zoid[r,c]
 
-    def get_cow_mask(self):
-        """Get copy-on-write mask of board rows."""
-        return tuple(self._cow_list)
+    def is_fake_row(self,r):
+        """Determine if a row is fake."""
+        if not (0 <= r < self._max_rows): raise IndexError('index out of range')
+        return r >= len(self._board)
+
+    def is_mirrored_row(self,r):
+        """Determine if a row is mirrored."""
+        if not (0 <= r < self._max_rows): raise IndexError('index out of range')
+        return not self.is_fake_row(r) and self._cow_list[r]
 
     #<<<<< COPY-ON-WRITE
 
