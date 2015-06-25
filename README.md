@@ -1,6 +1,8 @@
-Tetris-AI
-=========
+Tetris-AI with Pylearn2
+=======================
 
-Simulations of Tetris controlled by AI developed through a variety of methods (cross-entropy, human data, etc)
-
-Newline
+Workflow
+* For each subject
+** Load all episodes, split into list(list(features),list(moves))
+** Train net
+** stop if delta RMSE < threshold
