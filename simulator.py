@@ -27,6 +27,80 @@ OPTIMIZATION: based on a 230 second run of depth 10, controllers 20, survivors 4
 
 import sys, random, os, time, copy
 
+WEIGHTS_DELLACHERIE = {"landing_height":-1,
+                       "eroded_cells":1,
+                       "row_trans":-1,
+                       "col_trans":-1,
+                       "pits":-4,
+                       "cuml_wells":-1}
+
+WEIGHTS_DTS = {"landing_height":-12.63,
+               "eroded_cells":6.60,
+               "row_trans":-9.22,
+               "col_trans":-19.77,
+               "pits":-13.08,
+               "cuml_wells":-10.49,
+               "pit_depth":-1.61,
+               "pit_rows":-24.04}
+
+WEIGHTS_BAD = {"landing_height":1,
+               "eroded_cells":1,
+               "row_trans":-1,
+               "col_trans":-1,
+               "pits":1,
+               "cuml_wells":-1}
+
+class TetrisController(object):
+    """A tetris controller is an algorithm/strategy for solving a single episode
+    of tetris."""
+
+    def evaluate(self, options):
+        """This method takes a vector of possible moves and picks one."""
+        raise NotImplementedError()
+
+    def _print(self, feats):
+        raise NotImplementedError()
+
+class RandomController(TetrisController):
+
+    def evaluate(self, options):
+        return random.choice(options)
+
+class WeightedAverageController(TetrisController):
+
+    def __init__(self, weights):
+        self.weights = weights
+
+    def evaluate(self, options):
+        for i in options:
+            val = 0
+            for j in self.weights.keys():
+                val += i[4][j] * self.weights[j]
+            i.append(val)
+        crit = None
+        for i in options:
+            if not crit:
+                crit = i[-1]
+            else:
+                crit = max(crit, i[-1])
+        out = []
+        for i in options:
+            if i[-1] == crit:
+                out.append(i)
+        return random.choice(out)
+
+    def _print(self, feats):
+        out = []
+        for k in sorted(self.weights.keys()):
+            s = k.ljust(15) + ":\t"
+            if feats:
+                s += str(feats[k]) + "\t(" + ('%3.3f'%self.weights[k]).rjust(8) + ")"
+            else:
+                s += ('%3.3f'%self.weights[k]).rjust(8)
+            out.append(s)
+        print("\n".join(out))
+
+
 class TetrisSimulator(object):
     """A board object that supports assessment metrics and future simulations"""
     
@@ -161,13 +235,8 @@ class TetrisSimulator(object):
         
         if controller:
             self.controller = controller
-        else: #default Dellacherie model
-            self.controller = {"landing_height":-1,
-                            "eroded_cells":1,
-                            "row_trans":-1,
-                            "col_trans":-1,
-                            "pits":-4,
-                            "cuml_wells":-1}
+        else:
+            self.controller = WeightedAverageController(WEIGHTS_DELLACHERIE)
         
         
         self.show_result = show_result
@@ -606,14 +675,7 @@ class TetrisSimulator(object):
                 time.sleep(self.option_step)
     
     def printcontroller(self, feats = False):
-        for k in sorted(self.controller.keys()):
-            outstr = k.ljust(15) + ":\t" 
-            if feats:
-                outstr += str(feats[k]) + "\t(" + ('%3.3f'%self.controller[k]).rjust(8) + ")"
-            else:
-                outstr += ('%3.3f'%self.controller[k]).rjust(8)
-            print(outstr)
-
+        self.controller._print(feats)
     
     def printopt(self, opt):
         feats = opt[4]
@@ -732,7 +794,7 @@ class TetrisSimulator(object):
         
         features = {}
         
-        keys = self.controller.keys()
+        #keys = self.controller.keys()
         
         """
         #working out a dependency tree.
@@ -1214,16 +1276,15 @@ class TetrisSimulator(object):
     
     def control(self):
         options = self.options
-        options = self.evaluate(self.controller, options)
-        choice = random.randint(0, len(options)-1)
+        choice = self.controller.evaluate(options)
         
         if self.show_choice:
-            self.printopt(options[choice])
+            self.printopt(choice)
             if self.choice_step >0:
                 time.sleep(self.choice_step)
         
-        self.move(options[choice])
-        return options[choice]
+        self.move(choice)
+        return choice
     
     
     def run(self, eps = -1, printstep = 500):
@@ -1322,31 +1383,13 @@ def testboard():
 def main(argv):
     
     #default Dellacherie controller; 660,000 lines avg / game in literature!
-    controller1 = {"landing_height":-1,
-                "eroded_cells":1,
-                "row_trans":-1,
-                "col_trans":-1,
-                "pits":-4,
-                "cuml_wells":-1}
-    
+    controller1 = WeightedAverageController(WEIGHTS_DELLACHERIE)
     
     #DTS controller, from Dellacherie + Thiery & Scherrer; 35,000,000 rows?!!?!
-    controller2 = {"landing_height":-12.63,
-                "eroded_cells":6.60,
-                "row_trans":-9.22,
-                "col_trans":-19.77,
-                "pits":-13.08,
-                "cuml_wells":-10.49,
-                "pit_depth":-1.61,
-                "pit_rows":-24.04}
+    controller2 = WeightedAverageController(WEIGHTS_DTS)
     
     #bad controller for demonstration's purposes
-    controller3 = {"landing_height":1,
-                "eroded_cells":1,
-                "row_trans":-1,
-                "col_trans":-1,
-                "pits":1,
-                "cuml_wells":-1}
+    controller3 = WeightedAverageController(WEIGHTS_BAD)
     
     sim = TetrisSimulator(controller = controller1,
                         board = testboard(), curr="L", next = "S",
