@@ -16,7 +16,7 @@
 
 
 
-from simulator import TetrisSimulator
+from simulator import *
 import random, numpy, argparse, os, time
 from time import gmtime, strftime
 
@@ -365,7 +365,7 @@ if __name__ == '__main__':
             
             game_seed = rng.randint(0,100000)
             
-            sim = TetrisSimulator(controller = random_controller, show_choice = show_choice, show_result = show_result, choice_step = v_step, name = controller_name, seed = game_seed)
+            sim = TetrisSimulator(controller = WeightedAverageController(random_controller), show_choice = show_choice, show_result = show_result, choice_step = v_step, name = controller_name, seed = game_seed)
             sim_result = sim.run(eps = episodes, printstep = report_every)
             
             #session_vars, name, features, controller, vars = False, outs = False
@@ -395,7 +395,7 @@ if __name__ == '__main__':
             test_seed = 10001 + g
             for r in range(0, test_reps):
                 test_name = "G" + str(x + 1) + "_T" + str(g+1) + "_R" + str(r+1)
-                test_sim = TetrisSimulator(controller = start_controller, show_result = show_result, show_choice = show_choice, choice_step = v_step, name = test_name, seed = test_seed)
+                test_sim = TetrisSimulator(controller = WeightedAverageController(start_controller), show_result = show_result, show_choice = show_choice, choice_step = v_step, name = test_name, seed = test_seed)
                 test_res = test_sim.run(eps = episodes, printstep = report_every)
                 
                 test_results.append(test_res)
