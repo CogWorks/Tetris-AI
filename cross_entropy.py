@@ -19,7 +19,7 @@
 from simulator import *
 import random, numpy, argparse, os, time
 from time import gmtime, strftime
-from multiprocessing import Pool
+from multiprocessing import Pool, cpu_count
 from functools import partial
 
 ###Functions
@@ -368,7 +368,7 @@ if __name__ == '__main__':
                         outs = sim_result, game_seed = game_seed, type = "search", gen = x + 1, num = a+1, rep = 1)
         return [random_controller, sim_result]
     
-    p = Pool(multiprocessing.cpu_count())
+    p = Pool(cpu_count())
     for x in range (start_depth, depth):
         game_seed = rng.randint(0,100000)
         func = partial(simulate, x, controllers, start_controller, tolerances, rng, show_choice, show_result, v_step, episodes, report_every, features, game_seed)
