@@ -19,18 +19,25 @@
 from simulator import *
 import random, numpy, argparse, os, time
 from time import gmtime, strftime
+from multiprocessing import Pool
+from functools import partial
 
 ###Functions
 def generate_controller(start, tols, rng):
     new_controller = {}
     
+    vals = []
     #for each feature
     for k in sorted(start.keys()):
         #generate a new value around the mean
-        val = rng.gauss(start[k],tols[k])
+        while True:
+            val = rng.gauss(start[k][0],tols[k])
+            if val>=0:
+                break
         
+        vals.append(val)
         #and add this pair to the new controller
-        new_controller[k]= val
+        new_controller[k]= (val,start[k][1])
         
     return new_controller
 
@@ -43,11 +50,11 @@ def merge_controllers(controllers, noise):
     for k in sorted(controllers[0].keys()):
         vals = []
         for c in controllers:
-            vals.append(c[k])
+            vals.append(c[k][0])
         mean = float(sum(vals)) / float(len(vals))
         tol = numpy.std(vals)
         
-        new_controller[k] = mean
+        new_controller[k] = (mean, min)
         new_tolerances[k] = tol + noise
     
     return new_controller, new_tolerances
@@ -84,7 +91,7 @@ def write_controller(file, session_vars, name, features, controller, game_seed =
     featlist = []
     #get features
     for f in features:
-        featlist.append(controller[f])
+        featlist.append(controller[f][0])
     
     #add raw values
     outlist = outlist + map(str,featlist)
@@ -272,66 +279,66 @@ if __name__ == '__main__':
     
     
     if resume_file != None:
-	directory = os.path.dirname(os.path.realpath(__file__))
-	input_file = open(directory + '/runs/' + resume_file + '.incomplete.tsv', 'r')
-	input_lines = list(input_file)
-
-	for x in range(0,len(input_lines)):
-	    input_lines[x] = input_lines[x].split()
-	
-	last_gen = 0
-
-	for y in range(len(input_lines)-1, 0, -1):
-	    if input_lines[y][13] == 'result':
-		last_gen = y
-		break
-
-	
-	optimize = input_lines[1][1]	
-	depth = int(input_lines[1][2])
+    	directory = os.path.dirname(os.path.realpath(__file__))
+    	input_file = open(directory + '/runs/' + resume_file + '.incomplete.tsv', 'r')
+    	input_lines = list(input_file)
+    
+    	for x in range(0,len(input_lines)):
+    	    input_lines[x] = input_lines[x].split()
+    	
+    	last_gen = 0
+    
+    	for y in range(len(input_lines)-1, 0, -1):
+    	    if input_lines[y][13] == 'result':
+    		last_gen = y
+    		break
+    
+    	
+    	optimize = input_lines[1][1]	
+    	depth = int(input_lines[1][2])
     	controllers = int(input_lines[1][3])
     	survivors = int(input_lines[1][4])
     	episodes = int(input_lines[1][5])
     	noise = float(input_lines[1][6])
     	initial_val = int(input_lines[1][7])
     	variance = float(input_lines[1][8])
-
-	session_variables = [args.resume_file, optimize, str(depth), str(controllers), str(survivors), str(episodes),
-                       str(noise), str(initial_val), str(variance), str(random_seed)]
-
-	outfile = open("runs/" + args.resume_file + ".resumed.incomplete.tsv", "w")
-	for c in range(0,last_gen):
-	    outfile.write("\t".join(input_lines[c]) + "\n")
-	
-
-	features = []
-	feature_stuff = []
+    
+    	session_variables = [args.resume_file, optimize, str(depth), str(controllers), str(survivors), str(episodes),
+                           str(noise), str(initial_val), str(variance), str(random_seed)]
+    
+    	outfile = open("runs/" + args.resume_file + ".resumed.incomplete.tsv", "w")
+    	for c in range(0,last_gen):
+    	    outfile.write("\t".join(input_lines[c]) + "\n")
+    	
+    
+    	features = []
+    	feature_stuff = []
     	for z in range(16, len(input_lines[0])-8):
-	    feature_stuff.append(input_lines[0][z])   
-	for a in range(0, len(feature_stuff)/3):
-	    features.append(feature_stuff[a])
-
-	last_gen_features = []
-	last_feature_vals = []
-	last_feature_tols = []
-
-	for q in range(16, len(input_lines[last_gen])-8):
-	    last_gen_features.append(input_lines[last_gen][q])   
-	for a in range(0, len(last_gen_features)/3):
-	    last_feature_vals.append(last_gen_features[a])
-	for b in range(2*len(last_gen_features)/3, len(last_gen_features)):
-	    last_feature_tols.append(last_gen_features[b])
-
-	start_controller = {}
-	tolerances = {}
-	for f in range(0, len(features)):
-	    start_controller[features[f]] = float(last_feature_vals[f])
-	    tolerances[features[f]] = float(last_feature_tols[f])
-
-	write_controller(outfile, session_variables, "G" + str(input_lines[last_gen][12]), features, start_controller, 
-                        vars = tolerances, type = "result", gen = input_lines[last_gen][12])
-	
-	start_depth = int(input_lines[last_gen][12])
+    	    feature_stuff.append(input_lines[0][z])   
+    	for a in range(0, len(feature_stuff)/3):
+    	    features.append(feature_stuff[a])
+    
+    	last_gen_features = []
+    	last_feature_vals = []
+    	last_feature_tols = []
+    
+    	for q in range(16, len(input_lines[last_gen])-8):
+    	    last_gen_features.append(input_lines[last_gen][q])   
+    	for a in range(0, len(last_gen_features)/3):
+    	    last_feature_vals.append(last_gen_features[a])
+    	for b in range(2*len(last_gen_features)/3, len(last_gen_features)):
+    	    last_feature_tols.append(last_gen_features[b])
+    
+    	start_controller = {}
+    	tolerances = {}
+    	for f in range(0, len(features)):
+    	    start_controller[features[f]] = float(last_feature_vals[f])
+    	    tolerances[features[f]] = float(last_feature_tols[f])
+    
+    	write_controller(outfile, session_variables, "G" + str(input_lines[last_gen][12]), features, start_controller, 
+                            vars = tolerances, type = "result", gen = input_lines[last_gen][12])
+    	
+    	start_depth = int(input_lines[last_gen][12])
 
     else:
 	#log headers
@@ -343,7 +350,7 @@ if __name__ == '__main__':
         start_controller = {}
         tolerances = {}
         for f in features:
-            start_controller[f] = initial_val
+            start_controller[f] = (initial_val, min)
             tolerances[f] = variance
         
     
@@ -352,29 +359,20 @@ if __name__ == '__main__':
 	
 	start_depth = 0
     
+    def simulate(x, controllers, start_controller, tolerances, rng, show_choice, show_result, choice_step, episodes, printstep, features, game_seed, a):
+        random_controller = generate_controller(start_controller, tolerances, rng = rng)
+        controller_name = "G" + str(x + 1) + "_" + str(a+1)
+        sim = TetrisSimulator(controller = ProbabilisticController(random_controller), show_choice = show_choice, show_result = show_result, choice_step = choice_step, name = controller_name, seed = game_seed)
+        sim_result = sim.run(eps = episodes, printstep = printstep)
+        write_controller(outfile, session_variables, controller_name, features, random_controller, 
+                        outs = sim_result, game_seed = game_seed, type = "search", gen = x + 1, num = a+1, rep = 1)
+        return [random_controller, sim_result]
+    
+    p = Pool(8)
     for x in range (start_depth, depth):
-        
-        #session_vars, name, features, controller, vars = False, outs = False
-        
-        
-        results = []
-        
-        for a in range(0, controllers):
-            random_controller = generate_controller(start_controller, tolerances, rng = rng)
-            controller_name = "G" + str(x + 1) + "_" + str(a+1)
-            
-            game_seed = rng.randint(0,100000)
-            
-            sim = TetrisSimulator(controller = WeightedAverageController(random_controller), show_choice = show_choice, show_result = show_result, choice_step = v_step, name = controller_name, seed = game_seed)
-            sim_result = sim.run(eps = episodes, printstep = report_every)
-            
-            #session_vars, name, features, controller, vars = False, outs = False
-            write_controller(outfile, session_variables, controller_name, features, random_controller, 
-                            outs = sim_result, game_seed = game_seed, type = "search", gen = x + 1, num = a+1, rep = 1)
-            
-            results.append([random_controller, sim_result])
-            
-            
+        game_seed = rng.randint(0,100000)
+        func = partial(simulate, x, controllers, start_controller, tolerances, rng, show_choice, show_result, v_step, episodes, report_every, features, game_seed)
+        results = p.map(func, range(0, controllers))
         sorted_results = sorted(results, key=lambda k: k[1][optimize])
         
         #for d in sorted_results:
@@ -395,7 +393,7 @@ if __name__ == '__main__':
             test_seed = 10001 + g
             for r in range(0, test_reps):
                 test_name = "G" + str(x + 1) + "_T" + str(g+1) + "_R" + str(r+1)
-                test_sim = TetrisSimulator(controller = WeightedAverageController(start_controller), show_result = show_result, show_choice = show_choice, choice_step = v_step, name = test_name, seed = test_seed)
+                test_sim = TetrisSimulator(controller = ProbabilisticController(start_controller), show_result = show_result, show_choice = show_choice, choice_step = v_step, name = test_name, seed = test_seed)
                 test_res = test_sim.run(eps = episodes, printstep = report_every)
                 
                 test_results.append(test_res)
@@ -409,6 +407,9 @@ if __name__ == '__main__':
             for r in test_results:
                 val += r[o]
             test_avg[o] = val / float(len(test_results))
+        print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+        print(test_avg)
+        print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
         
         
         #output resultant controller and its scores
