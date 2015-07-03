@@ -368,7 +368,7 @@ if __name__ == '__main__':
                         outs = sim_result, game_seed = game_seed, type = "search", gen = x + 1, num = a+1, rep = 1)
         return [random_controller, sim_result]
     
-    p = Pool(8)
+    p = Pool(multiprocessing.cpu_count())
     for x in range (start_depth, depth):
         game_seed = rng.randint(0,100000)
         func = partial(simulate, x, controllers, start_controller, tolerances, rng, show_choice, show_result, v_step, episodes, report_every, features, game_seed)
@@ -407,9 +407,9 @@ if __name__ == '__main__':
             for r in test_results:
                 val += r[o]
             test_avg[o] = val / float(len(test_results))
-        print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+        print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
         print(test_avg)
-        print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+        print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
         
         
         #output resultant controller and its scores
