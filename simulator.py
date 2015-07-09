@@ -27,6 +27,48 @@ OPTIMIZATION: based on a 230 second run of depth 10, controllers 20, survivors 4
 
 import sys, random, os, time, copy
 
+def get_height(v):
+	for i in range(0, len(v)):
+		if v[i] != 0:
+			return len(v) - i
+	return 0
+
+def get_heights(colspace):
+	return [get_height(i) for i in colspace]
+	
+def get_pits(v):
+	state = v[0]
+	pits = 0
+	lumped_pits = 0
+	curr_pit = 0
+	rows = []
+	row = 18
+	for i in v[1:]:
+		if i != 0:
+			state = 1
+			curr_pit = 0 #lumped pit ends.
+		if i == 0 and state == 1:   #top detected and found a pit
+			if curr_pit == 0:    #we hadn't seen a pit yet
+				lumped_pits += 1    #so this is a new lumped pit
+			curr_pit = 1
+			pits += 1
+			rows.append(row)
+		row -= 1
+	return rows, lumped_pits
+	
+def get_all_pits(colspace):
+	col_pits = []
+	pit_rows = [] 
+	lumped_pits = 0
+	for i in colspace:
+		pits, lumped = get_pits(i)
+		lumped_pits += lumped
+		col_pits.append(len(pits))
+		for j in pits:
+			if j not in pit_rows:
+				pit_rows.append(j)
+	return(col_pits, pit_rows, lumped_pits)
+
 def weighted_choice(weights):
     rnd = random.random() * sum(weights)
     for i, w in enumerate(weights):
@@ -69,8 +111,8 @@ class TetrisController(object):
     """A tetris controller is an algorithm/strategy for solving a single episode
     of tetris."""
 
-    def evaluate(self, options):
-        """This method takes a vector of possible moves and picks one."""
+    def evaluate(self, sim):
+        """This method picks a move."""
         raise NotImplementedError()
 
     def _print(self, feats=False):
@@ -79,7 +121,8 @@ class TetrisController(object):
 class RandomController(TetrisController):
     """A tetris controller that just picks a random action"""
 
-    def evaluate(self, options):
+    def evaluate(self, sim):
+    	options = sim.options
         return random.choice(options)
 
 class WeightedAverageController(TetrisController):
@@ -89,7 +132,8 @@ class WeightedAverageController(TetrisController):
     def __init__(self, weights):
         self.weights = weights
 
-    def evaluate(self, options):
+    def evaluate(self, sim):
+    	options = sim.options
         for i in options:
             val = 0
             for j in self.weights.keys():
@@ -125,7 +169,8 @@ class ProbabilisticController(TetrisController):
     def __init__(self, probabilities):
         self.probabilities = probabilities
         
-    def evaluate(self, options):
+    def evaluate(self, sim):
+    	options = sim.options
         probs = [self.probabilities[p][0] for p in self.probabilities]
         strategy_index = weighted_choice(probs)
         strategy = self.probabilities.items()[strategy_index]
@@ -291,8 +336,8 @@ class TetrisSimulator(object):
         self.option_step = option_step
         self.choice_step = choice_step
         
-        #self.heights = self.get_heights(self.space)
-        #self.pits = self.get_all_pits(self.space)
+        #self.heights = get_heights(self.space)
+        #self.pits = get_all_pits(self.space)
         #self.col_roughs = self.get_roughs(self.space, columns = True)
         #self.row_roughs = self.get_roughs(self.space, columns = False)
         #self.ridge = self.get_ridge(self.space)
@@ -896,7 +941,7 @@ class TetrisSimulator(object):
         
         ##heavy calculations
         
-        all_heights = self.get_heights(cleared_space_cols)
+        all_heights = get_heights(cleared_space_cols)
         
         wells = self.get_wells(all_heights)
         
@@ -904,7 +949,7 @@ class TetrisSimulator(object):
         for i in range(0,len(all_heights)-1):
             diffs.append(all_heights[i+1] - all_heights[i])
         
-        all_pits, pit_rows, lumped_pits = self.get_all_pits(cleared_space_cols)
+        all_pits, pit_rows, lumped_pits = get_all_pits(cleared_space_cols)
         pit_depths = self.get_pit_depths(cleared_space_cols)
         
         
@@ -965,8 +1010,8 @@ class TetrisSimulator(object):
         #previous space
         if prev_space:
             prev_cols = self.get_cols(prev_space)
-            prev_heights = self.get_heights(prev_cols)
-            prev_pits = self.get_all_pits(prev_cols)[0]
+            prev_heights = get_heights(prev_cols)
+            prev_pits = get_all_pits(prev_cols)[0]
             
             features["d_max_ht"] = features["max_ht"] - max(prev_heights)
             features["d_all_ht"] = features["all_ht"] - sum(prev_heights)
@@ -1027,23 +1072,7 @@ class TetrisSimulator(object):
     
     
     ### FEATURES
-    
-    #Heights
-    def get_height(self, v):
-        for i in range(0, len(v)):
-            if v[i] != 0:
-                return len(v) - i
-        return 0
-    ###
-    
-    #!# parallelize
-    def get_heights(self, colspace):
-        out = []
-        for i in colspace:
-            out.append(self.get_height(i))
-        return(out)
-    ###
-    
+        
     def get_full_cells(self, space, row_weighted = False):
         total = 0
         for i in range(0,len(space)):
@@ -1057,27 +1086,6 @@ class TetrisSimulator(object):
     #Pits
     
     #need to represent pits as a list of unique pits with a particular length;
-    
-    def get_pits(self, v):
-        state = v[0]
-        pits = 0
-        lumped_pits = 0
-        curr_pit = 0
-        rows = []
-        row = 18
-        for i in v[1:]:
-            if i != 0:
-                state = 1
-                curr_pit = 0 #lumped pit ends.
-            if i == 0 and state == 1:   #top detected and found a pit
-                if curr_pit == 0:    #we hadn't seen a pit yet
-                    lumped_pits += 1    #so this is a new lumped pit
-                curr_pit = 1
-                pits += 1
-                rows.append(row)
-            row -= 1
-        return rows, lumped_pits
-    ###
     
     def get_matches(self, space):
         matches = 0
@@ -1107,20 +1115,6 @@ class TetrisSimulator(object):
                         if space[r-1][c] == 1:
                             matches += 1
         return matches
-    
-    #!# parallelize
-    def get_all_pits(self, colspace):
-        col_pits = []
-        pit_rows = [] 
-        lumped_pits = 0
-        for i in colspace:
-            pits, lumped = self.get_pits(i)
-            lumped_pits += lumped
-            col_pits.append(len(pits))
-            for j in pits:
-                if j not in pit_rows:
-                    pit_rows.append(j)
-        return(col_pits, pit_rows, lumped_pits)
     ###
     
     def get_landing_height(self, space):
@@ -1319,8 +1313,7 @@ class TetrisSimulator(object):
     
     
     def control(self):
-        options = self.options
-        choice = self.controller.evaluate(options)
+        choice = self.controller.evaluate(self)
         
         if self.show_choice:
             self.printopt(choice)
