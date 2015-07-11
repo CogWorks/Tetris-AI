@@ -225,7 +225,7 @@ if __name__ == '__main__':
 	parser.add_argument( '-f', '--features',
 						action = "store", dest = "features",
 						type = str, nargs = '+',
-						default = ["pile_penalty","matches","pile_density"],
+						default = WEIGHTS_RYAN.keys(),
 						help = """List of all features to be used in the model, separated by spaces. Taken from simulator.py. Select from:\n
 								mean_ht,  max_ht,  min_ht,	all_ht,	 \n
 								max_ht_diff,  min_ht_diff,	pits,  cleared,	 \n
