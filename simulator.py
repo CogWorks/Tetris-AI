@@ -112,7 +112,8 @@ WEIGHTS_BAD = {"landing_height":1,
 WEIGHTS_RYAN = {
     "pile_density":1,
     "matches":3,
-    "landing_height":-1
+    "pile_penalty":-.5,
+    #"landing_height":-1
 }
 
 PROBS_DELLACHERIE = {"landing_height":(1,min),
@@ -1042,10 +1043,11 @@ class TetrisSimulator(object):
 
         
         #independents
-        pd, pw, ph = self.pile_stats(space)
+        pd, pw, ph, pp = self.pile_stats(space)
         features["pile_density"] = pd
         features["pile_width"] = pw
         features["pile_height"] = ph
+        features["pile_penalty"] = pp
         
         features["landing_height"] = self.get_landing_height(space)
         
@@ -1253,7 +1255,7 @@ class TetrisSimulator(object):
         width = jj - ii + 1
         height = max(heights)
         s = sum([sum([1 if r>0 else 0 for r in row]) for row in space])
-        return (1.0*(s-sum(penalty))/(width*height),width,height)
+        return (1.0*s/(width*height),width,height,sum(penalty)**1.25)
     
     #eating a LOT of the processing
     def get_tetris_progress(self, space):
