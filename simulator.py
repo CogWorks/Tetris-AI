@@ -112,8 +112,9 @@ WEIGHTS_BAD = {"landing_height":1,
 WEIGHTS_RYAN = {
     "pile_density":1,
     "matches":3,
-    "pile_penalty":-.5,
-    #"landing_height":-1
+    "pile_penalty":-3,
+    "landing_height":-.5,
+    "nine_filled":1.0001
 }
 
 PROBS_DELLACHERIE = {"landing_height":(1,min),
