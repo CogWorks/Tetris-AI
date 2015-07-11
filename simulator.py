@@ -26,48 +26,58 @@ OPTIMIZATION: based on a 230 second run of depth 10, controllers 20, survivors 4
 
 
 import sys, random, os, time, copy
+import numpy as np
+import scipy.stats
+import scipy.spatial.distance
+
+pieces = ["I", "O", "T", "S", "Z", "J", "L"]
+
+#!# Work to remove this entirely! Unnecessary processing!
+#transform the space to be column-wise, rather than rows
+def get_cols(space):
+    return zip(*space)
 
 def get_height(v):
-	for i in range(0, len(v)):
-		if v[i] != 0:
-			return len(v) - i
-	return 0
+    for i in range(0, len(v)):
+        if v[i] != 0:
+            return len(v) - i
+    return 0
 
 def get_heights(colspace):
-	return [get_height(i) for i in colspace]
-	
+    return [get_height(i) for i in colspace]
+    
 def get_pits(v):
-	state = v[0]
-	pits = 0
-	lumped_pits = 0
-	curr_pit = 0
-	rows = []
-	row = 18
-	for i in v[1:]:
-		if i != 0:
-			state = 1
-			curr_pit = 0 #lumped pit ends.
-		if i == 0 and state == 1:   #top detected and found a pit
-			if curr_pit == 0:    #we hadn't seen a pit yet
-				lumped_pits += 1    #so this is a new lumped pit
-			curr_pit = 1
-			pits += 1
-			rows.append(row)
-		row -= 1
-	return rows, lumped_pits
-	
+    state = v[0]
+    pits = 0
+    lumped_pits = 0
+    curr_pit = 0
+    rows = []
+    row = 18
+    for i in v[1:]:
+        if i != 0:
+            state = 1
+            curr_pit = 0 #lumped pit ends.
+        if i == 0 and state == 1:   #top detected and found a pit
+            if curr_pit == 0:    #we hadn't seen a pit yet
+                lumped_pits += 1    #so this is a new lumped pit
+            curr_pit = 1
+            pits += 1
+            rows.append(row)
+        row -= 1
+    return rows, lumped_pits
+    
 def get_all_pits(colspace):
-	col_pits = []
-	pit_rows = [] 
-	lumped_pits = 0
-	for i in colspace:
-		pits, lumped = get_pits(i)
-		lumped_pits += lumped
-		col_pits.append(len(pits))
-		for j in pits:
-			if j not in pit_rows:
-				pit_rows.append(j)
-	return(col_pits, pit_rows, lumped_pits)
+    col_pits = []
+    pit_rows = [] 
+    lumped_pits = 0
+    for i in colspace:
+        pits, lumped = get_pits(i)
+        lumped_pits += lumped
+        col_pits.append(len(pits))
+        for j in pits:
+            if j not in pit_rows:
+                pit_rows.append(j)
+    return(col_pits, pit_rows, lumped_pits)
 
 def weighted_choice(weights):
     rnd = random.random() * sum(weights)
@@ -99,6 +109,12 @@ WEIGHTS_BAD = {"landing_height":1,
                "pits":1,
                "cuml_wells":-1}
 
+WEIGHTS_RYAN = {
+    "pile_density":1,
+    "matches":3,
+    "landing_height":-1
+}
+
 PROBS_DELLACHERIE = {"landing_height":(1,min),
                      "eroded_cells":(10,max),
                      "row_trans":(1,min),
@@ -122,7 +138,7 @@ class RandomController(TetrisController):
     """A tetris controller that just picks a random action"""
 
     def evaluate(self, sim):
-    	options = sim.options
+        options = sim.options
         return random.choice(options)
 
 class WeightedAverageController(TetrisController):
@@ -133,7 +149,7 @@ class WeightedAverageController(TetrisController):
         self.weights = weights
 
     def evaluate(self, sim):
-    	options = sim.options
+        options = sim.options
         for i in options:
             val = 0
             for j in self.weights.keys():
@@ -149,6 +165,7 @@ class WeightedAverageController(TetrisController):
         for i in options:
             if i[-1] == crit:
                 out.append(i)
+        
         return random.choice(out)
 
     def _print(self, feats=False):
@@ -170,7 +187,7 @@ class ProbabilisticController(TetrisController):
         self.probabilities = probabilities
         
     def evaluate(self, sim):
-    	options = sim.options
+        options = sim.options
         probs = [self.probabilities[p][0] for p in self.probabilities]
         strategy_index = weighted_choice(probs)
         strategy = self.probabilities.items()[strategy_index]
@@ -220,7 +237,7 @@ class TetrisSimulator(object):
     level = 0
     
     game_over = False
-    pieces = ["I", "O", "T", "S", "Z", "J", "L"]
+    
     
     #pieces = ["BIG_T","BIG_I","BIG_J","BIG_L","BIG_S","BIG_Z",
     #              "PLUS","U","BIG_V","D","B","W",
@@ -314,12 +331,12 @@ class TetrisSimulator(object):
         if curr:
             self.curr_z = curr
         else:
-            self.curr_z = self.pieces[self.sequence.randint(0,len(self.pieces)-1)]
+            self.curr_z = pieces[self.sequence.randint(0,len(pieces)-1)]
             
         if next:
             self.next_z = next
         else:
-            self.next_z = self.pieces[self.sequence.randint(0,len(self.pieces)-1)]
+            self.next_z = pieces[self.sequence.randint(0,len(pieces)-1)]
         
         self.name = name
         
@@ -483,7 +500,7 @@ class TetrisSimulator(object):
     #pure random selection
     def new_zoids(self):
         self.curr_z = self.next_z
-        self.next_z = self.pieces[self.sequence.randint(0,len(self.pieces)-1)]
+        self.next_z = pieces[self.sequence.randint(0,len(pieces)-1)]
     
     def filled_lines(self, space):
         count = 0
@@ -879,7 +896,7 @@ class TetrisSimulator(object):
         
         cleared_space = self.clear_rows(space)
         
-        cleared_space_cols = self.get_cols(cleared_space)
+        cleared_space_cols = get_cols(cleared_space)
         
         features = {}
         
@@ -954,7 +971,6 @@ class TetrisSimulator(object):
         
         
         #height dependent
-        
         features["mean_ht"] = sum(all_heights) * 1.0 / len(all_heights) * 1.0
         features["max_ht"] = max(all_heights)
         features["min_ht"] = min(all_heights)
@@ -1009,7 +1025,7 @@ class TetrisSimulator(object):
         
         #previous space
         if prev_space:
-            prev_cols = self.get_cols(prev_space)
+            prev_cols = get_cols(prev_space)
             prev_heights = get_heights(prev_cols)
             prev_pits = get_all_pits(prev_cols)[0]
             
@@ -1026,6 +1042,11 @@ class TetrisSimulator(object):
 
         
         #independents
+        pd, pw, ph = self.pile_stats(space)
+        features["pile_density"] = pd
+        features["pile_width"] = pw
+        features["pile_height"] = ph
+        
         features["landing_height"] = self.get_landing_height(space)
         
         features["pattern_div"] = self.get_col_diversity(cleared_space_cols)
@@ -1059,17 +1080,6 @@ class TetrisSimulator(object):
     def get_row(self, row, space):
         return space[row]
     ###
-    
-    #!# Work to remove this entirely! Unnecessary processing!
-    #transform the space to be column-wise, rather than rows
-    def get_cols(self, space):
-        
-        #out = []
-        #for i in range(0, len(space[0])):
-        #    out.append(self.get_col(i, space))
-        
-        return zip(*space)
-    
     
     ### FEATURES
         
@@ -1231,6 +1241,19 @@ class TetrisSimulator(object):
             return ix
         else:
             return None
+    
+    def pile_stats(self, space):
+        cols = get_cols(space)
+        heights = get_heights(cols)
+        col_sums = [sum([0 if cc==0 else 1 for cc in c]) for c in cols]
+        penalty = [heights[i]-col_sums[i] for i in range(0,len(cols))]
+        w = [i for i in range(0,len(heights)) if heights[i]>0]
+        ii = min(w)
+        jj = max(w)
+        width = jj - ii + 1
+        height = max(heights)
+        s = sum([sum([1 if r>0 else 0 for r in row]) for row in space])
+        return (1.0*(s-sum(penalty))/(width*height),width,height)
     
     #eating a LOT of the processing
     def get_tetris_progress(self, space):
@@ -1415,22 +1438,25 @@ def testboard():
 #Run main.
 def main(argv):
     
-    #controller = WeightedAverageController(WEIGHTS_DELLACHERIE)
-    controller = ProbabilisticController(PROBS_DELLACHERIE)
+    controller = WeightedAverageController(WEIGHTS_RYAN)
+    #controller = ProbabilisticController(PROBS_DELLACHERIE)
     
     sim = TetrisSimulator(controller = controller,
-                board = testboard(), curr="L", next = "S",
+                #board = testboard(),
+                #curr="L", next = "S",
                 show_choice = True, 
                 show_options = True, 
                 option_step = .3, 
                 choice_step = 1,
-                seed = 1
+                #seed = 1
                 )
     
     sim.show_options = False
     sim.choice_step = 0
     sim.overhangs = False
     sim.force_legal = True 
+    #sim.printboard()
+    #print sim.pile_density(sim.space)
     sim.run()
 
 
