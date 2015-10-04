@@ -4,20 +4,40 @@ from _tetris_cpp import *
 class tetris_cow2(tetris_20_10):
     """Copy-on-write Tetris board."""
     def __init__(self,max_rows=20,cols=10,rows=0):
-        """Initialize board: number of cols, max number of rows, initial number of rows."""
-        if max_rows != 20 or cols != 10: raise ValueError('this class can only be used with 20x10 boards')
+        """Initialize board: number of cols, max number of rows, initial
+        number of rows."""
+        if max_rows != 20 or cols != 10:
+            raise ValueError('this class can only be used with 20x10 boards')
         tetris_20_10.__init__(self,rows)
         self._profile = None
+
+    def __len__(self):
+        return self.row_count()
+
+    def __iter__(self):
+        for i in xrange(self.row_count()):
+            yield [c for c in self.row_iter(i)]
+
+    '''
+    def __getitem__(self, i, j=None):
+        if j == None:
+            return [x for x in self.row_iter(i)]
+        else:
+            return self[i,j]
+    '''
 
     @staticmethod
     def convert_old_board(board,clear=True):
         """Create a new board from a "list-of-rows" board."""
         all_cols = tuple(len(row) for row in board)
         if len(all_cols) == 20:
-            if max(all_cols) != min(all_cols): raise ValueError('rows are not all the same length')
-            if max(all_cols) != 10: raise ValueError('rows must all be of length 10')
+            if max(all_cols) != min(all_cols):
+                raise ValueError('rows are not all the same length')
+            if max(all_cols) != 10:
+                raise ValueError('rows must all be of length 10')
             cols = all_cols[0]
-        else: raise ValueError('board must contain 20 rows')
+        else:
+            raise ValueError('board must contain 20 rows')
         new_board = tetris_cow2(rows=20)
         for r in new_board.rows():
             for c in new_board.cols():
@@ -25,16 +45,17 @@ class tetris_cow2(tetris_20_10):
         if clear: new_board.check_empty(True)
         return new_board
 
-
     #ELEMENT ACCESS >>>>>
 
     def rows(self,reverse=False,all=False):
-        """Get a generator for the rows of the zoid in its current position and orientation. Optional: reverse order."""
+        """Get a generator for the rows of the zoid in its current position
+        and orientation. Optional: reverse order."""
         count = self.row_count() if all else self.pile_height()
         return xrange(count-1,-1,-1) if reverse else xrange(count)
 
     def cols(self):
-        """Get a generator for the cols of the zoid in its current position and orientation."""
+        """Get a generator for the cols of the zoid in its current position
+        and orientation."""
         return xrange(self.col_count())
 
     def row_iter(self,row,*args,**kwds):
