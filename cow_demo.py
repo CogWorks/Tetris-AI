@@ -62,6 +62,7 @@ if __name__ == '__main__':
         # i.e, open cells below the top of the pile, per col
         board_profile = main_board.get_top_profile()
 
+
         # choose a random zoid
         zoid_name,zoid = random.choice(all_zoids.items())
         # copy it so its orientation can be changed (this is a shallow copy and
@@ -136,7 +137,8 @@ if __name__ == '__main__':
 
         # print the board for fun
         print_board(main_board,entire=True,show_full=True)
-        time.sleep(0.1)
+        raw_input(main_board.get_top_profile())
+        #time.sleep(0.1)
 
         # slow it down so it looks like a game
         # ('True' means full rows are cleared here)
