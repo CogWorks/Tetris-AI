@@ -1,15 +1,17 @@
 import copy
-
 import _helpers
 
 
 class tetris_zoid(object):
     """Tetris zoid object, for use with 'tetris_cow'."""
     def __init__(self,values,dims,pos=(0,0),value=1,orient=0):
-        """Initialize zoid: pass 2d array of values, dims of array, and orientation."""
+        """Initialize zoid: pass 2d array of values, dims of array,
+        and orientation."""
 
-        #shared among copies
-        self._values = [tuple(values[len(values)-r-1] for r in range(len(values)))]+[None]*3
+        # shared among copies
+        self._values = [tuple(values[len(values)-r-1] for r in \
+            range(len(values)))]+[None]*3
+
         self._dims = dims
         self._profiles = [None]*4
 
@@ -19,7 +21,8 @@ class tetris_zoid(object):
         self._orient = orient
 
 
-    #ZOID MANIPULATION >>>>>
+    # ZOID MANIPULATION >>>>>
+
 
     def set_value(self,value):
         """Value: constant multiple for zoid cells when using []."""
@@ -64,7 +67,8 @@ class tetris_zoid(object):
         return self._value*self._values[self._orient][row][col]
 
     def get_dims(self,orient=None):
-        """Get zoid dimensions for current orientation. Optional: provide orientation."""
+        """Get zoid dimensions for current orientation. Optional:
+            provide orientation."""
         return (self.row_count(),self.col_count())
 
     def row_count(self):
@@ -76,29 +80,38 @@ class tetris_zoid(object):
         return self._dims[0] if self._orient%2 else self._dims[1]
 
     def rows(self,reverse=False,absolute=True):
-        """Get a generator for the rows of the zoid in its current position and orientation. Optional: reverse order for printing."""
+        """Get a generator for the rows of the zoid in its current position
+        and orientation. Optional: reverse order for printing."""
         offset = self._pos[0] if absolute else 0
-        return xrange(self.row_count()+offset-1,-1,-1) if reverse else xrange(self.row_count()+offset)
+        if reverse:
+            return xrange(self.row_count()+offset-1,-1,-1)
+        else:
+            return xrange(self.row_count()+offset)
 
     def cols(self,absolute=True):
-        """Get a generator for the cols of the zoid in its current position and orientation."""
+        """Get a generator for the cols of the zoid in its current position
+        and orientation."""
         return xrange(self.col_count()+(self._pos[1] if absolute else 0))
 
     def row_iter(self,row,*args,**kwds):
         """Iterate a particular row of cells. (Generates cell indices.)"""
-        for col in self.cols(*args,**kwds): yield self[row,col]
+        for col in self.cols(*args,**kwds):
+            yield self[row,col]
 
     def col_iter(self,col,*args,**kwds):
         """Iterate a particular col of cells. (Generates cell indices.)"""
-        for row in self.rows(*args,**kwds): yield self[row,col]
+        for row in self.rows(*args,**kwds):
+            yield self[row,col]
 
     def max_row(self):
-        """Get the row number of the top of the zoid in its current position and orientation."""
+        """Get the row number of the top of the zoid in its current position
+        and orientation."""
         return self._pos[0]+self.row_count()-1
 
     def get_bottom_profile(self):
         """Get the profile of the bottom of the zoid."""
-        if not self._profiles[self._orient]: self._generate_profile()
+        if not self._profiles[self._orient]:
+            self._generate_profile()
         return self._profiles[self._orient]
 
     #<<<<< ELEMENT ACCESS
@@ -119,7 +132,8 @@ class tetris_zoid(object):
         self._profiles[self._orient] = tuple(_helpers._find_outline(self,False))
 
     def _generate_orientation(self):
-        if not self._values[0]: raise AttributeError('original zoid orientation not defined')
+        if not self._values[0]:
+            raise AttributeError('original zoid orientation not defined')
 
         cells = [[0]*self.col_count() for _ in xrange(self.row_count())]
 
@@ -127,14 +141,16 @@ class tetris_zoid(object):
             for c in self.cols():
                 row,col = r,c
 
-                if self._orient == 0: pass
-                elif self._orient == 1: #90deg clockwise
-                    row,col = col,self._dims[1]-row-1
-                elif self._orient == 2: #180deg
-                    row,col = self._dims[0]-row-1,self._dims[1]-col-1
-                elif self._orient == 3: #270deg clockwise
-                    row,col = self._dims[0]-col-1,row
-                else: raise IndexError
+                if self._orient == 0:
+                    pass
+                elif self._orient == 1: # 90deg clockwise
+                    row,col = col, self._dims[1]-row-1
+                elif self._orient == 2: # 180deg
+                    row,col = self._dims[0]-row-1, self._dims[1]-col-1
+                elif self._orient == 3: # 270deg clockwise
+                    row,col = self._dims[0]-col-1, row
+                else:
+                    raise IndexError
 
                 cells[r][c] = self._values[0][row][col]
 
@@ -145,22 +161,24 @@ class tetris_zoid(object):
 
 
 all_zoids = {
-    'I': tetris_zoid(((1,1,1,1),),(1,4)),
+    'I': tetris_zoid(((1,1,1,1),),
+                      (1,4)),
 
-    'T': tetris_zoid(((1,1,1),
-                      (0,1,0)),(2,3)),
+    'T': tetris_zoid(((1,1,1), (0,1,0)),
+                      (2,3)),
 
-    'L': tetris_zoid(((1,1,1),
-                      (1,0,0)),(2,3)),
+    'L': tetris_zoid(((1,1,1), (1,0,0)),
+                      (2,3)),
 
-    'J': tetris_zoid(((1,1,1),
-                      (0,0,1)),(2,3)),
+    'J': tetris_zoid(((1,1,1), (0,0,1)),
+                      (2,3)),
 
-    'O': tetris_zoid(((1,1),
-                      (1,1)),(2,2)),
+    'O': tetris_zoid(((1,1), (1,1)),
+                      (2,2)),
 
-    'Z': tetris_zoid(((1,1,0),
-                      (0,1,1)),(2,3)),
+    'Z': tetris_zoid(((1,1,0), (0,1,1)),
+                      (2,3)),
 
-    'S': tetris_zoid(((0,1,1),
-                      (1,1,0)),(2,3)) }
+    'S': tetris_zoid(((0,1,1), (1,1,0)),
+                      (2,3))
+    }

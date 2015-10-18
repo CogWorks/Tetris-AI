@@ -12,11 +12,14 @@ class tetris_cow2(tetris_20_10):
         self._profile = None
 
     def __len__(self):
-        return self.row_count()
+        try:
+            return self.row_count()
+        except:
+            raise Exception("tetris_cow2.__len__(self) is broken")
 
     def __iter__(self):
         for i in xrange(self.row_count()):
-            yield [c for c in self.row_iter(i)]
+            yield (c for c in self.row_iter(i))
 
     '''
     def __getitem__(self, i, j=None):
@@ -60,16 +63,18 @@ class tetris_cow2(tetris_20_10):
 
     def row_iter(self,row,*args,**kwds):
         """Iterate a particular row of cells. (Generates cell values.)"""
-        for col in self.cols(*args,**kwds): yield self[row,col]
+        for col in self.cols(*args,**kwds):
+            yield self[row,col]
 
     def col_iter(self,col,*args,**kwds):
         """Iterate a particular col of cells. (Generates cell values.)"""
-        for row in self.rows(*args,**kwds): yield self[row,col]
+        for row in self.rows(*args,**kwds):
+            yield self[row,col]
 
     def get_top_profile(self):
         """Get the profile of the top of the board."""
-        #NOTE: 'get_tamper_seal' is managed by 'tetris_20_10'; when the board is
-        #modified, it unsets the seal
+        # NOTE: 'get_tamper_seal' is managed by 'tetris_20_10'; when the board
+        # is modified, it unsets the seal
         if not self.get_tamper_seal():
             self._generate_profile()
             self.set_tamper_seal()
@@ -78,7 +83,7 @@ class tetris_cow2(tetris_20_10):
     #<<<<< ELEMENT ACCESS
 
 
-    #ROW MANIPULATION >>>>>
+    # ROW MANIPULATION >>>>>
 
     def fill_max(self):
         """Add rows until the board is at its maximum size."""
@@ -87,7 +92,7 @@ class tetris_cow2(tetris_20_10):
     #<<<<< ROW MANIPULATION
 
 
-    #COPY-ON-WRITE >>>>>
+    # COPY-ON-WRITE >>>>>
 
     def get_cow(self):
         """Get a copy-on-write copy of the board."""
@@ -102,18 +107,23 @@ class tetris_cow2(tetris_20_10):
         return new
 
     def imprint_zoid(self,zoid,pos=None,value=None,orient=None,check=False):
-        """Imprint a zoid on the board. Position specifies bottom left of zoid."""
+        """Imprint a zoid on the board. Position specifies bottom left of zoid.
+        pos=(i,j)"""
         if not all((pos is None,value is None,orient is None)):
             zoid = zoid.get_copy()
-            if pos is not None: zoid.set_pos(pos)
-            if value is not None: zoid.set_value(value)
-            if orient is not None: zoid.set_orient(orient)
+            if pos is not None:
+                zoid.set_pos(pos)
+            if value is not None:
+                zoid.set_value(value)
+            if orient is not None:
+                zoid.set_orient(orient)
         self.add_rows(zoid.max_row()-self.pile_height()+1)
         for r in zoid.rows():
             for c in zoid.cols():
                 if zoid[r,c]:
-                    if check and self[r,c]: raise ValueError('board cell not empty')
-                    self[r,c] = zoid[r,c]\
+                    if check and self[r,c]:
+                        raise ValueError('board cell not empty')
+                    self[r,c] = zoid[r,c]
 
     #<<<<< COPY-ON-WRITE
 
@@ -124,8 +134,10 @@ class tetris_cow2(tetris_20_10):
         counts = [0]*self.col_count()
         for c in self.cols():
             for cell in self.col_iter(c,reverse=True):
-                if not cell: counts[c] += 1
-                else: break
+                if not cell:
+                    counts[c] = 1
+                else:
+                    break
         self._profile = tuple(counts)
 
     #<<<<< HELPERS
