@@ -643,8 +643,7 @@ class TetrisSimulator(object):
         """
 
         ##heavy calculations
-        get_height = lambda v: sum(1 if i else 0 for i in v)
-        all_heights = [get_height(i) for i in cleared_space_cols]
+        all_heights = [self.get_height(i) for i in cleared_space_cols]
 
         wells = self.get_wells(all_heights)
 
@@ -750,6 +749,11 @@ class TetrisSimulator(object):
         # features["cuml_eroded"] = self.accumulate([features["eroded_cells"]])
         return features
 
+    def get_height(self, v):
+        for i, x in enumerate(v):
+            if x:
+                return len(v) - i
+        return 0
     #!# parallelize
     def get_full_cells(self, space, row_weighted = False):
         """counts the total number of filled cells"""
