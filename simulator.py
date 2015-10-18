@@ -302,7 +302,7 @@ class TetrisSimulator(object):
     def possible_moves(self):
         """generates a list of possible moves via the Straight-Drop method
             for each orientation, it drops the zoid straight down in each
-            column"""
+            column."""
         zoid = self.curr_z.get_copy()
         options = []
         board_profile = self.space.get_top_profile()
@@ -323,10 +323,6 @@ class TetrisSimulator(object):
 
                 # determine how low the zoid rests relative to the top of the
                 # pile
-                if sum(board_profile):
-                    print zoid_profile
-                    raw_input(board_profile)
-                    print_board(self.space, entire=True)
                 heights = tuple(board_profile[c+cc]+zoid_profile[cc]
                         for cc in xrange(len(zoid_profile)))
                 r = self.space.pile_height() - min(heights)
