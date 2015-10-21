@@ -7,7 +7,7 @@
 
 #include <Python.h>
 
-#include "tetris_cow.hpp"
+#include "tetris_cow.cpp"
 
 #define DEFAULT_ROW_CACHE_SIZE   500
 #define DEFAULT_BOARD_CACHE_SIZE 25

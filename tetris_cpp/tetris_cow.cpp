@@ -7,7 +7,7 @@
 #include <string.h>
 
 #include "abstract_board.hpp"
-#include "row_pool.hpp"
+#include "row_pool.cpp"
 
 
 //dynamically-sized board

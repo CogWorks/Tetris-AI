@@ -56,13 +56,16 @@ class tetris_zoid(object):
     def __getitem__(self,(row,col)):
         """Get a cell value (row first), e.g., 'myzoid[0,0]'."""
 
-        if not self._values[self._orient]: self._generate_orientation()
+        if not self._values[self._orient]:
+            self._generate_orientation()
 
         row -= self._pos[0]
         col -= self._pos[1]
 
-        if not (0 <= row < self.row_count()): return 0
-        if not (0 <= col < self.col_count()): return 0
+        if not (0 <= row < self.row_count()):
+            return 0
+        if not (0 <= col < self.col_count()):
+            return 0
 
         return self._value*self._values[self._orient][row][col]
 
@@ -155,7 +158,6 @@ class tetris_zoid(object):
                 cells[r][c] = self._values[0][row][col]
 
         self._values[self._orient] = tuple(tuple(x) for x in cells)
-
 
     #<<<<< HELPERS
 

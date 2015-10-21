@@ -315,38 +315,31 @@ class TetrisSimulator(object):
             # orientation;
             # therefore, it's only computed once ever per zoid per orientation
             zoid_profile = zoid.get_bottom_profile()
-            # and each possible column for that rotation
-            # for c in range(len(space[0]) - len(self.shapes[zoid][r][0]) + 1):
+            # get the coordinates of all occupied cells in the zoid
+            crds = [(i,j) for i in zoid.rows() for j in zoid.cols() if zoid[i,j]]
             for c in self.space.cols():
                 if c+zoid.col_count() > self.space.col_count():
                     break
 
                 # determine how low the zoid rests relative to the top of the
                 # pile
-                heights = tuple(board_profile[c+cc]+zoid_profile[cc]
-                        for cc in xrange(len(zoid_profile)))
-                r = self.space.pile_height() - min(heights)
-
-                # skip it if it will be too high up
-                if r+zoid.row_count() > self.space.row_count():
+                #heights = tuple(board_profile[c+cc]+zoid_profile[cc]
+                #        for cc in xrange(len(zoid_profile)))
+                #r = self.space.pile_height() - min(heights)
+                col_space = self.space.col_space()
+                heights = tuple(self.get_height(col) for col in col_space)
+                r = min(heights[c:c+zoid.col_count()])
+                try:
+                    while sum(self.space[r+i,c+j] for i,j in crds):
+                        r += 1
+                except IndexError:
                     continue
-
-                # copy the board and imprint the zoid
-                # 'pos' and 'value' are properties of the zoid that are
-                # overridden when imprinting it
-                # 'pos': position of the bottom left of the zoid's bounding box
-                # 'value': value to multiply the cells by
-                # zoid_board = self.space.get_cow()
-                # zoid_board.imprint_zoid(zoid, pos=(r,c), value=2, check=True)
-
-                options.append((orient, (r,c)))
-
-        if self.show_options:
-            self.printoptions(options)
+                else:
+                    options.append((orient, (r,c)))
 
         return options
 
-    def possible_moves_under(self, zoid = None, space = None):
+    def possible_moves_under(self, zoid=None, space=None):
         """generates a list of possible moves via a "set-and-wiggle" method"""
         if not zoid:
             zoid = self.curr_z
@@ -369,7 +362,7 @@ class TetrisSimulator(object):
         for cnd in candidates:
             c, rt, r = cnd["c"], cnd["rot"], cnd["r"]
             simboard, ends_game = self.possible_board(c, rt, r, zoid)
-            features = self.get_features(simboard, prev_space = space,
+            features = self.get_features(simboard, prev_space=space,
                     All=False)
             opt = [c, rt, r, simboard, features, ends_game]
             options.append(opt)
@@ -542,7 +535,6 @@ class TetrisSimulator(object):
                 "  3: " + str(self.l[3]) +
                 "  4: " + str(self.l[4]) + ")")
 
-
     def printspace(self, space=None):
         """generic space-printing, used in the above"""
         space = space or self.space
@@ -550,20 +542,11 @@ class TetrisSimulator(object):
         print("+" + "-"*space.col_count()*2 + "+")
         # for i in range(len(space)):
         for i in space.rows(all=True):
-         out = "|"
-         for j in space.row_iter(i):
-            if j == 0:
-             out = out + "  "
-            elif j == 1:
-             out = out + "[]"   #was u"\u2BDD "
-            elif j == 2:
-             out = out + "WM"   #was u"\u2b1c "
-         print(out + "|" + str(len(space)-i-1))
-        # print("+" + "-"*len(space[i])*2 + "+")
-        print("+" + "-"*space.col_count()*2 + "+")
-        # numline = " " + " ".join(str(x) for x in range(len(space[0])))
+            row = ({0: '  ', 1: '[]', 2: 'WM'}[j] for j in space.row_iter(i))
+            print '|%r|%d' %(''.join(row), str(len(space-i-1)))
+            print "+" + "-"*space.col_count()*2 + "+"
         numline = " " + " ".join(str(x) for x in space.cols())
-        print(numline)
+        print numline
 
     # <<<<< DISPLAY
 
@@ -579,12 +562,14 @@ class TetrisSimulator(object):
         """retrieves all of the features for a given space"""
 
         if convert:
-            space = [[int(bool(c)) for c in r] for r in space]
+            for r in space.rows():
+                for c in space.cols():
+                    space[r,c] = int(bool(space[r,c]))
 
         cleared_space = space.get_cow()
-        cleared_space.check_full()
+        cleared_space.check_full(True)
 
-        cleared_space_cols = zip(*cleared_space)
+        cleared_space_cols = cleared_space.col_space()
 
         keys = self.controller.keys()
 
@@ -712,7 +697,7 @@ class TetrisSimulator(object):
         #previous space
         if prev_space:
             prev_cols = zip(*prev_space)
-            prev_heights = [get_height(i) for i in prev_cols]
+            prev_heights = [self.get_height(i) for i in prev_cols]
             prev_pits = self.get_all_pits(prev_cols)[0]
 
             features["d_max_ht"] = features["max_ht"] - max(prev_heights)
@@ -727,14 +712,14 @@ class TetrisSimulator(object):
             features["d_pits"] = None
 
 
-        #independents
+        # independents
         features["landing_height"] = self.get_landing_height(space)
 
         features["pattern_div"] = self.get_col_diversity(cleared_space_cols)
 
         features["matches"] = self.get_matches(space)
 
-        #if "tetris_progress" in keys or "nine_filled" in keys or all:
+        # if "tetris_progress" in keys or "nine_filled" in keys or all:
         tetris_progress, nine_filled = self.get_tetris_progress(cleared_space)
         features["tetris_progress"] = tetris_progress
         features["nine_filled"] = nine_filled
@@ -744,7 +729,8 @@ class TetrisSimulator(object):
         features["weighted_cells"] = self.get_full_cells(cleared_space,
                 row_weighted=True)
 
-        features["eroded_cells"] = sum(i.count(2) if all(i) else 0 for i in space)
+        features["eroded_cells"] = sum(list(i).count(2) if all(i) else 0
+                for i in space)
         features["cuml_eroded"] = sum(range(1, features["eroded_cells"]))
         # features["cuml_eroded"] = self.accumulate([features["eroded_cells"]])
         return features
@@ -754,6 +740,7 @@ class TetrisSimulator(object):
             if x:
                 return len(v) - i
         return 0
+
     #!# parallelize
     def get_full_cells(self, space, row_weighted = False):
         """counts the total number of filled cells"""
@@ -1034,6 +1021,8 @@ class TetrisSimulator(object):
             performs the move"""
         scores = []
         zoid = self.curr_z.get_copy()
+        #print [x for _,x in self.options]
+        #raw_input()
         for orient, pos in self.options:
             zoid_board = self.space.get_cow()
             zoid_board.imprint_zoid(zoid, orient=orient, pos=pos, value=2,
@@ -1050,8 +1039,7 @@ class TetrisSimulator(object):
         self.space.imprint_zoid(zoid, orient=choice[0], pos=choice[1],
                 check=True)
         # ('False' means full rows aren't cleared here; just counted)
-        full_rows = self.space.check_full(False)
-        self.space.check_full()
+        full_rows = self.space.check_full(True)
         self.lines += full_rows
 
         if self.show_choice:
@@ -1129,6 +1117,7 @@ def main(argv):
 
     ## Introducing overhangs
 
+
     osim = TetrisSimulator(
                 controller=controller1,
                 board=tetris_cow2(),
@@ -1145,9 +1134,19 @@ def main(argv):
     osim.show_options = False
     osim.choice_step = 0
 
-    ##normal
-    osim.overhangs, osim.force_legal = False, False
-    osim.run()
+    if '-f' in argv:
+        osim = TetrisSimulator(
+                controller=controller1,
+                board=tetris_cow2(),
+                curr=all_zoids["L"],
+                next=all_zoids["S"],
+                seed=1
+                )
+        os.overhangs, osim.force_legal = False, False
+        osim.run()
+    else:  # normal
+        osim.overhangs, osim.force_legal = False, False
+        osim.run()
 
     ##overhangs allowed, but legality not enforced
     #osim.overhangs, osim.force_legal = True, False
