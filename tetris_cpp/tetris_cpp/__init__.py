@@ -12,10 +12,7 @@ class tetris_cow2(tetris_20_10):
         self._profile = None
 
     def __len__(self):
-        try:
-            return self.row_count()
-        except:
-            raise Exception("tetris_cow2.__len__(self) is broken")
+        return self.row_count()
 
     @staticmethod
     def convert_old_board(board,clear=True):
@@ -105,7 +102,7 @@ class tetris_cow2(tetris_20_10):
         new.uncow_all()
         return new
 
-    def imprint_zoid(self,zoid,pos=None,value=None,orient=None,check=False):
+    def imprint_zoid(self,zoid,pos=None,value=None,orient=None,check=True):
         """Imprint a zoid on the board. Position specifies bottom left of zoid.
         pos=(i,j)"""
         if not all((pos is None,value is None,orient is None)):

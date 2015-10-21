@@ -12,10 +12,7 @@ class tetris_cow2(tetris_20_10):
         self._profile = None
 
     def __len__(self):
-        try:
-            return self.row_count()
-        except:
-            raise Exception("tetris_cow2.__len__(self) is broken")
+        return self.row_count()
 
     @staticmethod
     def convert_old_board(board,clear=True):
