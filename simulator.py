@@ -19,80 +19,15 @@ class TetrisSimulator(object):
     show_choice = False
     choice_step = .5
 
-    # saved state variables
-    #space = []
-    heights = []
-    pits = []
-    col_roughs = []
-    row_roughs = []
-    ridge = []
-    matches = []
-
-    # score values for the run
-    # lines = 0
-    # l1 = 0
-    # l2 = 0
-    # l3 = 0
-    # l4 = 0
-    # score = 0
-    # level = 0
-
-    # game_over = False
-
-    #possible piece names, in order of representation as per Meta-T
-    pieces = ["I", "O", "T", "S", "Z", "J", "L"]
-
     #pieces from the PENTIX variant of Tetris.
     #pieces = ["BIG_T","BIG_I","BIG_J","BIG_L","BIG_S","BIG_Z",
     #              "PLUS","U","BIG_V","D","B","W",
     #              "J_DOT","L_DOT","J_STILT","L_STILT","LONG_S","LONG_Z"]
 
-    # shapes of all zoids
-
-    shapes = all_zoids
-    '''
-    shapes =    {
-                "O":{
-                    0: [[1,1],[1,1]]
-                    },
-                "I":{
-                    0: [[1,1,1,1]],
-                    1: [[1],[1],[1],[1]]
-                    },
-                "Z":{
-                    0: [[1,1,0],[0,1,1]],
-                    1: [[0,1],[1,1],[1,0]]
-                    },
-                "S":{
-                    0: [[0,1,1],[1,1,0]],
-                    1: [[1,0],[1,1],[0,1]]
-                    },
-                "T":{
-                    0: [[1,1,1],[0,1,0]],
-                    1: [[0,1],[1,1],[0,1]],
-                    2: [[0,1,0],[1,1,1]],
-                    3: [[1,0],[1,1],[1,0]]
-                    },
-                "L":{
-                    0: [[1,1,1],[1,0,0]],
-                    1: [[1,1],[0,1],[0,1]],
-                    2: [[0,0,1],[1,1,1]],
-                    3: [[1,0],[1,0],[1,1]]
-                    },
-                "J":{
-                    0: [[1,1,1],[0,0,1]],
-                    1: [[0,1],[0,1],[1,1]],
-                    2: [[1,0,0],[1,1,1]],
-                    3: [[1,1],[1,0],[1,0]]
-                    }
-                }
-    '''
-
     def __init__(self, board=None, curr=None, next=None, controller=None,
                     show_scores=False, show_options=False, show_result=True,
                     show_choice=False, option_step=0, choice_step=0,
-                    name="Controller", seed=time.time() * 10000000000000.0,
-                    overhangs=False, force_legal=True):
+                    name="Controller", overhangs=False, force_legal=True):
         """
         Initializes the simulator object.
             board : a board representation [20 rows, 10 columns]
@@ -110,32 +45,25 @@ class TetrisSimulator(object):
             choice (COSTLY)
             name : the name given for logging and tracking purposes (printed
             during long runs)
-            seed : the seed used to generate zoid sequences.
             overhangs : if enabled, uses a more robust system for determining
             possible moves
             force_legal : enables an A* search to determine if overhang moves
             are actually legal (COSTLY)
         """
 
-        self.sequence = random.Random()
-        self.sequence.seed(seed)
-
         if board:
             self.space = board
         else:
             self.space = tetris_cow2(rows=20)
+
         if curr:
             self.curr_z = curr
         else:
             self.curr_z = random.choice(all_zoids.values())
-            # self.curr_z = self.pieces[self.sequence.randint(0,
-            #     len(self.pieces)-1)]
 
         if next:
             self.next_z = next
         else:
-            # self.next_z = self.pieces[self.sequence.randint(0,
-            #     len(self.pieces)-1)]
             self.next_z = random.choice(all_zoids.values())
 
         self.name = name
@@ -145,8 +73,7 @@ class TetrisSimulator(object):
 
         if controller:
             self.controller = controller
-
-        else: # default Dellacherie model
+        else:  # default Dellacherie model
             self.controller = {"landing_height":-1,
                             "eroded_cells":1,
                             "row_trans":-1,
@@ -170,26 +97,19 @@ class TetrisSimulator(object):
         self.level = 0
         #self.stats_dict = {}
 
-        self.game_over = False
-
-        #self.get_stats()
-
-    # GAME FUNCTIONS >>>>>
+   # GAME FUNCTIONS >>>>>
 
     def get_random_zoid(self):
         """generates a new random zoid. duplicates are generally avoided"""
 
         # generate random, but with dummy value 7
             #[7? in the specs, but what good is it?]
-        z_id = sequence.randint(0, len(self.zoids))
-
+        z_id = random.choice(range(len(self.zoids) + 1))
         # then repeat/dummy check, and reroll *once*
         if not self.curr_z or z_id == len(self.zoids):
-            # return random.choice(range(len(self.zoids)))
-            return self.sequence.randint( 0, len(self.zoids)-1 )
+            return random.choice(range(len(self.zoids)))
         elif self.zoids[z_id] == self.curr_z:
-            # return random.choice(range(len(self.zoids)))
-            return self.sequence.randint( 0, len(self.zoids)-1 )
+            return random.choice(range(len(self.zoids)))
 
         return z_id
 
@@ -227,17 +147,20 @@ class TetrisSimulator(object):
         """generates a list of possible moves via the Straight-Drop method
             for each orientation, it drops the zoid straight down in each
             column."""
+        zoid = self.curr_z
         options = []
-        zoid = self.curr_z.get_copy()
-        board_profile = self.space.get_top_profile()
-        col_space = self.space.col_space()
-        heights = tuple(self.get_height(col) for col in col_space)
         for orient in xrange(4):
             zoid.set_orient(orient)
             # get the coordinates of all occupied cells in the zoid
             crds = [(i,j) for i in zoid.rows()
                     for j in zoid.cols() if zoid[i,j]]
             for c in self.space.cols():
+                if c+zoid.col_count() > self.space.col_count():
+                    break
+
+                col_space = self.space.col_space()
+                heights = tuple(self.get_height(col) for col in col_space)
+                r = min(heights[c:c+zoid.col_count()])
                 try:
                     r = min(heights[c:c+zoid.col_count()])
                     while sum(self.space[r+i,c+j] for i,j in crds):
@@ -249,7 +172,172 @@ class TetrisSimulator(object):
 
         return options
 
-    # <<<<< METHODS TO GET PERCEPTS
+    # FUNCTIONS FOR FINDING POSSIBLE MOVES UNDER >>>>>
+
+    def possible_moves_under(self, zoid=None, space=None):
+        """generates a list of possible moves via a "set-and-wiggle" method"""
+        if not zoid:
+            zoid = self.curr_z
+        if not space:
+            space = self.space
+
+        drop_points = self.get_drop_points(space)
+
+        candidates = []
+
+        for rot in range(len(all_zoids[zoid])):
+            candidates += self.drop_point_candidates(space, zoid, rot,
+                    drop_points)
+
+        if self.force_legal:
+            candidates = self.legal_dp_candidates(candidates,zoid,space)
+
+        options = []
+
+        for cnd in candidates:
+            c, rt, r = cnd["c"], cnd["rot"], cnd["r"]
+            simboard, ends_game = self.possible_board(c, rt, r, zoid)
+            features = self.get_features(simboard, prev_space=space,
+                    All=False)
+            opt = [c, rt, r, simboard, features, ends_game]
+            options.append(opt)
+
+        if self.show_options:
+            self.printoptions(options)
+
+        return options
+
+    def find_drop(self, col, rot, zoid, space):  # purge
+        """straight-drop method"""
+        if not zoid:
+            zoid = self.curr_z
+        if not space:
+            space = self.space
+        # start completely above the board
+        z_h = len(space) + len(self.shapes[zoid][rot])
+        for i in range(z_h + 1):
+            # print("testing height", z_h - i)
+            if self.detect_collision(col, rot, z_h - i, zoid, space):
+                return z_h - i
+        return None
+
+    def detect_collision(self, col, rot, row, zoid=False, space=False, off=0):  # purge
+        """detects collisions for finding possible moves"""
+        if not zoid:
+            zoid = self.curr_z
+        if not space:
+            space = self.space
+
+        shape = self.shapes[zoid][rot]
+        '''
+        #set column and row to start checking
+        x = col
+        y = len(space) - off - row
+        '''
+
+        # begin iteration
+        # ix = x
+        # iy = y
+        ix = col
+        iy = len(space) - off - row
+
+        # for each cell in the shape
+        for i in shape:
+            for j in i:
+                # if this cell isn't empty, and we aren't above the board...
+                if j != 0 and iy >= 0:
+                    if iy >= len(space):
+                        return True
+                    # print("checking",iy,ix)
+                        if space[iy, ix] != 0:
+                            return True
+                ix += 1
+            ix = col
+            # ix = x
+            iy += 1
+        return False
+
+    def get_drop_points(self, space):
+        """get a list of drop points {"r":r,"c":c}
+            all closed cells with empty cells above them are potential
+            drop points"""
+        points = []
+        get_cell = lambda r, c, space: space[len(space)-1-r][c]
+
+        # for c in range(len(space[0])):
+        for c in range(space.col_count()):
+            for r in range(len(space)):
+                space[len(space)-1-r, c]
+                if get_cell(r, c, space) == 0:
+                    if r == 0:
+                        points.append({"c":c,"r":r})
+                    elif get_cell(r-1,c,space) != 0:
+                        points.append({"c":c,"r":r})
+        return points
+
+    def drop_point_candidates(self, space, zoid, rot, dps):
+        """narrows list of drop points to those viable for the zoid"""
+        z = self.shapes[zoid][rot]
+
+        cands = []
+
+        for p in dps:
+            #for each column of the zoid
+            for i in range(len(z[0])):
+                c = p["c"]-i
+                r = p["r"]+len(z)-self.shape_bottoms[zoid][rot][i] - 1
+                # if not (c < 0 or c + len(z[0]) > len(space[0])):
+                if not (c < 0 or c + len(z[0]) > space.col_count()):
+                  if not self.detect_collision(c,rot,r,zoid,space,off=1):
+                    c = {"c":c,"rot":rot,"r":r}
+                    if c not in cands:
+                        cands.append(c)
+        return cands
+
+    def legal_dp_candidates(self, cnds, zoid, space):
+        """further narrows list of drop points for legality
+            performs A* search to see if zoid could legally reach the drop point"""
+        candidates = []
+        checked = []
+        rot = None
+
+        def check(c,r,l=0,report = "start"):
+            checked.append([c,r])
+            #print " "*l,[c,r], report
+            if self.detect_collision(c,rot,r,zoid,space,off=1):
+                #print " "*l,report,"failed"
+                return False
+            elif r == len(space)-1:
+                #print " "*l,"LEGAL"
+                return True
+            else:
+                if [c-1,r] not in checked and c-1 >= 0:
+                    left = check(c-1,r,l+1,"left")
+                else:
+                    left = False
+                # if [c+1,r] not in checked and c+1 < len(space[0]) - \
+                        # len(self.shapes[zoid][rot][0]) - 1:
+                if [c+1,r] not in checked and c+1 < space.col_count() - \
+                        len(self.shapes[zoid][rot][0]) - 1:
+                    right = check(c+1,r,l+1,"right")
+                else:
+                    right = False
+                if [c,r+1] not in checked and r+1 < len(space):
+                    up = check(c,r+1,l+1,"up")
+                else:
+                    up = False
+
+                return left or right or up
+
+        for cnd in cnds:
+            rot = cnd["rot"]
+            checked = []
+            if check(cnd["c"],cnd["r"]):
+                candidates.append(cnd)
+
+        return candidates
+
+    # <<<<< FUNCTIONS FOR FINDING POSSIBLE MOVES UNDER
 
     # DISPLAY >>>>>
 
@@ -275,9 +363,19 @@ class TetrisSimulator(object):
         numline = " " + " ".join(str(x) for x in space.cols())
         print numline
 
-    # <<<<< DISPLAY
 
-    #u"\u2b1c"
+    def printcontroller(self, feats=False):
+        """print the controller's values"""
+        for k in sorted(self.controller.keys()):
+            outstr = k.ljust(15) + ":\t"
+            if feats:
+                outstr += str(feats[k]) + "\t(" + \
+                ('%3.3f'%self.controller[k]).rjust(8) + ")"
+            else:
+                outstr += ('%3.3f'%self.controller[k]).rjust(8)
+            print(outstr)
+
+   #u"\u2b1c"
     #u"\u2b1c"
     #u"\u26DD"
 
@@ -321,7 +419,6 @@ class TetrisSimulator(object):
         #cleared dependent
         features["cleared"] = sum(all(row) for row in space)
         features["cuml_cleared"] = sum(range(1, features["cleared"] + 1))
-        # features["cuml_cleared"] = self.accumulate([features["cleared"]])
         features["tetris"] = 1 if features["cleared"] == 4 else 0
         features["move_score"] = features["cleared"] * (self.level + 1)
 
@@ -333,7 +430,6 @@ class TetrisSimulator(object):
 
         #well and height dependent
         features["wells"] = sum(wells)
-        # features["cuml_wells"] = self.accumulate(wells)
         features["cuml_wells"] = sum(sum(range(1, x+1)) for x in wells)
         features["deep_wells"] = sum([i for i in wells if i != 1])
         features["max_well"] = max(wells)
@@ -374,7 +470,8 @@ class TetrisSimulator(object):
 
             features["d_max_ht"] = features["max_ht"] - max(prev_heights)
             features["d_all_ht"] = features["all_ht"] - sum(prev_heights)
-            features["d_mean_ht"] = features["mean_ht"] - (sum(prev_heights) * 1.0 / len(prev_heights) * 1.0)
+            features["d_mean_ht"] = features["mean_ht"] - \
+                    (sum(prev_heights) * 1.0 / len(prev_heights) * 1.0)
             features["d_pits"] = features["pits"] - sum(prev_pits)
 
         else:
@@ -404,12 +501,13 @@ class TetrisSimulator(object):
         features["eroded_cells"] = sum(list(i).count(2) if all(i) else 0
                 for i in space)
         features["cuml_eroded"] = sum(range(1, features["eroded_cells"]))
-        # features["cuml_eroded"] = self.accumulate([features["eroded_cells"]])
+
         return features
 
     def get_height(self, v):
-        if v and v[0] != 0:
-            return 1 + self.get_height(v[1:])
+        for i, x in enumerate(v):
+            if x != 0:
+                return len(v) - i
         return 0
 
     #!# parallelize
@@ -417,7 +515,6 @@ class TetrisSimulator(object):
         """counts the total number of filled cells"""
         if not row_weighted:
             return sum(sum(True for i in row if i) for row in space)
-            # return sum(sum(bool(i) for i in row) for row in space)
         total = 0
         for i, row in enumerate(space):
             total += sum(len(space) - i for c in row if c)
@@ -512,12 +609,6 @@ class TetrisSimulator(object):
             if 2 in space.row_iter(i):
                 return i
 
-    def get_eroded_cells(self, space):
-        """determine the number of zoid cells eroded due to line clears
-        this episode"""
-        return sum(row.count(2) for row in space if all(row))
-
-    #Roughness
     def get_transitions(self, v):
         """for one vector, get the number of transitions from empty to
         full, or vice versa"""
@@ -620,7 +711,7 @@ class TetrisSimulator(object):
         prev_col = -1
 
         prev_row = []
-        #from the bottom up
+        # from the bottom up
         for r in range(1,len(space)+1):
             r_ix = len(space) - r
             # col = self.nine_filled(space[r_ix])
@@ -629,7 +720,7 @@ class TetrisSimulator(object):
             # found a filled row
             if col != None:
                 nine_count += 1
-                #new column, reset counter
+                # new column, reset counter
                 if col != prev_col:
                     if r == 1:  #first row
                         progress = 1
@@ -667,21 +758,6 @@ class TetrisSimulator(object):
 
     # <<<<< FEATURES
 
-    # DISPLAY >>>>>
-
-    def printcontroller(self, feats=False):
-        """print the controller's values"""
-        for k in sorted(self.controller.keys()):
-            outstr = k.ljust(15) + ":\t"
-            if feats:
-                outstr += str(feats[k]) + "\t(" + \
-                ('%3.3f'%self.controller[k]).rjust(8) + ")"
-            else:
-                outstr += ('%3.3f'%self.controller[k]).rjust(8)
-            print(outstr)
-
-    # <<<<< DISPLAY
-
     # CONTROLLERS >>>>>
 
     def control(self, orient, pos):
@@ -698,7 +774,7 @@ class TetrisSimulator(object):
             generates possible moves and chooses one
             loops until game_over or max_eps is exceeded"""
         ep = 0
-        while not self.game_over and ep != max_eps and self.get_options():
+        while ep != max_eps and self.get_options():
             # generate options and features
             scores = {x: self.control(*x) for x in self.options}
             best_moves = tuple(k for k,v in scores.items()
@@ -779,7 +855,6 @@ def main(argv):
                 show_options=True,
                 option_step=.3,
                 choice_step=1,
-                seed=1
                 )
 
     ## enable for speed test
@@ -792,7 +867,6 @@ def main(argv):
                 board=tetris_cow2(),
                 curr=all_zoids["L"],
                 next=all_zoids["S"],
-                seed=1
                 )
         os.overhangs, osim.force_legal = False, False
         osim.run()
