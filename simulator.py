@@ -1,33 +1,33 @@
 #!/usr/bin/python
-import copy
 import os
 import random
 from tetris_cpp import *
 from boards import *
 import time
-import random
 import sys
 
 
 class TetrisSimulator(object):
+
     """A board object that supports assessment metrics and future simulations"""
 
-    #modifiers for the run
+    # modifiers for the run
     how_scores = False
     show_options = False
     option_step = .1
     show_choice = False
     choice_step = .5
 
-    #pieces from the PENTIX variant of Tetris.
-    #pieces = ["BIG_T","BIG_I","BIG_J","BIG_L","BIG_S","BIG_Z",
+    # pieces from the PENTIX variant of Tetris.
+    # pieces = ["BIG_T","BIG_I","BIG_J","BIG_L","BIG_S","BIG_Z",
     #              "PLUS","U","BIG_V","D","B","W",
     #              "J_DOT","L_DOT","J_STILT","L_STILT","LONG_S","LONG_Z"]
 
     def __init__(self, board=None, curr=None, next=None, controller=None,
-                    show_scores=False, show_options=False, show_result=True,
-                    show_choice=False, option_step=0, choice_step=0,
-                    name="Controller", overhangs=False, force_legal=True):
+                 show_scores=False, show_options=False, show_result=True,
+                 show_choice=False, option_step=0, choice_step=0,
+                 name="Controller", seed=time.time(), overhangs=False,
+                 force_legal=True):
         """
         Initializes the simulator object.
             board : a board representation [20 rows, 10 columns]
@@ -50,6 +50,7 @@ class TetrisSimulator(object):
             force_legal : enables an A* search to determine if overhang moves
             are actually legal (COSTLY)
         """
+        self.sequence = random.Random(seed)
 
         if board:
             self.space = board
@@ -59,12 +60,12 @@ class TetrisSimulator(object):
         if curr:
             self.curr_z = curr
         else:
-            self.curr_z = random.choice(all_zoids.values())
+            self.curr_z = self.sequence.choice(all_zoids.values())
 
         if next:
             self.next_z = next
         else:
-            self.next_z = random.choice(all_zoids.values())
+            self.next_z = self.sequence.choice(all_zoids.values())
 
         self.name = name
 
@@ -74,12 +75,12 @@ class TetrisSimulator(object):
         if controller:
             self.controller = controller
         else:  # default Dellacherie model
-            self.controller = {"landing_height":-1,
-                            "eroded_cells":1,
-                            "row_trans":-1,
-                            "col_trans":-1,
-                            "pits":-4,
-                            "cuml_wells":-1}
+            self.controller = {"landing_height": -1,
+                               "eroded_cells": 1,
+                               "row_trans": -1,
+                               "col_trans": -1,
+                               "pits": -4,
+                               "cuml_wells": -1}
 
         # display options saved
         self.show_result = show_result
@@ -95,28 +96,28 @@ class TetrisSimulator(object):
         self.l = {1: 0, 2: 0, 3: 0, 4: 0}
         self.score = 0
         self.level = 0
-        #self.stats_dict = {}
+        # self.stats_dict = {}
 
-   # GAME METHODS >>>>>
+    # GAME METHODS >>>>>
 
     def get_random_zoid(self):
         """generates a new random zoid. duplicates are generally avoided"""
 
         # generate random, but with dummy value 7
             #[7? in the specs, but what good is it?]
-        z_id = random.choice(range(len(self.zoids) + 1))
+        z_id = self.sequence.choice(range(len(self.zoids) + 1))
         # then repeat/dummy check, and reroll *once*
         if not self.curr_z or z_id == len(self.zoids):
-            return random.choice(range(len(self.zoids)))
+            return self.sequence.choice(range(len(self.zoids)))
         elif self.zoids[z_id] == self.curr_z:
-            return random.choice(range(len(self.zoids)))
+            return self.sequence.choice(range(len(self.zoids)))
 
         return z_id
 
     def new_zoids(self):
         """pure random selection"""
         self.curr_z = self.next_z
-        self.next_z = random.choice(all_zoids.values())
+        self.next_z = self.sequence.choice(all_zoids.values())
 
     def update_score(self):
         """Scores the board. Should be called immediately after a move is made"""
@@ -125,7 +126,7 @@ class TetrisSimulator(object):
         if clears in self.l:
             self.l[clears] += 1
             self.score += {1: 40, 2: 100, 3: 300, 4: 1200}[clears] * \
-                    (self.level + 1)
+                (self.level + 1)
         self.level = int(self.lines / 10)
 
     # <<<<< GAME METHODS
@@ -139,7 +140,7 @@ class TetrisSimulator(object):
         print("Score:\t" + str(self.score))
         print("Lines:\t" + str(self.lines))
         print "\t(1: %d  2: %d  3: %d  4: %d)" \
-                %(self.l[1], self.l[2], self.l[3], self.l[4])
+            % (self.l[1], self.l[2], self.l[3], self.l[4])
 
     def printspace(self, space=None):
         """generic space-printing.
@@ -147,12 +148,12 @@ class TetrisSimulator(object):
 
         space = space or self.space
         # print("+" + "-"*len(space[0])*2 + "+")
-        print("+" + "-"*space.col_count()*2 + "+")
+        print("+" + "-" * space.col_count() * 2 + "+")
         # for i in range(len(space)):
         for i in space.rows(all=True):
             row = ({0: '  ', 1: '[]', 2: 'WM'}[j] for j in space.row_iter(i))
-            print '|%r|%d' %(''.join(row), str(len(space-i-1)))
-            print "+" + "-"*space.col_count()*2 + "+"
+            print '|%r|%d' % (''.join(row), str(len(space - i - 1)))
+            print "+" + "-" * space.col_count() * 2 + "+"
         numline = " " + " ".join(str(x) for x in space.cols())
         print numline
 
@@ -162,9 +163,9 @@ class TetrisSimulator(object):
             outstr = k.ljust(15) + ":\t"
             if feats:
                 outstr += str(feats[k]) + "\t(" + \
-                ('%3.3f'%self.controller[k]).rjust(8) + ")"
+                    ('%3.3f' % self.controller[k]).rjust(8) + ")"
             else:
-                outstr += ('%3.3f'%self.controller[k]).rjust(8)
+                outstr += ('%3.3f' % self.controller[k]).rjust(8)
             print(outstr)
 
     # u"\u2b1c"
@@ -172,7 +173,6 @@ class TetrisSimulator(object):
     # u"\u27DD"
 
     # <<<<< DISPLAY
-
 
     # METHODS TO GET PERCEPTS >>>>>
 
@@ -195,28 +195,28 @@ class TetrisSimulator(object):
         for orient in xrange(4):
             zoid.set_orient(orient)
             # get the indices of all occupied cells in the zoid
-            crds = [(i,j) for i in zoid.rows()
-                    for j in zoid.cols() if zoid[i,j]]
+            crds = [(i, j) for i in zoid.rows()
+                    for j in zoid.cols() if zoid[i, j]]
             for c in self.space.cols():
                 # stop if we run off the board
-                if c+zoid.col_count() > self.space.col_count():
+                if c + zoid.col_count() > self.space.col_count():
                     break
 
                 # find where the zoid rests
                 heights = tuple(self.get_height(col) for col in
-                        self.space.col_space())
+                                self.space.col_space())
                 # start at the lowest column height
-                r = min(heights[c:c+zoid.col_count()])
+                r = min(heights[c:c + zoid.col_count()])
                 try:
                     # then keep checking the next row until all cells in the
                     # board are unoccupied
-                    while any(self.space[r+i,c+j] for i,j in crds):
+                    while any(self.space[r + i, c + j] for i, j in crds):
                         r += 1
                 except IndexError:
                     # can't place the zoid in this column
                     continue
                 else:
-                    options.append((orient, (r,c)))
+                    options.append((orient, (r, c)))
 
         return options
 
@@ -226,20 +226,19 @@ class TetrisSimulator(object):
         if convert:
             for r in space.rows():
                 for c in space.cols():
-                    space[r,c] = int(bool(space[r,c]))
+                    space[r, c] = int(bool(space[r, c]))
 
         cleared_space = space.get_cow()
         cleared_space.check_full(True)
 
         cleared_space_cols = cleared_space.col_space()
 
-        keys = self.controller.keys()
-
         # heavy calculations
         all_heights = [self.get_height(x) for x in cleared_space_cols]
         wells = self.get_wells(all_heights)
 
-        diffs = [all_heights[i+1] - x for i, x in enumerate(all_heights[:-1])]
+        diffs = [all_heights[i + 1] - x for i,
+                 x in enumerate(all_heights[:-1])]
         all_pits, pit_rows, lumped_pits = self.get_all_pits(cleared_space_cols)
         pit_depths = [self.get_pit_depth(x) for x in cleared_space_cols]
 
@@ -268,7 +267,7 @@ class TetrisSimulator(object):
 
         # well and height dependent
         features["wells"] = sum(wells)
-        features["cuml_wells"] = sum(sum(range(1, x+1)) for x in wells)
+        features["cuml_wells"] = sum(sum(range(1, x + 1)) for x in wells)
         features["deep_wells"] = sum([i for i in wells if i != 1])
         features["max_well"] = max(wells)
 
@@ -283,8 +282,7 @@ class TetrisSimulator(object):
             features["mean_pit_depth"] = 0
         else:
             features["mean_pit_depth"] = features["pit_depth"] * 1.0 / \
-                    features["pits"] * 1.0
-
+                features["pits"] * 1.0
 
         # diff and height dependent
         features["cd_1"] = diffs[0]
@@ -309,7 +307,7 @@ class TetrisSimulator(object):
             features["d_max_ht"] = features["max_ht"] - max(prev_heights)
             features["d_all_ht"] = features["all_ht"] - sum(prev_heights)
             features["d_mean_ht"] = features["mean_ht"] - \
-                    (sum(prev_heights) * 1.0 / len(prev_heights) * 1.0)
+                (sum(prev_heights) * 1.0 / len(prev_heights) * 1.0)
             features["d_pits"] = features["pits"] - sum(prev_pits)
 
         else:
@@ -317,7 +315,6 @@ class TetrisSimulator(object):
             features["d_all_ht"] = None
             features["d_mean_ht"] = None
             features["d_pits"] = None
-
 
         # independents
         features["landing_height"] = self.get_landing_height(space)
@@ -334,10 +331,10 @@ class TetrisSimulator(object):
         features["full_cells"] = self.get_full_cells(cleared_space)
 
         features["weighted_cells"] = self.get_full_cells(cleared_space,
-                row_weighted=True)
+                                                         row_weighted=True)
 
         features["eroded_cells"] = sum(list(i).count(2) if all(i) else 0
-                for i in space)
+                                       for i in space)
         features["cuml_eroded"] = sum(range(1, features["eroded_cells"]))
 
         return features
@@ -348,7 +345,7 @@ class TetrisSimulator(object):
                 return len(v) - i
         return 0
 
-    #!# parallelize
+    # !# parallelize
     def get_full_cells(self, space, row_weighted=False):
         """counts the total number of filled cells"""
         if not row_weighted:
@@ -360,9 +357,10 @@ class TetrisSimulator(object):
         return total
 
     # Pits
-    #!# need to represent pits as a list of unique pits with a particular length;
+    # !# need to represent pits as a list of unique pits with a particular length;
 
     """isolating"""
+
     def get_pits(self, v):
         """For one column, search for the number of covered empty cells
             returns:
@@ -377,10 +375,10 @@ class TetrisSimulator(object):
         for i in v[1:]:
             if i != 0:
                 state = 1
-                curr_pit = 0 #lumped pit ends.
-            if i == 0 and state == 1:   #top detected and found a pit
-                if curr_pit == 0:    #we hadn't seen a pit yet
-                    lumped_pits += 1    #so this is a new lumped pit
+                curr_pit = 0  # lumped pit ends.
+            if i == 0 and state == 1:  # top detected and found a pit
+                if curr_pit == 0:  # we hadn't seen a pit yet
+                    lumped_pits += 1  # so this is a new lumped pit
                 curr_pit = 1
                 pits += 1
                 rows.append(row)
@@ -388,6 +386,7 @@ class TetrisSimulator(object):
         return rows, lumped_pits
 
     """isolating"""
+
     def get_matches(self, space):
         """detect the total number of matched edges for a given zoid
         placement."""
@@ -397,33 +396,34 @@ class TetrisSimulator(object):
         for r in space.rows():
             for c in space.cols():
                 if space[r, c] == 2:
-                    #down
+                    # down
                     if r + 1 >= len(space):
                         matches += 1
                     else:
-                        if space[r+1, c] == 1:
+                        if space[r + 1, c] == 1:
                             matches += 1
-                    #left
+                    # left
                     if c - 1 < 0:
                         matches += 1
                     else:
-                        if space[r, c-1] == 1:
+                        if space[r, c - 1] == 1:
                             matches += 1
-                    #right
+                    # right
                     # if c + 1 >= len(space[r]):
                     if c + 1 >= space.col_count():
                         matches += 1
                     else:
-                        if space[r, c+1] == 1:
+                        if space[r, c + 1] == 1:
                             matches += 1
-                    #up, rarely
+                    # up, rarely
                     if r - 1 >= 0:
-                        if space[r-1, c] == 1:
+                        if space[r - 1, c] == 1:
                             matches += 1
         return matches
 
     """isolating"""
-    #!# parallelize
+    # !# parallelize
+
     def get_all_pits(self, colspace):
         """get pit values for all columns,
             returns:
@@ -441,6 +441,7 @@ class TetrisSimulator(object):
         return(col_pits, pit_rows, lumped_pits)
 
     """isolating"""
+
     def get_landing_height(self, space):
         """determine the bottommost height of a zoid placement"""
         for i in space.rows():
@@ -453,15 +454,15 @@ class TetrisSimulator(object):
         state = v[0]
         trans = 0
         for i in v[1:]:
-         if i == 0 and state != 0:
-             trans += 1
-             state = 0
-         elif i != 0 and state == 0:
-             trans += 1
-             state = 1
+            if i == 0 and state != 0:
+                trans += 1
+                state = 0
+            elif i != 0 and state == 0:
+                trans += 1
+                state = 1
         return trans
 
-    #!# parallelize
+    # !# parallelize
     def get_all_transitions(self, space):
         """get transitions for all vectors in a space (generic)"""
         return [self.get_transitions(list(row)) for row in space]
@@ -470,10 +471,10 @@ class TetrisSimulator(object):
         """determine how many times a pattern is repeated
         lower values mean the pattern is less diverse, and more ordered"""
         patterns = []
-        for i in range(len(colspace)-1):
+        for i in range(len(colspace) - 1):
             pattern = []
             for j in range(len(colspace[i])):
-                pattern.append(colspace[i][j] - colspace[i+1][j])
+                pattern.append(colspace[i][j] - colspace[i + 1][j])
             patterns.append(pattern)
 
         return len(patterns)
@@ -502,9 +503,9 @@ class TetrisSimulator(object):
         heights = [len(self.space)] + heights + [len(self.space)]
 
         wells = []
-        for i in range(1, len(heights)-1):
-            ldiff = heights[i-1] - heights[i]
-            rdiff = heights[i+1] - heights[i]
+        for i in range(1, len(heights) - 1):
+            ldiff = heights[i - 1] - heights[i]
+            rdiff = heights[i + 1] - heights[i]
             if ldiff < 0 or rdiff < 0:
                 wells.append(0)
             else:
@@ -535,9 +536,9 @@ class TetrisSimulator(object):
         # eating a LOT of the processing
         # complicated measure JKL cooked up
         # e.g. - if four rows have 9 cells filled
-             #and the 9th cell is in the same column for each
-             #and there is nothing above that column
-             #tetris_progress = 4, i.e. a tetris is available
+                # and the 9th cell is in the same column for each
+                # and there is nothing above that column
+                # tetris_progress = 4, i.e. a tetris is available
         # newspace = copy.deepcopy(space)
         # newspace.reverse()
         return 0, 0
@@ -548,24 +549,23 @@ class TetrisSimulator(object):
         prev_col = -1
         prev_col = -1
 
-        prev_row = []
         # from the bottom up
-        for r in range(1,len(space)+1):
+        for r in range(1, len(space) + 1):
             r_ix = len(space) - r
             # col = self.nine_filled(space[r_ix])
             col = self.nine_filled(list(space.row_iter(r_ix)))
 
             # found a filled row
-            if col != None:
+            if col is not None:
                 nine_count += 1
                 # new column, reset counter
                 if col != prev_col:
-                    if r == 1:  #first row
+                    if r == 1:  # first row
                         progress = 1
                         prev_col = col
                         stagnated = False
                     else:
-                        if space[r_ix+1, col] != 0:  #if there's a block below, we can restart
+                        if space[r_ix + 1, col] != 0:  # if there's a block below, we can restart
 
                             progress = 1
                             prev_col = col
@@ -573,13 +573,13 @@ class TetrisSimulator(object):
                         else:
                             progress = 0
                             prev_col = -1
-                #same column, increase counter
+                # same column, increase counter
                 elif col == prev_col and not stagnated:
                     progress += 1
 
-            #no nine-count row detected
+            # no nine-count row detected
             else:
-                #column is blocked, reset progress and column
+                # column is blocked, reset progress and column
                 try:
                     space[r_ix, prev_col]
                 except:
@@ -589,7 +589,7 @@ class TetrisSimulator(object):
                 if space[r_ix, prev_col] != 0:
                     progress = 0
                     prev_col = -1
-                #otherwise, progress stagnates here
+                # otherwise, progress stagnates here
                 else:
                     stagnated = True
         return progress, nine_count
@@ -605,7 +605,7 @@ class TetrisSimulator(object):
         zoid_board = self.space.get_cow()
         zoid_board.imprint_zoid(zoid, orient=orient, pos=pos, value=2)
         features = self.get_features(zoid_board, self.space)
-        return sum(features[x]*self.controller[x] for x in self.controller)
+        return sum(features[x] * self.controller[x] for x in self.controller)
 
     def run(self, max_eps=None, printstep=500):
         """runs the simulator
@@ -615,9 +615,9 @@ class TetrisSimulator(object):
         while ep != max_eps and self.get_options():
             # generate options and features
             scores = {x: self.control(*x) for x in self.options}
-            best_moves = tuple(k for k,v in scores.items()
-                    if v == max(scores.values()))
-            orient, pos = random.choice(best_moves)
+            best_moves = tuple(k for k, v in scores.items()
+                               if v == max(scores.values()))
+            orient, pos = self.sequence.choice(best_moves)
             self.space.imprint_zoid(self.curr_z, orient=orient, pos=pos)
             self.update_score()
             self.new_zoids()
@@ -628,11 +628,10 @@ class TetrisSimulator(object):
                 print_board(self.space, entire=True, show_full=True)
                 time.sleep(0.1)
 
-
             if self.show_scores or ep % printstep == 0 and not \
                     printstep == -1:
-              print("\nEpisode: " + str(ep))
-              self.printscores()
+                print("\nEpisode: " + str(ep))
+                self.printscores()
             ep += 1
 
         if self.show_result:
@@ -642,84 +641,85 @@ class TetrisSimulator(object):
             self.printcontroller()
             print("\n")
 
-        return({"lines":self.lines,
-                "l1":self.l[1],
-                "l2":self.l[2],
-                "l3":self.l[3],
-                "l4":self.l[4],
-                "score":self.score,
-                "level":self.level,
-                "eps":ep})
+        return({"lines": self.lines,
+                "l1": self.l[1],
+                "l2": self.l[2],
+                "l3": self.l[3],
+                "l4": self.l[4],
+                "score": self.score,
+                "level": self.level,
+                "eps": ep})
 
     # <<<<< CONTROLLERS
 
 
 def main(argv):
 
-    controller1 = {"landing_height":-1,
-                "eroded_cells":1,
-                "row_trans":-1,
-                "col_trans":-1,
-                "pits":-4,
-                "cuml_wells":-1}
+    controller1 = {"landing_height": -1,
+                   "eroded_cells": 1,
+                   "row_trans": -1,
+                   "col_trans": -1,
+                   "pits": -4,
+                   "cuml_wells": -1}
 
+    # DTS controller, from Dellacherie + Thiery & Scherrer; 35,000,000
+    # rows?!!?!
+    controller2 = {"landing_height": -12.63,
+                   "eroded_cells": 6.60,
+                   "row_trans": -9.22,
+                   "col_trans": -19.77,
+                   "pits": -13.08,
+                   "cuml_wells": -10.49,
+                   "pit_depth": -1.61,
+                   "pit_rows": -24.04}
 
-    #DTS controller, from Dellacherie + Thiery & Scherrer; 35,000,000 rows?!!?!
-    controller2 = {"landing_height":-12.63,
-                "eroded_cells":6.60,
-                "row_trans":-9.22,
-                "col_trans":-19.77,
-                "pits":-13.08,
-                "cuml_wells":-10.49,
-                "pit_depth":-1.61,
-                "pit_rows":-24.04}
+    # bad controller for demonstration's purposes
+    controller3 = {"landing_height": 1,
+                   "eroded_cells": 1,
+                   "row_trans": -1,
+                   "col_trans": -1,
+                   "pits": 1,
+                   "cuml_wells": -1}
 
-    #bad controller for demonstration's purposes
-    controller3 = {"landing_height":1,
-                "eroded_cells":1,
-                "row_trans":-1,
-                "col_trans":-1,
-                "pits":1,
-                "cuml_wells":-1}
-
-    ## Introducing overhangs
-
+    # Introducing overhangs
 
     osim = TetrisSimulator(
-                controller=controller1,
-                board=tetris_cow2(),
-                curr=all_zoids["L"],
-                next=all_zoids["S"],
-                show_choice=True,
-                show_options=True,
-                option_step=.3,
-                choice_step=1,
-                )
+            controller=controller1,
+            board=tetris_cow2(),
+            curr=all_zoids["L"],
+            next=all_zoids["S"],
+            show_choice=True,
+            show_options=True,
+            option_step=.3,
+            choice_step=1,
+            seed=1
+    )
 
-    ## enable for speed test
+    # enable for speed test
     osim.show_options = False
     osim.choice_step = 0
 
     if '-f' in argv:
         osim = TetrisSimulator(
-                controller=controller1,
-                board=tetris_cow2(),
-                curr=all_zoids["L"],
-                next=all_zoids["S"],
-                )
+            controller=controller1,
+            board=tetris_cow2(),
+            curr=all_zoids["L"],
+            next=all_zoids["S"],
+            seed=1
+        )
         os.overhangs, osim.force_legal = False, False
         osim.run()
     else:  # normal
         osim.overhangs, osim.force_legal = False, False
         osim.run()
 
-    ##overhangs allowed, but legality not enforced
-    #osim.overhangs, osim.force_legal = True, False
-    #osim.run()
+    # overhangs allowed, but legality not enforced
+    # osim.overhangs, osim.force_legal = True, False
+    # osim.run()
 
-    ##legality enforced
-    #osim.overhangs, osim.force_legal = True, True
-    #osim.run()
+    # legality enforced
+    # osim.overhangs, osim.force_legal = True, True
+    # osim.run()
 
 
 if __name__ == "__main__":
