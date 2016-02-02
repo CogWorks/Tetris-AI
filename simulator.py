@@ -1,8 +1,7 @@
 #!/usr/bin/python
-import os
 import random
 from tetris_cpp import *
-from boards import *
+from boards import print_board, all_zoids
 import time
 import sys
 
@@ -120,7 +119,8 @@ class TetrisSimulator(object):
         self.next_z = self.sequence.choice(all_zoids.values())
 
     def update_score(self):
-        """Scores the board. Should be called immediately after a move is made"""
+        """Scores the board. Should be called immediately after a move
+        is made"""
         clears = sum(all(row) for row in self.space)
         self.lines += clears
         if clears in self.l:
@@ -141,10 +141,12 @@ class TetrisSimulator(object):
         print("Lines:\t" + str(self.lines))
         print "\t(1: %d  2: %d  3: %d  4: %d)" \
             % (self.l[1], self.l[2], self.l[3], self.l[4])
+        print
 
     def printspace(self, space=None):
         """generic space-printing.
-        should probably migrate this to boards._helpers"""
+        Now that the board engine is decoupled from this class, it's probably
+        a good idea to migrate this to boards._helpers"""
 
         space = space or self.space
         # print("+" + "-"*len(space[0])*2 + "+")
@@ -624,15 +626,15 @@ class TetrisSimulator(object):
             # the True parameter means full rows are counted *and* cleared
             self.space.check_full(True)
 
-            if self.show_choice:
-                print_board(self.space, entire=True, show_full=True)
-                time.sleep(0.1)
-
             if self.show_scores or ep % printstep == 0 and not \
                     printstep == -1:
                 print("\nEpisode: " + str(ep))
                 self.printscores()
             ep += 1
+
+            if self.show_choice:
+                print_board(self.space, entire=True, show_full=True)
+                time.sleep(self.choice_step)
 
         if self.show_result:
             print("\n\nGame Over\nFinal scores:")
@@ -684,11 +686,12 @@ def main(argv):
     # Introducing overhangs
 
     osim = TetrisSimulator(
-            controller=controller1,
+        controller=controller1,
             board=tetris_cow2(),
             curr=all_zoids["L"],
             next=all_zoids["S"],
             show_choice=True,
+            show_scores=True,
             show_options=True,
             option_step=.3,
             choice_step=1,
@@ -699,19 +702,7 @@ def main(argv):
     osim.show_options = False
     osim.choice_step = 0
 
-    if '-f' in argv:
-        osim = TetrisSimulator(
-            controller=controller1,
-            board=tetris_cow2(),
-            curr=all_zoids["L"],
-            next=all_zoids["S"],
-            seed=1
-        )
-        os.overhangs, osim.force_legal = False, False
-        osim.run()
-    else:  # normal
-        osim.overhangs, osim.force_legal = False, False
-        osim.run()
+    osim.run()
 
     # overhangs allowed, but legality not enforced
     # osim.overhangs, osim.force_legal = True, False
