@@ -1,9 +1,10 @@
 #!/usr/bin/python
-import random
+import platform, sys
+if platform.system() == 'Linux':
+    sys.path.insert(1,"lib.linux-x86_64-2.7")
 from tetris_cpp import *
 from boards import print_board, all_zoids
-import time
-import sys
+import time, random
 
 
 class TetrisSimulator(object):
