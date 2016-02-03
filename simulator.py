@@ -629,8 +629,7 @@ class TetrisSimulator(object):
             # the True parameter means full rows are counted *and* cleared
             self.space.check_full(True)
 
-            if self.show_scores or ep % printstep == 0 and not \
-                    printstep == -1:
+            if self.show_scores and ep % printstep == 0 and not printstep == -1:
                 print("\nEpisode: " + str(ep))
                 self.printscores()
             ep += 1
@@ -715,6 +714,33 @@ def main(argv):
     # osim.overhangs, osim.force_legal = True, True
     # osim.run()
 
+def mm_test(landing_height, eroded_cells, row_trans, col_trans, pits, cuml_wells, pit_depth, pit_rows):
+
+    controller = {
+        "landing_height": landing_height,
+        "eroded_cells": eroded_cells,
+        "row_trans": row_trans,
+        "col_trans": col_trans,
+        "pits": pits,
+        "cuml_wells":cuml_wells,
+        "pit_depth": pit_depth,
+        "pit_rows": pit_rows
+    }
+
+    osim = TetrisSimulator(
+        controller=controller,
+            board=tetris_cow2(),
+            curr=all_zoids["L"],
+            next=all_zoids["S"],
+            show_choice=False,
+            show_scores=False,
+            show_options=False,
+            show_result=False,
+            seed=1
+    )
+
+    return osim.run()
+
 
 if __name__ == "__main__":
-    main(sys.argv)
+    print mm_test(1,1,1,1,1,1,1,1)
