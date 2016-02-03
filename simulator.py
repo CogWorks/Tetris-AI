@@ -1,7 +1,9 @@
 #!/usr/bin/python
 import platform, sys
 if platform.system() == 'Linux':
-    sys.path.insert(1,"lib.linux-x86_64-2.7")
+    sys.path.insert(1,"lib/lib.linux-x86_64-2.7")
+elif platform.system() == 'Darwin':
+    sys.path.insert(1,"lib/lib.macosx-10.10-x86_64-2.7")
 from tetris_cpp import *
 from boards import print_board, all_zoids
 import time, random
