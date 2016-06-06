@@ -315,7 +315,7 @@ if __name__ == '__main__':
             game_seed = rng.randint(0,100000)
             
             sim = TetrisSimulator(controller = random_controller, show_choice = show_choice, show_result = show_result, choice_step = v_step, name = controller_name, seed = game_seed)
-            sim_result = sim.run(eps = episodes, printstep = report_every)
+            sim_result = sim.run(max_eps = episodes, printstep = report_every)
             
             #session_vars, name, features, controller, vars = False, outs = False
             write_controller(outfile, session_variables, controller_name, features, random_controller, 
