@@ -345,7 +345,7 @@ if __name__ == '__main__':
             for r in range(0, test_reps):
                 test_name = "G" + str(x + 1) + "_T" + str(g+1) + "_R" + str(r+1)
                 test_sim = TetrisSimulator(controller = start_controller, show_result = show_result, show_choice = show_choice, choice_step = v_step, name = test_name, seed = test_seed)
-                test_res = test_sim.run(eps = episodes, printstep = report_every)
+                test_res = test_sim.run(max_eps = episodes, printstep = report_every)
                 
                 test_results.append(test_res)
                 write_controller(outfile, session_variables, test_name, features, start_controller, outs = test_res, 
