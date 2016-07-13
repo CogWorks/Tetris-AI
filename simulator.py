@@ -745,7 +745,7 @@ def mm_test(landing_height, eroded_cells, row_trans, col_trans, pits, cuml_wells
 if __name__ == "__main__":
     print mm_test(1,1,1,1,1,1,1,1)
 
-def mm_test2(landing_height, eroded_cells, row_trans, col_trans, pits, cuml_wells, pit_depth, pit_rows, eps):
+def mm_test2(landing_height, eroded_cells, row_trans, col_trans, pits, cuml_wells, pit_depth, pit_rows, max_eps):
 
     controller = {
         "landing_height": landing_height,
@@ -770,7 +770,7 @@ def mm_test2(landing_height, eroded_cells, row_trans, col_trans, pits, cuml_well
             seed=1
     )
 
-    return osim.run(max_eps = eps)
+    return osim.run(max_eps = max_eps)
     
 if __name__ == "__main__":
     print mm_test2(1,1,1,1,1,1,1,1)
