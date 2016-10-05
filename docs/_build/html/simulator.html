@@ -1,0 +1,544 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Simulator Module &mdash; Tetris-AI - RPI Cogworks Laboratory 1.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Tetris-AI - RPI Cogworks Laboratory 1.0 documentation" href="index.html" />
+    <link rel="prev" title="Welcome to Tetris-AI’s documentation!" href="index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-simulator">
+<span id="simulator-module"></span><h1>Simulator Module<a class="headerlink" href="#module-simulator" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="tetrissimulator-class">
+<h2>TetrisSimulator class<a class="headerlink" href="#tetrissimulator-class" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="simulator.TetrisSimulator">
+<em class="property">class </em><code class="descclassname">simulator.</code><code class="descname">TetrisSimulator</code><span class="sig-paren">(</span><em>board=None</em>, <em>curr=None</em>, <em>next=None</em>, <em>controller=None</em>, <em>show_scores=False</em>, <em>show_options=False</em>, <em>show_result=True</em>, <em>show_choice=False</em>, <em>option_step=0</em>, <em>choice_step=0</em>, <em>name='Controller'</em>, <em>seed=1456908114.923909</em>, <em>overhangs=False</em>, <em>force_legal=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/simulator.html#TetrisSimulator"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simulator.TetrisSimulator" title="Permalink to this definition">¶</a></dt>
+<dd><div class="line-block">
+<div class="line"><strong>TetrisSimulator is a board object that supports assessment metrics and future simulations.</strong></div>
+<div class="line">This class is the basic building block of the Tetris A.I. Simulator.</div>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Variables:</th><td class="field-body"><ul class="first last simple">
+<li><strong>sequence</strong> (<em>random.Random</em>) &#8211; Python random object, used to randomly select zoids.</li>
+<li><strong>space</strong> (<em>tetris_cow2</em>) &#8211; Board representation.</li>
+<li><strong>curr_z</strong> (<em>tetris_zoid</em>) &#8211; Current zoid.</li>
+<li><strong>next_z</strong> (<em>tetris_zoid</em>) &#8211; Next zoid.</li>
+<li><strong>name</strong> (<em>string</em>) &#8211; The name for logging and tracking purposes.</li>
+<li><strong>overhangs</strong> (<em>bool</em>) &#8211; Decides whether to use a more robust system for determining possible moves. <strong>Has not been implemented yet</strong></li>
+<li><strong>force_legal</strong> (<em>bool</em>) &#8211; Enables an A* search to determine if overhang moves are actually legal (<strong>COSTLY</strong>).</li>
+<li><strong>controller</strong> (<em>dictionary{string-float}</em>) &#8211; Feature names and their relative weights.</li>
+<li><strong>show_result</strong> (<em>bool</em>) &#8211; Determines whether to print the results of each game.</li>
+<li><strong>show_scores</strong> (<em>bool</em>) &#8211; Determines wether to display the scores of the current moves.</li>
+<li><strong>show_options</strong> (<em>bool</em>) &#8211; Determines whether to print POTENTIAL move as it is considered.</li>
+<li><strong>show_choice</strong> (<em>bool</em>) &#8211; Determines whether to show the CHOSEN move.</li>
+<li><strong>option_step</strong> (<em>float</em>) &#8211; The delay time (in seconds) for displaying each option (<strong>COSTLY</strong>).</li>
+<li><strong>choice_step</strong> (<em>float</em>) &#8211; The delay time (in seconds) for displaying each choice (<strong>COSTLY</strong>).</li>
+<li><strong>lines</strong> (<em>int</em>) &#8211; Number of lines cleared</li>
+<li><strong>l</strong> (<em>dictionary{int-int}</em>) &#8211; Keeps track of 1, 2, 3, and 4 line clear moves.</li>
+<li><strong>score</strong> (<em>int</em>) &#8211; Current score.</li>
+<li><strong>level</strong> (<em>int</em>) &#8211; Current level.</li>
+<li><strong>options</strong> &#8211; A list of options for possible moves. (generated by possible_moves() function)</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="simulator.TetrisSimulator.get_random_zoid">
+<code class="descname">get_random_zoid</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/simulator.html#TetrisSimulator.get_random_zoid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simulator.TetrisSimulator.get_random_zoid" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates a new random zoid. duplicates are generally avoided.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">int &#8211; A zoid id.</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">This function generates an error and is not used elsewhere in this
+module.</p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="simulator.TetrisSimulator.new_zoids">
+<code class="descname">new_zoids</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/simulator.html#TetrisSimulator.new_zoids"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simulator.TetrisSimulator.new_zoids" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets current zoid to next zoid and chooses a new random zoid for the
+next zoid.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Modifies:</th><td class="field-body">self.curr_z, self.next_z</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="simulator.TetrisSimulator.update_score">
+<code class="descname">update_score</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/simulator.html#TetrisSimulator.update_score"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simulator.TetrisSimulator.update_score" title="Permalink to this definition">¶</a></dt>
+<dd><p>Scores the board. Should be called immediately after a move
+is made.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Modifies:</th><td class="field-body">self.lines, self.l, self.score, self.level</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="simulator.TetrisSimulator.printscores">
+<code class="descname">printscores</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/simulator.html#TetrisSimulator.printscores"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simulator.TetrisSimulator.printscores" title="Permalink to this definition">¶</a></dt>
+<dd><p>Print the scores in the following format:</p>
+<div class="line-block">
+<div class="line">Name:  self.name</div>
+<div class="line">Level: self.level</div>
+<div class="line">Score: self.score</div>
+<div class="line">Lines: self.lines</div>
+<div class="line-block">
+<div class="line">(1: self.l[1] 2: self.l[2] 3: self.l[3] 4: self.l[4])</div>
+</div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="simulator.TetrisSimulator.printspace">
+<code class="descname">printspace</code><span class="sig-paren">(</span><em>space=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/simulator.html#TetrisSimulator.printspace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simulator.TetrisSimulator.printspace" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generic space-printing.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Now that the board engine is decoupled from this class, it&#8217;s probably
+a good idea to migrate this to boards._helpers</p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="simulator.TetrisSimulator.printcontroller">
+<code class="descname">printcontroller</code><span class="sig-paren">(</span><em>feats=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/simulator.html#TetrisSimulator.printcontroller"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simulator.TetrisSimulator.printcontroller" title="Permalink to this definition">¶</a></dt>
+<dd><p>Print the controller&#8217;s values.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>feats</strong> (<em>dictionary {string : ?}</em>) &#8211; Additional information about values in controller (optional).</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="simulator.TetrisSimulator.get_options">
+<code class="descname">get_options</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/simulator.html#TetrisSimulator.get_options"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simulator.TetrisSimulator.get_options" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates the list of options</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Modifies:</th><td class="field-body">self.options</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body">Exception if self.overhangs == True</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">[(int, (int, int))] &#8211; A list of options in the format [(orientaion, (row, column))]</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="simulator.TetrisSimulator.possible_moves">
+<code class="descname">possible_moves</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/simulator.html#TetrisSimulator.possible_moves"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simulator.TetrisSimulator.possible_moves" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates a list of possible moves via the Straight-Drop method
+for each orientation, it drops the zoid straight down in each
+column.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">[(int, (int, int))] &#8211; A list of possible moves in the format [(orientaion, (row, column))]</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="simulator.TetrisSimulator.get_features">
+<code class="descname">get_features</code><span class="sig-paren">(</span><em>space</em>, <em>prev_space=None</em>, <em>convert=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/simulator.html#TetrisSimulator.get_features"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simulator.TetrisSimulator.get_features" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieves all of the features for a given space</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>space</strong> (<em>tetris_cow2</em>) &#8211; The current board space.</li>
+<li><strong>prev_space</strong> (<em>tetris_cow2</em>) &#8211; Previous board space (default = None).</li>
+<li><strong>convert</strong> (<em>bool</em>) &#8211; converts space to an integer values of its boolean representation (default = False).</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">{string : number} &#8211; A dictionary of all features</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="simulator.TetrisSimulator.get_height">
+<code class="descname">get_height</code><span class="sig-paren">(</span><em>v</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/simulator.html#TetrisSimulator.get_height"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simulator.TetrisSimulator.get_height" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets the height of any column.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>v</strong> (<em>int</em>) &#8211; The column number.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">int &#8211; The height of the column v.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="simulator.TetrisSimulator.get_full_cells">
+<code class="descname">get_full_cells</code><span class="sig-paren">(</span><em>space</em>, <em>row_weighted=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/simulator.html#TetrisSimulator.get_full_cells"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simulator.TetrisSimulator.get_full_cells" title="Permalink to this definition">¶</a></dt>
+<dd><p>Counts the total number of filled cells.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>space</strong> (<em>tetris_cow2</em>) &#8211; The current space.</li>
+<li><strong>row_weighted</strong> (<em>bool</em>) &#8211; Decides whether to weight cells by row.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="simulator.TetrisSimulator.get_pits">
+<code class="descname">get_pits</code><span class="sig-paren">(</span><em>v</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/simulator.html#TetrisSimulator.get_pits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simulator.TetrisSimulator.get_pits" title="Permalink to this definition">¶</a></dt>
+<dd><p>For one column, search for the number of covered empty cells</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>v</strong> (<em>int</em>) &#8211; The column number.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">a list of the rows in which pits exist. And
+a &#8216;lumped&#8217; measure of pits (adjacent pits considered one pit).</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="simulator.TetrisSimulator.get_matches">
+<code class="descname">get_matches</code><span class="sig-paren">(</span><em>space</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/simulator.html#TetrisSimulator.get_matches"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simulator.TetrisSimulator.get_matches" title="Permalink to this definition">¶</a></dt>
+<dd><p>Detect the total number of matched edges for a given zoid placement.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>space</strong> (<em>tetris_cow2</em>) &#8211; The board space to get matches from.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">int &#8211; The number of total matched edges for a given zoid placement.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="simulator.TetrisSimulator.get_all_pits">
+<code class="descname">get_all_pits</code><span class="sig-paren">(</span><em>colspace</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/simulator.html#TetrisSimulator.get_all_pits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simulator.TetrisSimulator.get_all_pits" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get pit values for all columns.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>colspace</strong> &#8211; The desired column space (returned from tetris_cow2.col_space()).</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">([int],[int],int) &#8211; (count of all pits [col_pits],
+list of rows containing pits [row_pits],
+adjacently lumped pits [lumped_pits]).</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="simulator.TetrisSimulator.get_landing_height">
+<code class="descname">get_landing_height</code><span class="sig-paren">(</span><em>space</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/simulator.html#TetrisSimulator.get_landing_height"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simulator.TetrisSimulator.get_landing_height" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine the bottommost height of a zoid placement.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>space</strong> (<em>tetris_cow2</em>) &#8211; The desired board space.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">int &#8211; The bottommost height of a zoid placement.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="simulator.TetrisSimulator.get_transitions">
+<code class="descname">get_transitions</code><span class="sig-paren">(</span><em>v</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/simulator.html#TetrisSimulator.get_transitions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simulator.TetrisSimulator.get_transitions" title="Permalink to this definition">¶</a></dt>
+<dd><p>For one vector, get the number of transitions from empty to
+full, or vice versa.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>v</strong> (<em>[int]</em>) &#8211; Vector of a row.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">int &#8211; Number of transitions from empty to full.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="simulator.TetrisSimulator.get_all_transitions">
+<code class="descname">get_all_transitions</code><span class="sig-paren">(</span><em>space</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/simulator.html#TetrisSimulator.get_all_transitions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simulator.TetrisSimulator.get_all_transitions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get transitions for all vectors in a space (generic).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>space</strong> (<em>tetris_cow2</em>) &#8211; The desired board space.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">[int] &#8211; Number of transitions for each row in space.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="simulator.TetrisSimulator.get_col_diversity">
+<code class="descname">get_col_diversity</code><span class="sig-paren">(</span><em>colspace</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/simulator.html#TetrisSimulator.get_col_diversity"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simulator.TetrisSimulator.get_col_diversity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine how many times a pattern is repeated
+lower values mean the pattern is less diverse, and more ordered.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>colspace</strong> &#8211; The desired column space (returned from tetris_cow2.col_space()).</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Number of repeated patterns.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="simulator.TetrisSimulator.get_pit_depth">
+<code class="descname">get_pit_depth</code><span class="sig-paren">(</span><em>v</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/simulator.html#TetrisSimulator.get_pit_depth"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simulator.TetrisSimulator.get_pit_depth" title="Permalink to this definition">¶</a></dt>
+<dd><p>Detect the depth of all pits in a vector.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>v</strong> (<em>[int]</em>) &#8211; Vector of a row.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Depth of a pit in a vector.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="simulator.TetrisSimulator.get_wells">
+<code class="descname">get_wells</code><span class="sig-paren">(</span><em>heights</em>, <em>cumulative=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/simulator.html#TetrisSimulator.get_wells"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simulator.TetrisSimulator.get_wells" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine the number of wells.
+Wells are columns with higher columns on either side.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>heights</strong> (<em>[int]</em>) &#8211; List of heights for each column (from self.get_height(col)).</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">[int] &#8211; A list of wells.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="simulator.TetrisSimulator.nine_filled">
+<code class="descname">nine_filled</code><span class="sig-paren">(</span><em>row</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/simulator.html#TetrisSimulator.nine_filled"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simulator.TetrisSimulator.nine_filled" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determines if a row has 9 cells filled.
+(Useful in determining tetris progress)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>row</strong> (<em>[int]</em>) &#8211; A vector representation of the row.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">int, None &#8211; Empty column number if 9 cells filled, None otherwise.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="simulator.TetrisSimulator.get_tetris_progress">
+<code class="descname">get_tetris_progress</code><span class="sig-paren">(</span><em>space</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/simulator.html#TetrisSimulator.get_tetris_progress"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simulator.TetrisSimulator.get_tetris_progress" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determines the current progress toward scoring a tetris.</p>
+<p>e.g. If four rows have 9 cells filled and the 9th cell is in
+the same column for each and there is nothing above that column
+tetris_progress = 4, (i.e. a tetris is available)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>space</strong> (<em>tetris_cow2</em>) &#8211; The desired board space.</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">eating a LOT of the processing, complicated measure JKL cooked up.
+<strong>Only Returns 0, 0</strong></p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="simulator.TetrisSimulator.control">
+<code class="descname">control</code><span class="sig-paren">(</span><em>orient</em>, <em>pos</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/simulator.html#TetrisSimulator.control"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simulator.TetrisSimulator.control" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns an integer corresponding to the score of a move given the
+orientation and position to place the current zoid.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>orient</strong> &#8211; The orientation to place the current zoid.</li>
+<li><strong>pos</strong> &#8211; The position to place the current zoid.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">int &#8211; Move score.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="simulator.TetrisSimulator.run">
+<code class="descname">run</code><span class="sig-paren">(</span><em>max_eps=None</em>, <em>printstep=500</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/simulator.html#TetrisSimulator.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#simulator.TetrisSimulator.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Runs the simulator.
+Generates possible moves and chooses one.
+Loops until game_over or max_eps is exceeded.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Simulator Module</a><ul>
+<li><a class="reference internal" href="#tetrissimulator-class">TetrisSimulator class</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">Welcome to Tetris-AI&#8217;s documentation!</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/simulator.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2016, John Lindstedt, Catherine Sibert, Ryan Hope, Keenan Sanchez, Mitchell Mellone.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.7</a>
+      
+      |
+      <a href="_sources/simulator.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

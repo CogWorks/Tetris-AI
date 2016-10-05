@@ -1,0 +1,992 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>simulator &mdash; Tetris-AI - RPI Cogworks Laboratory 1.0 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="Tetris-AI - RPI Cogworks Laboratory 1.0 documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for simulator</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/python</span>
+<span class="kn">import</span> <span class="nn">platform</span><span class="o">,</span> <span class="nn">sys</span>
+<span class="k">if</span> <span class="n">platform</span><span class="o">.</span><span class="n">system</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;Linux&#39;</span><span class="p">:</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="s2">&quot;lib/lib.linux-x86_64-2.7&quot;</span><span class="p">)</span>
+<span class="k">elif</span> <span class="n">platform</span><span class="o">.</span><span class="n">system</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;Darwin&#39;</span><span class="p">:</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="s2">&quot;lib/lib.macosx-10.10-x86_64-2.7&quot;</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">tetris_cpp</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">boards</span> <span class="kn">import</span> <span class="n">print_board</span><span class="p">,</span> <span class="n">all_zoids</span>
+<span class="kn">import</span> <span class="nn">time</span><span class="o">,</span> <span class="nn">random</span>
+
+
+<div class="viewcode-block" id="TetrisSimulator"><a class="viewcode-back" href="../simulator.html#simulator.TetrisSimulator">[docs]</a><span class="k">class</span> <span class="nc">TetrisSimulator</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;| **TetrisSimulator is a board object that supports assessment metrics and future simulations.**</span>
+<span class="sd">    | This class is the basic building block of the Tetris A.I. Simulator.</span>
+
+<span class="sd">    :ivar random.Random sequence: Python random object, used to randomly select zoids.</span>
+<span class="sd">    :ivar tetris_cow2 space: Board representation.</span>
+<span class="sd">    :ivar tetris_zoid curr_z: Current zoid.</span>
+<span class="sd">    :ivar tetris_zoid next_z: Next zoid.</span>
+<span class="sd">    :ivar string name: The name for logging and tracking purposes.</span>
+<span class="sd">    :ivar bool overhangs: Decides whether to use a more robust system for determining possible moves. **Has not been implemented yet**</span>
+<span class="sd">    :ivar bool force_legal: Enables an A* search to determine if overhang moves are actually legal (**COSTLY**).</span>
+<span class="sd">    :ivar dictionary{string-float} controller: Feature names and their relative weights.</span>
+<span class="sd">    :ivar bool show_result: Determines whether to print the results of each game.</span>
+<span class="sd">    :ivar bool show_scores: Determines wether to display the scores of the current moves.</span>
+<span class="sd">    :ivar bool show_options: Determines whether to print POTENTIAL move as it is considered.</span>
+<span class="sd">    :ivar bool show_choice: Determines whether to show the CHOSEN move.</span>
+<span class="sd">    :ivar float option_step: The delay time (in seconds) for displaying each option (**COSTLY**).</span>
+<span class="sd">    :ivar float choice_step: The delay time (in seconds) for displaying each choice (**COSTLY**).</span>
+<span class="sd">    :ivar int lines: Number of lines cleared</span>
+<span class="sd">    :ivar dictionary{int-int} l: Keeps track of 1, 2, 3, and 4 line clear moves.</span>
+<span class="sd">    :ivar int score: Current score.</span>
+<span class="sd">    :ivar int level: Current level.</span>
+<span class="sd">    :ivar options: A list of options for possible moves. (generated by possible_moves() function)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># modifiers for the run</span>
+    <span class="n">how_scores</span> <span class="o">=</span> <span class="bp">False</span>
+    <span class="n">show_options</span> <span class="o">=</span> <span class="bp">False</span>
+    <span class="n">option_step</span> <span class="o">=</span> <span class="o">.</span><span class="mi">1</span>
+    <span class="n">show_choice</span> <span class="o">=</span> <span class="bp">False</span>
+    <span class="n">choice_step</span> <span class="o">=</span> <span class="o">.</span><span class="mi">5</span>
+
+    <span class="c1"># pieces from the PENTIX variant of Tetris.</span>
+    <span class="c1"># pieces = [&quot;BIG_T&quot;,&quot;BIG_I&quot;,&quot;BIG_J&quot;,&quot;BIG_L&quot;,&quot;BIG_S&quot;,&quot;BIG_Z&quot;,</span>
+    <span class="c1">#              &quot;PLUS&quot;,&quot;U&quot;,&quot;BIG_V&quot;,&quot;D&quot;,&quot;B&quot;,&quot;W&quot;,</span>
+    <span class="c1">#              &quot;J_DOT&quot;,&quot;L_DOT&quot;,&quot;J_STILT&quot;,&quot;L_STILT&quot;,&quot;LONG_S&quot;,&quot;LONG_Z&quot;]</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">board</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">curr</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="nb">next</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">controller</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                 <span class="n">show_scores</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">show_options</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">show_result</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+                 <span class="n">show_choice</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">option_step</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">choice_step</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                 <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Controller&quot;</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span> <span class="n">overhangs</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                 <span class="n">force_legal</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Initializes the simulator object.</span>
+
+<span class="sd">        :param board: A board representation [20 rows, 10 columns].</span>
+<span class="sd">        :param curr: The current zoid.</span>
+<span class="sd">        :param next: The next zoid.</span>
+<span class="sd">        :param controller: A dictionary of feature names and their relative weights.</span>
+<span class="sd">        :param show_scores: Whether to display the scores of the current moves.</span>
+<span class="sd">        :param show_options: Whether to print **POTENTIAL** move as it is considered.</span>
+<span class="sd">        :param show_result: Whether to print the results of each game.</span>
+<span class="sd">        :param show_choice: Whether to show the **CHOSEN** move.</span>
+<span class="sd">        :param option_step: The delay time (in seconds) for displaying each option (**COSTLY**).</span>
+<span class="sd">        :param choice_step: The delay time (in seconds) for displaying each choice (**COSTLY**).</span>
+<span class="sd">        :param name: The name given for logging and tracking purposes (printed during long runs).</span>
+<span class="sd">        :param overhangs: If enabled, uses a more robust system for determining possible moves.</span>
+<span class="sd">        :param force_legal: Enables an A* search to determine if overhang moves are actually legal (COSTLY).</span>
+
+<span class="sd">        :type board: tetris_cow2</span>
+<span class="sd">        :type curr: tetris_zoid</span>
+<span class="sd">        :type next: tetris_zoid</span>
+<span class="sd">        :type controller: dictionary {string : float}</span>
+<span class="sd">        :type show_scores: bool</span>
+<span class="sd">        :type show_options: bool</span>
+<span class="sd">        :type show_result: bool</span>
+<span class="sd">        :type show_choice: bool</span>
+<span class="sd">        :type option_step: float</span>
+<span class="sd">        :type choice_step: float</span>
+<span class="sd">        :type name: string</span>
+<span class="sd">        :type overhangs: bool</span>
+<span class="sd">        :type force_legal: bool</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">sequence</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">Random</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">board</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">space</span> <span class="o">=</span> <span class="n">board</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">space</span> <span class="o">=</span> <span class="n">tetris_cow2</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">curr</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">curr_z</span> <span class="o">=</span> <span class="n">curr</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">curr_z</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sequence</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">all_zoids</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+
+        <span class="k">if</span> <span class="nb">next</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">next_z</span> <span class="o">=</span> <span class="nb">next</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">next_z</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sequence</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">all_zoids</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">overhangs</span> <span class="o">=</span> <span class="n">overhangs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">force_legal</span> <span class="o">=</span> <span class="n">force_legal</span>
+
+        <span class="k">if</span> <span class="n">controller</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">controller</span> <span class="o">=</span> <span class="n">controller</span>
+        <span class="k">else</span><span class="p">:</span>  <span class="c1"># default Dellacherie model</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">controller</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;landing_height&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+                               <span class="s2">&quot;eroded_cells&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+                               <span class="s2">&quot;row_trans&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+                               <span class="s2">&quot;col_trans&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+                               <span class="s2">&quot;pits&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">4</span><span class="p">,</span>
+                               <span class="s2">&quot;cuml_wells&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">}</span>
+
+        <span class="c1"># display options saved</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">show_result</span> <span class="o">=</span> <span class="n">show_result</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">show_scores</span> <span class="o">=</span> <span class="n">show_scores</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">show_options</span> <span class="o">=</span> <span class="n">show_options</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">show_choice</span> <span class="o">=</span> <span class="n">show_choice</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">option_step</span> <span class="o">=</span> <span class="n">option_step</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">choice_step</span> <span class="o">=</span> <span class="n">choice_step</span>
+
+        <span class="c1"># output scores initialized</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lines</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">l</span> <span class="o">=</span> <span class="p">{</span><span class="mi">1</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">4</span><span class="p">:</span> <span class="mi">0</span><span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">score</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">level</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="c1"># self.stats_dict = {}</span>
+
+    <span class="c1"># GAME METHODS &gt;&gt;&gt;&gt;&gt;</span>
+
+<div class="viewcode-block" id="TetrisSimulator.get_random_zoid"><a class="viewcode-back" href="../simulator.html#simulator.TetrisSimulator.get_random_zoid">[docs]</a>    <span class="k">def</span> <span class="nf">get_random_zoid</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Generates a new random zoid. duplicates are generally avoided.</span>
+
+<span class="sd">        :return: int -- A zoid id.</span>
+
+<span class="sd">        ..  warning::</span>
+<span class="sd">            This function generates an error and is not used elsewhere in this</span>
+<span class="sd">            module.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># generate random, but with dummy value 7</span>
+            <span class="c1">#[7? in the specs, but what good is it?]</span>
+        <span class="n">z_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sequence</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">zoids</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
+        <span class="c1"># then repeat/dummy check, and reroll *once*</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">curr_z</span> <span class="ow">or</span> <span class="n">z_id</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">zoids</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">sequence</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">zoids</span><span class="p">)))</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">zoids</span><span class="p">[</span><span class="n">z_id</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">curr_z</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">sequence</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">zoids</span><span class="p">)))</span>
+
+        <span class="k">return</span> <span class="n">z_id</span></div>
+
+<div class="viewcode-block" id="TetrisSimulator.new_zoids"><a class="viewcode-back" href="../simulator.html#simulator.TetrisSimulator.new_zoids">[docs]</a>    <span class="k">def</span> <span class="nf">new_zoids</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Sets current zoid to next zoid and chooses a new random zoid for the</span>
+<span class="sd">        next zoid.</span>
+
+<span class="sd">        :modifies: self.curr_z, self.next_z</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">curr_z</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">next_z</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">next_z</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sequence</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">all_zoids</span><span class="o">.</span><span class="n">values</span><span class="p">())</span></div>
+
+<div class="viewcode-block" id="TetrisSimulator.update_score"><a class="viewcode-back" href="../simulator.html#simulator.TetrisSimulator.update_score">[docs]</a>    <span class="k">def</span> <span class="nf">update_score</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Scores the board. Should be called immediately after a move</span>
+<span class="sd">        is made.</span>
+
+<span class="sd">        :modifies: self.lines, self.l, self.score, self.level</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">clears</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="nb">all</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">space</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lines</span> <span class="o">+=</span> <span class="n">clears</span>
+        <span class="k">if</span> <span class="n">clears</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">l</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">l</span><span class="p">[</span><span class="n">clears</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">score</span> <span class="o">+=</span> <span class="p">{</span><span class="mi">1</span><span class="p">:</span> <span class="mi">40</span><span class="p">,</span> <span class="mi">2</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">3</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span> <span class="mi">4</span><span class="p">:</span> <span class="mi">1200</span><span class="p">}[</span><span class="n">clears</span><span class="p">]</span> <span class="o">*</span> \
+                <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">level</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">level</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lines</span> <span class="o">/</span> <span class="mi">10</span><span class="p">)</span></div>
+
+    <span class="c1"># &lt;&lt;&lt;&lt;&lt; GAME METHODS</span>
+
+    <span class="c1"># DISPLAY &gt;&gt;&gt;&gt;&gt;</span>
+
+<div class="viewcode-block" id="TetrisSimulator.printscores"><a class="viewcode-back" href="../simulator.html#simulator.TetrisSimulator.printscores">[docs]</a>    <span class="k">def</span> <span class="nf">printscores</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Print the scores in the following format:</span>
+
+<span class="sd">        | Name:  self.name</span>
+<span class="sd">        | Level: self.level</span>
+<span class="sd">        | Score: self.score</span>
+<span class="sd">        | Lines: self.lines</span>
+<span class="sd">        |   (1: self.l[1] 2: self.l[2] 3: self.l[3] 4: self.l[4])</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Name:</span><span class="se">\t</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Level:</span><span class="se">\t</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">level</span><span class="p">))</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Score:</span><span class="se">\t</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">score</span><span class="p">))</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Lines:</span><span class="se">\t</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lines</span><span class="p">))</span>
+        <span class="k">print</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="s2">(1: </span><span class="si">%d</span><span class="s2">  2: </span><span class="si">%d</span><span class="s2">  3: </span><span class="si">%d</span><span class="s2">  4: </span><span class="si">%d</span><span class="s2">)&quot;</span> \
+            <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">l</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">l</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">l</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">l</span><span class="p">[</span><span class="mi">4</span><span class="p">])</span>
+        <span class="k">print</span></div>
+
+<div class="viewcode-block" id="TetrisSimulator.printspace"><a class="viewcode-back" href="../simulator.html#simulator.TetrisSimulator.printspace">[docs]</a>    <span class="k">def</span> <span class="nf">printspace</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">space</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Generic space-printing.</span>
+
+<span class="sd">        .. note::</span>
+<span class="sd">            Now that the board engine is decoupled from this class, it&#39;s probably</span>
+<span class="sd">            a good idea to migrate this to boards._helpers</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">space</span> <span class="o">=</span> <span class="n">space</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">space</span>
+        <span class="c1"># print(&quot;+&quot; + &quot;-&quot;*len(space[0])*2 + &quot;+&quot;)</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">&quot;+&quot;</span> <span class="o">+</span> <span class="s2">&quot;-&quot;</span> <span class="o">*</span> <span class="n">space</span><span class="o">.</span><span class="n">col_count</span><span class="p">()</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">+</span> <span class="s2">&quot;+&quot;</span><span class="p">)</span>
+        <span class="c1"># for i in range(len(space)):</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">space</span><span class="o">.</span><span class="n">rows</span><span class="p">(</span><span class="nb">all</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+            <span class="n">row</span> <span class="o">=</span> <span class="p">({</span><span class="mi">0</span><span class="p">:</span> <span class="s1">&#39;  &#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span> <span class="s1">&#39;[]&#39;</span><span class="p">,</span> <span class="mi">2</span><span class="p">:</span> <span class="s1">&#39;WM&#39;</span><span class="p">}[</span><span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">space</span><span class="o">.</span><span class="n">row_iter</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
+            <span class="k">print</span> <span class="s1">&#39;|</span><span class="si">%r</span><span class="s1">|</span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">row</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">space</span> <span class="o">-</span> <span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)))</span>
+            <span class="k">print</span> <span class="s2">&quot;+&quot;</span> <span class="o">+</span> <span class="s2">&quot;-&quot;</span> <span class="o">*</span> <span class="n">space</span><span class="o">.</span><span class="n">col_count</span><span class="p">()</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">+</span> <span class="s2">&quot;+&quot;</span>
+        <span class="n">numline</span> <span class="o">=</span> <span class="s2">&quot; &quot;</span> <span class="o">+</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">space</span><span class="o">.</span><span class="n">cols</span><span class="p">())</span>
+        <span class="k">print</span> <span class="n">numline</span></div>
+
+<div class="viewcode-block" id="TetrisSimulator.printcontroller"><a class="viewcode-back" href="../simulator.html#simulator.TetrisSimulator.printcontroller">[docs]</a>    <span class="k">def</span> <span class="nf">printcontroller</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">feats</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Print the controller&#39;s values.</span>
+
+<span class="sd">        :param feats: Additional information about values in controller (optional).</span>
+<span class="sd">        :type feats: dictionary {string : ?}</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">controller</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+            <span class="n">outstr</span> <span class="o">=</span> <span class="n">k</span><span class="o">.</span><span class="n">ljust</span><span class="p">(</span><span class="mi">15</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;:</span><span class="se">\t</span><span class="s2">&quot;</span>
+            <span class="k">if</span> <span class="n">feats</span><span class="p">:</span>
+                <span class="n">outstr</span> <span class="o">+=</span> <span class="nb">str</span><span class="p">(</span><span class="n">feats</span><span class="p">[</span><span class="n">k</span><span class="p">])</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="s2">(&quot;</span> <span class="o">+</span> \
+                    <span class="p">(</span><span class="s1">&#39;</span><span class="si">%3.3f</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">controller</span><span class="p">[</span><span class="n">k</span><span class="p">])</span><span class="o">.</span><span class="n">rjust</span><span class="p">(</span><span class="mi">8</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;)&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">outstr</span> <span class="o">+=</span> <span class="p">(</span><span class="s1">&#39;</span><span class="si">%3.3f</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">controller</span><span class="p">[</span><span class="n">k</span><span class="p">])</span><span class="o">.</span><span class="n">rjust</span><span class="p">(</span><span class="mi">8</span><span class="p">)</span>
+            <span class="k">print</span><span class="p">(</span><span class="n">outstr</span><span class="p">)</span></div>
+
+    <span class="c1"># u&quot;\u2b1c&quot;</span>
+    <span class="c1"># u&quot;\u2b1c&quot;</span>
+    <span class="c1"># u&quot;\u27DD&quot;</span>
+
+    <span class="c1"># &lt;&lt;&lt;&lt;&lt; DISPLAY</span>
+
+    <span class="c1"># METHODS TO GET PERCEPTS &gt;&gt;&gt;&gt;&gt;</span>
+
+<div class="viewcode-block" id="TetrisSimulator.get_options"><a class="viewcode-back" href="../simulator.html#simulator.TetrisSimulator.get_options">[docs]</a>    <span class="k">def</span> <span class="nf">get_options</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Generates the list of options</span>
+
+<span class="sd">        :modifies: self.options</span>
+<span class="sd">        :raises: Exception if self.overhangs == True</span>
+<span class="sd">        :returns: [(int, (int, int))] -- A list of options in the format [(orientaion, (row, column))]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">overhangs</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;support for overhangs has not been implemented&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">possible_moves</span><span class="p">()</span>
+            <span class="c1"># self.options = [x for x in self.possible_moves() if not x[5]]</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span></div>
+
+<div class="viewcode-block" id="TetrisSimulator.possible_moves"><a class="viewcode-back" href="../simulator.html#simulator.TetrisSimulator.possible_moves">[docs]</a>    <span class="k">def</span> <span class="nf">possible_moves</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Generates a list of possible moves via the Straight-Drop method</span>
+<span class="sd">        for each orientation, it drops the zoid straight down in each</span>
+<span class="sd">        column.</span>
+
+<span class="sd">        :returns: [(int, (int, int))] -- A list of possible moves in the format [(orientaion, (row, column))]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">zoid</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">curr_z</span>
+        <span class="n">options</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">orient</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="mi">4</span><span class="p">):</span>
+            <span class="n">zoid</span><span class="o">.</span><span class="n">set_orient</span><span class="p">(</span><span class="n">orient</span><span class="p">)</span>
+            <span class="c1"># get the indices of all occupied cells in the zoid</span>
+            <span class="n">crds</span> <span class="o">=</span> <span class="p">[(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">zoid</span><span class="o">.</span><span class="n">rows</span><span class="p">()</span>
+                    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">zoid</span><span class="o">.</span><span class="n">cols</span><span class="p">()</span> <span class="k">if</span> <span class="n">zoid</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]]</span>
+            <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">space</span><span class="o">.</span><span class="n">cols</span><span class="p">():</span>
+                <span class="c1"># stop if we run off the board</span>
+                <span class="k">if</span> <span class="n">c</span> <span class="o">+</span> <span class="n">zoid</span><span class="o">.</span><span class="n">col_count</span><span class="p">()</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">space</span><span class="o">.</span><span class="n">col_count</span><span class="p">():</span>
+                    <span class="k">break</span>
+
+                <span class="c1"># find where the zoid rests</span>
+                <span class="n">heights</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_height</span><span class="p">(</span><span class="n">col</span><span class="p">)</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">space</span><span class="o">.</span><span class="n">col_space</span><span class="p">())</span>
+                <span class="c1"># start at the lowest column height</span>
+                <span class="n">r</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">heights</span><span class="p">[</span><span class="n">c</span><span class="p">:</span><span class="n">c</span> <span class="o">+</span> <span class="n">zoid</span><span class="o">.</span><span class="n">col_count</span><span class="p">()])</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="c1"># then keep checking the next row until all cells in the</span>
+                    <span class="c1"># board are unoccupied</span>
+                    <span class="k">while</span> <span class="nb">any</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">space</span><span class="p">[</span><span class="n">r</span> <span class="o">+</span> <span class="n">i</span><span class="p">,</span> <span class="n">c</span> <span class="o">+</span> <span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">crds</span><span class="p">):</span>
+                        <span class="n">r</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
+                    <span class="c1"># can&#39;t place the zoid in this column</span>
+                    <span class="k">continue</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">options</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">orient</span><span class="p">,</span> <span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">c</span><span class="p">)))</span>
+
+        <span class="k">return</span> <span class="n">options</span></div>
+
+<div class="viewcode-block" id="TetrisSimulator.get_features"><a class="viewcode-back" href="../simulator.html#simulator.TetrisSimulator.get_features">[docs]</a>    <span class="k">def</span> <span class="nf">get_features</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">space</span><span class="p">,</span> <span class="n">prev_space</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">convert</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Retrieves all of the features for a given space</span>
+
+<span class="sd">        :param space: The current board space.</span>
+<span class="sd">        :type space: tetris_cow2</span>
+<span class="sd">        :param prev_space: Previous board space (default = None).</span>
+<span class="sd">        :type prev_space: tetris_cow2</span>
+<span class="sd">        :param convert: converts space to an integer values of its boolean representation (default = False).</span>
+<span class="sd">        :type convert: bool</span>
+
+<span class="sd">        :returns: {string : number} -- A dictionary of all features</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">convert</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">space</span><span class="o">.</span><span class="n">rows</span><span class="p">():</span>
+                <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">space</span><span class="o">.</span><span class="n">cols</span><span class="p">():</span>
+                    <span class="n">space</span><span class="p">[</span><span class="n">r</span><span class="p">,</span> <span class="n">c</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">bool</span><span class="p">(</span><span class="n">space</span><span class="p">[</span><span class="n">r</span><span class="p">,</span> <span class="n">c</span><span class="p">]))</span>
+
+        <span class="n">cleared_space</span> <span class="o">=</span> <span class="n">space</span><span class="o">.</span><span class="n">get_cow</span><span class="p">()</span>
+        <span class="n">cleared_space</span><span class="o">.</span><span class="n">check_full</span><span class="p">(</span><span class="bp">True</span><span class="p">)</span>
+
+        <span class="n">cleared_space_cols</span> <span class="o">=</span> <span class="n">cleared_space</span><span class="o">.</span><span class="n">col_space</span><span class="p">()</span>
+
+        <span class="c1"># heavy calculations</span>
+        <span class="n">all_heights</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">get_height</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">cleared_space_cols</span><span class="p">]</span>
+        <span class="n">wells</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_wells</span><span class="p">(</span><span class="n">all_heights</span><span class="p">)</span>
+
+        <span class="n">diffs</span> <span class="o">=</span> <span class="p">[</span><span class="n">all_heights</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">x</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span>
+                 <span class="n">x</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">all_heights</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])]</span>
+        <span class="n">all_pits</span><span class="p">,</span> <span class="n">pit_rows</span><span class="p">,</span> <span class="n">lumped_pits</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_all_pits</span><span class="p">(</span><span class="n">cleared_space_cols</span><span class="p">)</span>
+        <span class="n">pit_depths</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">get_pit_depth</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">cleared_space_cols</span><span class="p">]</span>
+
+        <span class="n">features</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="c1"># height dependent</span>
+        <span class="n">features</span><span class="p">[</span><span class="s2">&quot;mean_ht&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">all_heights</span><span class="p">)</span> <span class="o">*</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">all_heights</span><span class="p">)</span> <span class="o">*</span> <span class="mf">1.0</span>
+        <span class="n">features</span><span class="p">[</span><span class="s2">&quot;max_ht&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">all_heights</span><span class="p">)</span>
+        <span class="n">features</span><span class="p">[</span><span class="s2">&quot;min_ht&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">all_heights</span><span class="p">)</span>
+        <span class="n">features</span><span class="p">[</span><span class="s2">&quot;all_ht&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">all_heights</span><span class="p">)</span>
+        <span class="n">features</span><span class="p">[</span><span class="s2">&quot;max_ht_diff&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">features</span><span class="p">[</span><span class="s2">&quot;max_ht&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">features</span><span class="p">[</span><span class="s2">&quot;mean_ht&quot;</span><span class="p">]</span>
+        <span class="n">features</span><span class="p">[</span><span class="s2">&quot;min_ht_diff&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">features</span><span class="p">[</span><span class="s2">&quot;mean_ht&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">features</span><span class="p">[</span><span class="s2">&quot;min_ht&quot;</span><span class="p">]</span>
+        <span class="n">features</span><span class="p">[</span><span class="s2">&quot;column_9&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">all_heights</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="c1"># cleared dependent</span>
+        <span class="n">features</span><span class="p">[</span><span class="s2">&quot;cleared&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="nb">all</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">space</span><span class="p">)</span>
+        <span class="n">features</span><span class="p">[</span><span class="s2">&quot;cuml_cleared&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">features</span><span class="p">[</span><span class="s2">&quot;cleared&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
+        <span class="n">features</span><span class="p">[</span><span class="s2">&quot;tetris&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">features</span><span class="p">[</span><span class="s2">&quot;cleared&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">4</span> <span class="k">else</span> <span class="mi">0</span>
+        <span class="n">features</span><span class="p">[</span><span class="s2">&quot;move_score&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">features</span><span class="p">[</span><span class="s2">&quot;cleared&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">level</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1"># trans dependent</span>
+        <span class="n">features</span><span class="p">[</span><span class="s2">&quot;col_trans&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_all_transitions</span><span class="p">(</span>
+                                    <span class="n">cleared_space_cols</span><span class="p">))</span>
+        <span class="n">features</span><span class="p">[</span><span class="s2">&quot;row_trans&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_all_transitions</span><span class="p">(</span><span class="n">cleared_space</span><span class="p">))</span>
+        <span class="n">features</span><span class="p">[</span><span class="s2">&quot;all_trans&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">features</span><span class="p">[</span><span class="s2">&quot;col_trans&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">features</span><span class="p">[</span><span class="s2">&quot;row_trans&quot;</span><span class="p">]</span>
+
+        <span class="c1"># well and height dependent</span>
+        <span class="n">features</span><span class="p">[</span><span class="s2">&quot;wells&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">wells</span><span class="p">)</span>
+        <span class="n">features</span><span class="p">[</span><span class="s2">&quot;cuml_wells&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">x</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">wells</span><span class="p">)</span>
+        <span class="n">features</span><span class="p">[</span><span class="s2">&quot;deep_wells&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">([</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">wells</span> <span class="k">if</span> <span class="n">i</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">])</span>
+        <span class="n">features</span><span class="p">[</span><span class="s2">&quot;max_well&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">wells</span><span class="p">)</span>
+
+        <span class="c1"># pit dependent</span>
+        <span class="n">features</span><span class="p">[</span><span class="s2">&quot;pits&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">all_pits</span><span class="p">)</span>
+        <span class="n">features</span><span class="p">[</span><span class="s2">&quot;pit_rows&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">pit_rows</span><span class="p">)</span>
+        <span class="n">features</span><span class="p">[</span><span class="s2">&quot;lumped_pits&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">lumped_pits</span>
+
+        <span class="c1"># pit depth dependent</span>
+        <span class="n">features</span><span class="p">[</span><span class="s2">&quot;pit_depth&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">pit_depths</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">features</span><span class="p">[</span><span class="s2">&quot;pits&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.0</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">features</span><span class="p">[</span><span class="s2">&quot;mean_pit_depth&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">features</span><span class="p">[</span><span class="s2">&quot;mean_pit_depth&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">features</span><span class="p">[</span><span class="s2">&quot;pit_depth&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.0</span> <span class="o">/</span> \
+                <span class="n">features</span><span class="p">[</span><span class="s2">&quot;pits&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.0</span>
+
+        <span class="c1"># diff and height dependent</span>
+        <span class="n">features</span><span class="p">[</span><span class="s2">&quot;cd_1&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">diffs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">features</span><span class="p">[</span><span class="s2">&quot;cd_2&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">diffs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">features</span><span class="p">[</span><span class="s2">&quot;cd_3&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">diffs</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+        <span class="n">features</span><span class="p">[</span><span class="s2">&quot;cd_4&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">diffs</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+        <span class="n">features</span><span class="p">[</span><span class="s2">&quot;cd_5&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">diffs</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span>
+        <span class="n">features</span><span class="p">[</span><span class="s2">&quot;cd_6&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">diffs</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span>
+        <span class="n">features</span><span class="p">[</span><span class="s2">&quot;cd_7&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">diffs</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span>
+        <span class="n">features</span><span class="p">[</span><span class="s2">&quot;cd_8&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">diffs</span><span class="p">[</span><span class="mi">7</span><span class="p">]</span>
+        <span class="n">features</span><span class="p">[</span><span class="s2">&quot;cd_9&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">diffs</span><span class="p">[</span><span class="mi">8</span><span class="p">]</span>
+        <span class="n">features</span><span class="p">[</span><span class="s2">&quot;all_diffs&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">diffs</span><span class="p">)</span>
+        <span class="n">features</span><span class="p">[</span><span class="s2">&quot;max_diffs&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">diffs</span><span class="p">)</span>
+        <span class="n">features</span><span class="p">[</span><span class="s2">&quot;jaggedness&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">([</span><span class="nb">abs</span><span class="p">(</span><span class="n">d</span><span class="p">)</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">diffs</span><span class="p">])</span>
+
+        <span class="c1"># previous space</span>
+        <span class="k">if</span> <span class="n">prev_space</span><span class="p">:</span>
+            <span class="n">prev_cols</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">prev_space</span><span class="p">)</span>
+            <span class="n">prev_heights</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">get_height</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">prev_cols</span><span class="p">]</span>
+            <span class="n">prev_pits</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_all_pits</span><span class="p">(</span><span class="n">prev_cols</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+            <span class="n">features</span><span class="p">[</span><span class="s2">&quot;d_max_ht&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">features</span><span class="p">[</span><span class="s2">&quot;max_ht&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="nb">max</span><span class="p">(</span><span class="n">prev_heights</span><span class="p">)</span>
+            <span class="n">features</span><span class="p">[</span><span class="s2">&quot;d_all_ht&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">features</span><span class="p">[</span><span class="s2">&quot;all_ht&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="nb">sum</span><span class="p">(</span><span class="n">prev_heights</span><span class="p">)</span>
+            <span class="n">features</span><span class="p">[</span><span class="s2">&quot;d_mean_ht&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">features</span><span class="p">[</span><span class="s2">&quot;mean_ht&quot;</span><span class="p">]</span> <span class="o">-</span> \
+                <span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">prev_heights</span><span class="p">)</span> <span class="o">*</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">prev_heights</span><span class="p">)</span> <span class="o">*</span> <span class="mf">1.0</span><span class="p">)</span>
+            <span class="n">features</span><span class="p">[</span><span class="s2">&quot;d_pits&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">features</span><span class="p">[</span><span class="s2">&quot;pits&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="nb">sum</span><span class="p">(</span><span class="n">prev_pits</span><span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">features</span><span class="p">[</span><span class="s2">&quot;d_max_ht&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span>
+            <span class="n">features</span><span class="p">[</span><span class="s2">&quot;d_all_ht&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span>
+            <span class="n">features</span><span class="p">[</span><span class="s2">&quot;d_mean_ht&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span>
+            <span class="n">features</span><span class="p">[</span><span class="s2">&quot;d_pits&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span>
+
+        <span class="c1"># independents</span>
+        <span class="n">features</span><span class="p">[</span><span class="s2">&quot;landing_height&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_landing_height</span><span class="p">(</span><span class="n">space</span><span class="p">)</span>
+
+        <span class="n">features</span><span class="p">[</span><span class="s2">&quot;pattern_div&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_col_diversity</span><span class="p">(</span><span class="n">cleared_space_cols</span><span class="p">)</span>
+
+        <span class="n">features</span><span class="p">[</span><span class="s2">&quot;matches&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_matches</span><span class="p">(</span><span class="n">space</span><span class="p">)</span>
+
+        <span class="c1"># if &quot;tetris_progress&quot; in keys or &quot;nine_filled&quot; in keys or all:</span>
+        <span class="n">tetris_progress</span><span class="p">,</span> <span class="n">nine_filled</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_tetris_progress</span><span class="p">(</span><span class="n">cleared_space</span><span class="p">)</span>
+        <span class="n">features</span><span class="p">[</span><span class="s2">&quot;tetris_progress&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tetris_progress</span>
+        <span class="n">features</span><span class="p">[</span><span class="s2">&quot;nine_filled&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">nine_filled</span>
+
+        <span class="n">features</span><span class="p">[</span><span class="s2">&quot;full_cells&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_full_cells</span><span class="p">(</span><span class="n">cleared_space</span><span class="p">)</span>
+
+        <span class="n">features</span><span class="p">[</span><span class="s2">&quot;weighted_cells&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_full_cells</span><span class="p">(</span><span class="n">cleared_space</span><span class="p">,</span>
+                                                         <span class="n">row_weighted</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+        <span class="n">features</span><span class="p">[</span><span class="s2">&quot;eroded_cells&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">else</span> <span class="mi">0</span>
+                                       <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">space</span><span class="p">)</span>
+        <span class="n">features</span><span class="p">[</span><span class="s2">&quot;cuml_eroded&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">features</span><span class="p">[</span><span class="s2">&quot;eroded_cells&quot;</span><span class="p">]))</span>
+
+        <span class="k">return</span> <span class="n">features</span></div>
+
+<div class="viewcode-block" id="TetrisSimulator.get_height"><a class="viewcode-back" href="../simulator.html#simulator.TetrisSimulator.get_height">[docs]</a>    <span class="k">def</span> <span class="nf">get_height</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Gets the height of any column.</span>
+
+<span class="sd">        :param v: The column number.</span>
+<span class="sd">        :type v: int</span>
+
+<span class="sd">        :returns: int -- The height of the column v.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">v</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">x</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">-</span> <span class="n">i</span>
+        <span class="k">return</span> <span class="mi">0</span></div>
+
+    <span class="c1"># !# parallelize</span>
+<div class="viewcode-block" id="TetrisSimulator.get_full_cells"><a class="viewcode-back" href="../simulator.html#simulator.TetrisSimulator.get_full_cells">[docs]</a>    <span class="k">def</span> <span class="nf">get_full_cells</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">space</span><span class="p">,</span> <span class="n">row_weighted</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Counts the total number of filled cells.</span>
+
+<span class="sd">        :param space: The current space.</span>
+<span class="sd">        :type space: tetris_cow2</span>
+<span class="sd">        :param row_weighted: Decides whether to weight cells by row.</span>
+<span class="sd">        :type row_weighted: bool</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">row_weighted</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="bp">True</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">row</span> <span class="k">if</span> <span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">space</span><span class="p">)</span>
+        <span class="n">total</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">space</span><span class="p">):</span>
+            <span class="n">total</span> <span class="o">+=</span> <span class="nb">sum</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">space</span><span class="p">)</span> <span class="o">-</span> <span class="n">i</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">row</span> <span class="k">if</span> <span class="n">c</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">total</span></div>
+
+    <span class="c1"># Pits</span>
+    <span class="c1"># !# need to represent pits as a list of unique pits with a particular length;</span>
+
+    <span class="sd">&quot;&quot;&quot;isolating&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="TetrisSimulator.get_pits"><a class="viewcode-back" href="../simulator.html#simulator.TetrisSimulator.get_pits">[docs]</a>    <span class="k">def</span> <span class="nf">get_pits</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;For one column, search for the number of covered empty cells</span>
+
+<span class="sd">        :param v: The column number.</span>
+<span class="sd">        :type v: int</span>
+
+<span class="sd">        :returns: a list of the rows in which pits exist. And</span>
+<span class="sd">                  a &#39;lumped&#39; measure of pits (adjacent pits considered one pit).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">state</span> <span class="o">=</span> <span class="n">v</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">pits</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">lumped_pits</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">curr_pit</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">rows</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">row</span> <span class="o">=</span> <span class="mi">18</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">v</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">state</span> <span class="o">=</span> <span class="mi">1</span>
+                <span class="n">curr_pit</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c1"># lumped pit ends.</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">state</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>  <span class="c1"># top detected and found a pit</span>
+                <span class="k">if</span> <span class="n">curr_pit</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>  <span class="c1"># we hadn&#39;t seen a pit yet</span>
+                    <span class="n">lumped_pits</span> <span class="o">+=</span> <span class="mi">1</span>  <span class="c1"># so this is a new lumped pit</span>
+                <span class="n">curr_pit</span> <span class="o">=</span> <span class="mi">1</span>
+                <span class="n">pits</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="n">rows</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+            <span class="n">row</span> <span class="o">-=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="n">rows</span><span class="p">,</span> <span class="n">lumped_pits</span></div>
+
+    <span class="sd">&quot;&quot;&quot;isolating&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="TetrisSimulator.get_matches"><a class="viewcode-back" href="../simulator.html#simulator.TetrisSimulator.get_matches">[docs]</a>    <span class="k">def</span> <span class="nf">get_matches</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">space</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Detect the total number of matched edges for a given zoid placement.</span>
+
+<span class="sd">        :param space: The board space to get matches from.</span>
+<span class="sd">        :type space: tetris_cow2</span>
+
+<span class="sd">        :returns: int -- The number of total matched edges for a given zoid placement.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">matches</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="c1"># for r in range(len(space)):</span>
+        <span class="c1">#     for c in range(len(space[r])):</span>
+        <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">space</span><span class="o">.</span><span class="n">rows</span><span class="p">():</span>
+            <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">space</span><span class="o">.</span><span class="n">cols</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">space</span><span class="p">[</span><span class="n">r</span><span class="p">,</span> <span class="n">c</span><span class="p">]</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+                    <span class="c1"># down</span>
+                    <span class="k">if</span> <span class="n">r</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">space</span><span class="p">):</span>
+                        <span class="n">matches</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">space</span><span class="p">[</span><span class="n">r</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">c</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                            <span class="n">matches</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="c1"># left</span>
+                    <span class="k">if</span> <span class="n">c</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="n">matches</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">space</span><span class="p">[</span><span class="n">r</span><span class="p">,</span> <span class="n">c</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                            <span class="n">matches</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="c1"># right</span>
+                    <span class="c1"># if c + 1 &gt;= len(space[r]):</span>
+                    <span class="k">if</span> <span class="n">c</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">&gt;=</span> <span class="n">space</span><span class="o">.</span><span class="n">col_count</span><span class="p">():</span>
+                        <span class="n">matches</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">space</span><span class="p">[</span><span class="n">r</span><span class="p">,</span> <span class="n">c</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                            <span class="n">matches</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="c1"># up, rarely</span>
+                    <span class="k">if</span> <span class="n">r</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">space</span><span class="p">[</span><span class="n">r</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">c</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                            <span class="n">matches</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="n">matches</span></div>
+
+    <span class="sd">&quot;&quot;&quot;isolating&quot;&quot;&quot;</span>
+    <span class="c1"># !# parallelize</span>
+
+<div class="viewcode-block" id="TetrisSimulator.get_all_pits"><a class="viewcode-back" href="../simulator.html#simulator.TetrisSimulator.get_all_pits">[docs]</a>    <span class="k">def</span> <span class="nf">get_all_pits</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">colspace</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get pit values for all columns.</span>
+
+<span class="sd">        :param colspace: The desired column space (returned from tetris_cow2.col_space()).</span>
+
+<span class="sd">        :returns: ([int],[int],int) -- (count of all pits [col_pits],</span>
+<span class="sd">            list of rows containing pits [row_pits],</span>
+<span class="sd">            adjacently lumped pits [lumped_pits]).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">col_pits</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">pit_rows</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">lumped_pits</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">colspace</span><span class="p">:</span>
+            <span class="n">pits</span><span class="p">,</span> <span class="n">lumped</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_pits</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+            <span class="n">lumped_pits</span> <span class="o">+=</span> <span class="n">lumped</span>
+            <span class="n">col_pits</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">pits</span><span class="p">))</span>
+            <span class="n">pit_rows</span> <span class="o">=</span> <span class="p">[</span><span class="n">j</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">pits</span> <span class="k">if</span> <span class="n">j</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">pit_rows</span><span class="p">]</span>
+        <span class="k">return</span><span class="p">(</span><span class="n">col_pits</span><span class="p">,</span> <span class="n">pit_rows</span><span class="p">,</span> <span class="n">lumped_pits</span><span class="p">)</span></div>
+
+    <span class="sd">&quot;&quot;&quot;isolating&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="TetrisSimulator.get_landing_height"><a class="viewcode-back" href="../simulator.html#simulator.TetrisSimulator.get_landing_height">[docs]</a>    <span class="k">def</span> <span class="nf">get_landing_height</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">space</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Determine the bottommost height of a zoid placement.</span>
+
+<span class="sd">        :param space: The desired board space.</span>
+<span class="sd">        :type space: tetris_cow2</span>
+
+<span class="sd">        :returns: int -- The bottommost height of a zoid placement.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">space</span><span class="o">.</span><span class="n">rows</span><span class="p">():</span>
+            <span class="k">if</span> <span class="mi">2</span> <span class="ow">in</span> <span class="n">space</span><span class="o">.</span><span class="n">row_iter</span><span class="p">(</span><span class="n">i</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">i</span></div>
+
+<div class="viewcode-block" id="TetrisSimulator.get_transitions"><a class="viewcode-back" href="../simulator.html#simulator.TetrisSimulator.get_transitions">[docs]</a>    <span class="k">def</span> <span class="nf">get_transitions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;For one vector, get the number of transitions from empty to</span>
+<span class="sd">        full, or vice versa.</span>
+
+<span class="sd">        :param v: Vector of a row.</span>
+<span class="sd">        :type v: [int]</span>
+
+<span class="sd">        :returns: int -- Number of transitions from empty to full.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">state</span> <span class="o">=</span> <span class="n">v</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">trans</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">v</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">state</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">trans</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="n">state</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">elif</span> <span class="n">i</span> <span class="o">!=</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">state</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">trans</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="n">state</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="n">trans</span></div>
+
+    <span class="c1"># !# parallelize</span>
+<div class="viewcode-block" id="TetrisSimulator.get_all_transitions"><a class="viewcode-back" href="../simulator.html#simulator.TetrisSimulator.get_all_transitions">[docs]</a>    <span class="k">def</span> <span class="nf">get_all_transitions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">space</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get transitions for all vectors in a space (generic).</span>
+
+<span class="sd">        :param space: The desired board space.</span>
+<span class="sd">        :type space: tetris_cow2</span>
+
+<span class="sd">        :returns: [int] -- Number of transitions for each row in space.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">get_transitions</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">row</span><span class="p">))</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">space</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="TetrisSimulator.get_col_diversity"><a class="viewcode-back" href="../simulator.html#simulator.TetrisSimulator.get_col_diversity">[docs]</a>    <span class="k">def</span> <span class="nf">get_col_diversity</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">colspace</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Determine how many times a pattern is repeated</span>
+<span class="sd">        lower values mean the pattern is less diverse, and more ordered.</span>
+
+<span class="sd">        :param colspace: The desired column space (returned from tetris_cow2.col_space()).</span>
+
+<span class="sd">        :returns: Number of repeated patterns.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">patterns</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">colspace</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="n">pattern</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">colspace</span><span class="p">[</span><span class="n">i</span><span class="p">])):</span>
+                <span class="n">pattern</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">colspace</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">-</span> <span class="n">colspace</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">][</span><span class="n">j</span><span class="p">])</span>
+            <span class="n">patterns</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pattern</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">patterns</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TetrisSimulator.get_pit_depth"><a class="viewcode-back" href="../simulator.html#simulator.TetrisSimulator.get_pit_depth">[docs]</a>    <span class="k">def</span> <span class="nf">get_pit_depth</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Detect the depth of all pits in a vector.</span>
+
+<span class="sd">        :param v: Vector of a row.</span>
+<span class="sd">        :type v: [int]</span>
+
+<span class="sd">        :returns: Depth of a pit in a vector.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">state</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">depth</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">curdepth</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">v</span><span class="p">:</span>
+            <span class="c1"># found first full cell</span>
+            <span class="k">if</span> <span class="n">state</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">i</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">curdepth</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="n">state</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="c1"># found another full cell</span>
+            <span class="k">elif</span> <span class="n">state</span> <span class="o">!=</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">i</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">curdepth</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="c1"># found a pit! commit current depth to total</span>
+            <span class="k">elif</span> <span class="n">state</span> <span class="o">!=</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">depth</span> <span class="o">+=</span> <span class="n">curdepth</span>
+        <span class="k">return</span> <span class="n">depth</span></div>
+
+<div class="viewcode-block" id="TetrisSimulator.get_wells"><a class="viewcode-back" href="../simulator.html#simulator.TetrisSimulator.get_wells">[docs]</a>    <span class="k">def</span> <span class="nf">get_wells</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">heights</span><span class="p">,</span> <span class="n">cumulative</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Determine the number of wells.</span>
+<span class="sd">        Wells are columns with higher columns on either side.</span>
+
+<span class="sd">        :param heights: List of heights for each column (from self.get_height(col)).</span>
+<span class="sd">        :type heights: [int]</span>
+
+<span class="sd">        :returns: [int] -- A list of wells.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">heights</span> <span class="o">=</span> <span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">space</span><span class="p">)]</span> <span class="o">+</span> <span class="n">heights</span> <span class="o">+</span> <span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">space</span><span class="p">)]</span>
+
+        <span class="n">wells</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">heights</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="n">ldiff</span> <span class="o">=</span> <span class="n">heights</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">heights</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">rdiff</span> <span class="o">=</span> <span class="n">heights</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">heights</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">ldiff</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">rdiff</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">wells</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">wells</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">ldiff</span><span class="p">,</span> <span class="n">rdiff</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">wells</span></div>
+
+<div class="viewcode-block" id="TetrisSimulator.nine_filled"><a class="viewcode-back" href="../simulator.html#simulator.TetrisSimulator.nine_filled">[docs]</a>    <span class="k">def</span> <span class="nf">nine_filled</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">row</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Determines if a row has 9 cells filled.</span>
+<span class="sd">        (Useful in determining tetris progress)</span>
+
+<span class="sd">        :param row: A vector representation of the row.</span>
+<span class="sd">        :type row: [int]</span>
+
+<span class="sd">        :returns: int, None -- Empty column number if 9 cells filled, None otherwise.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">filled</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">row</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">row</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">filled</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">if</span> <span class="n">row</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">ix</span> <span class="o">=</span> <span class="n">i</span>
+        <span class="k">if</span> <span class="n">filled</span> <span class="o">==</span> <span class="mi">9</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">ix</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">None</span></div>
+
+<div class="viewcode-block" id="TetrisSimulator.get_tetris_progress"><a class="viewcode-back" href="../simulator.html#simulator.TetrisSimulator.get_tetris_progress">[docs]</a>    <span class="k">def</span> <span class="nf">get_tetris_progress</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">space</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Determines the current progress toward scoring a tetris.</span>
+
+<span class="sd">        e.g. If four rows have 9 cells filled and the 9th cell is in</span>
+<span class="sd">        the same column for each and there is nothing above that column</span>
+<span class="sd">        tetris_progress = 4, (i.e. a tetris is available)</span>
+
+<span class="sd">        :param space: The desired board space.</span>
+<span class="sd">        :type space: tetris_cow2</span>
+
+<span class="sd">        .. warning::</span>
+<span class="sd">            eating a LOT of the processing, complicated measure JKL cooked up.</span>
+<span class="sd">            **Only Returns 0, 0**</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+
+        <span class="c1"># newspace = copy.deepcopy(space)</span>
+        <span class="c1"># newspace.reverse()</span>
+        <span class="k">return</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span>
+
+        <span class="n">nine_count</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="n">progress</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">prev_col</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="n">prev_col</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+
+        <span class="c1"># from the bottom up</span>
+        <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">space</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="n">r_ix</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">space</span><span class="p">)</span> <span class="o">-</span> <span class="n">r</span>
+            <span class="c1"># col = self.nine_filled(space[r_ix])</span>
+            <span class="n">col</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nine_filled</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">space</span><span class="o">.</span><span class="n">row_iter</span><span class="p">(</span><span class="n">r_ix</span><span class="p">)))</span>
+
+            <span class="c1"># found a filled row</span>
+            <span class="k">if</span> <span class="n">col</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">nine_count</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="c1"># new column, reset counter</span>
+                <span class="k">if</span> <span class="n">col</span> <span class="o">!=</span> <span class="n">prev_col</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">r</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>  <span class="c1"># first row</span>
+                        <span class="n">progress</span> <span class="o">=</span> <span class="mi">1</span>
+                        <span class="n">prev_col</span> <span class="o">=</span> <span class="n">col</span>
+                        <span class="n">stagnated</span> <span class="o">=</span> <span class="bp">False</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">space</span><span class="p">[</span><span class="n">r_ix</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">col</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>  <span class="c1"># if there&#39;s a block below, we can restart</span>
+
+                            <span class="n">progress</span> <span class="o">=</span> <span class="mi">1</span>
+                            <span class="n">prev_col</span> <span class="o">=</span> <span class="n">col</span>
+                            <span class="n">stagnated</span> <span class="o">=</span> <span class="bp">False</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">progress</span> <span class="o">=</span> <span class="mi">0</span>
+                            <span class="n">prev_col</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+                <span class="c1"># same column, increase counter</span>
+                <span class="k">elif</span> <span class="n">col</span> <span class="o">==</span> <span class="n">prev_col</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">stagnated</span><span class="p">:</span>
+                    <span class="n">progress</span> <span class="o">+=</span> <span class="mi">1</span>
+
+            <span class="c1"># no nine-count row detected</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># column is blocked, reset progress and column</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">space</span><span class="p">[</span><span class="n">r_ix</span><span class="p">,</span> <span class="n">prev_col</span><span class="p">]</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="k">print</span> <span class="n">r_ix</span>
+                    <span class="k">print</span> <span class="n">prev_col</span>
+
+                <span class="k">if</span> <span class="n">space</span><span class="p">[</span><span class="n">r_ix</span><span class="p">,</span> <span class="n">prev_col</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">progress</span> <span class="o">=</span> <span class="mi">0</span>
+                    <span class="n">prev_col</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+                <span class="c1"># otherwise, progress stagnates here</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">stagnated</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="k">return</span> <span class="n">progress</span><span class="p">,</span> <span class="n">nine_count</span></div>
+
+    <span class="c1"># &lt;&lt;&lt;&lt;&lt; METHODS TO GET PERCEPTS</span>
+
+    <span class="c1"># CONTROLLERS &gt;&gt;&gt;&gt;&gt;</span>
+
+<div class="viewcode-block" id="TetrisSimulator.control"><a class="viewcode-back" href="../simulator.html#simulator.TetrisSimulator.control">[docs]</a>    <span class="k">def</span> <span class="nf">control</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">orient</span><span class="p">,</span> <span class="n">pos</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns an integer corresponding to the score of a move given the</span>
+<span class="sd">        orientation and position to place the current zoid.</span>
+
+<span class="sd">        :param orient: The orientation to place the current zoid.</span>
+<span class="sd">        :param pos: The position to place the current zoid.</span>
+
+<span class="sd">        :returns: int -- Move score.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">zoid</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">curr_z</span><span class="o">.</span><span class="n">get_copy</span><span class="p">()</span>
+        <span class="n">zoid_board</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">space</span><span class="o">.</span><span class="n">get_cow</span><span class="p">()</span>
+        <span class="n">zoid_board</span><span class="o">.</span><span class="n">imprint_zoid</span><span class="p">(</span><span class="n">zoid</span><span class="p">,</span> <span class="n">orient</span><span class="o">=</span><span class="n">orient</span><span class="p">,</span> <span class="n">pos</span><span class="o">=</span><span class="n">pos</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">features</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_features</span><span class="p">(</span><span class="n">zoid_board</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">space</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">features</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">controller</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">controller</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TetrisSimulator.run"><a class="viewcode-back" href="../simulator.html#simulator.TetrisSimulator.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_eps</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">printstep</span><span class="o">=</span><span class="mi">500</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Runs the simulator.</span>
+<span class="sd">        Generates possible moves and chooses one.</span>
+<span class="sd">        Loops until game_over or max_eps is exceeded.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">ep</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">while</span> <span class="n">ep</span> <span class="o">!=</span> <span class="n">max_eps</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_options</span><span class="p">():</span>
+            <span class="c1"># generate options and features</span>
+            <span class="n">scores</span> <span class="o">=</span> <span class="p">{</span><span class="n">x</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">control</span><span class="p">(</span><span class="o">*</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="p">}</span>
+            <span class="n">best_moves</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">k</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">scores</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+                               <span class="k">if</span> <span class="n">v</span> <span class="o">==</span> <span class="nb">max</span><span class="p">(</span><span class="n">scores</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span>
+            <span class="n">orient</span><span class="p">,</span> <span class="n">pos</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sequence</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">best_moves</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">space</span><span class="o">.</span><span class="n">imprint_zoid</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">curr_z</span><span class="p">,</span> <span class="n">orient</span><span class="o">=</span><span class="n">orient</span><span class="p">,</span> <span class="n">pos</span><span class="o">=</span><span class="n">pos</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">update_score</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">new_zoids</span><span class="p">()</span>
+            <span class="c1"># the True parameter means full rows are counted *and* cleared</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">space</span><span class="o">.</span><span class="n">check_full</span><span class="p">(</span><span class="bp">True</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">show_scores</span> <span class="ow">and</span> <span class="n">ep</span> <span class="o">%</span> <span class="n">printstep</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">printstep</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                <span class="k">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Episode: &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">ep</span><span class="p">))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">printscores</span><span class="p">()</span>
+            <span class="n">ep</span> <span class="o">+=</span> <span class="mi">1</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">show_choice</span><span class="p">:</span>
+                <span class="n">print_board</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">space</span><span class="p">,</span> <span class="n">entire</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">show_full</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+                <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">choice_step</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">show_result</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">Game Over</span><span class="se">\n</span><span class="s2">Final scores:&quot;</span><span class="p">)</span>
+            <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Episodes: &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">ep</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">printscores</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">printcontroller</span><span class="p">()</span>
+            <span class="k">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span><span class="p">({</span><span class="s2">&quot;lines&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">lines</span><span class="p">,</span>
+                <span class="s2">&quot;l1&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">l</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+                <span class="s2">&quot;l2&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">l</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span>
+                <span class="s2">&quot;l3&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">l</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span>
+                <span class="s2">&quot;l4&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">l</span><span class="p">[</span><span class="mi">4</span><span class="p">],</span>
+                <span class="s2">&quot;score&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">score</span><span class="p">,</span>
+                <span class="s2">&quot;level&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">level</span><span class="p">,</span>
+                <span class="s2">&quot;eps&quot;</span><span class="p">:</span> <span class="n">ep</span><span class="p">})</span></div></div>
+
+    <span class="c1"># &lt;&lt;&lt;&lt;&lt; CONTROLLERS</span>
+
+
+<div class="viewcode-block" id="main"><a class="viewcode-back" href="../simulator.html#simulator.main">[docs]</a><span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="n">argv</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Initializes 3 separate controllers, creates a model with controller1, and runs it.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">controller1</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;landing_height&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+                   <span class="s2">&quot;eroded_cells&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+                   <span class="s2">&quot;row_trans&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+                   <span class="s2">&quot;col_trans&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+                   <span class="s2">&quot;pits&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">4</span><span class="p">,</span>
+                   <span class="s2">&quot;cuml_wells&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">}</span>
+
+    <span class="c1"># DTS controller, from Dellacherie + Thiery &amp; Scherrer; 35,000,000</span>
+    <span class="c1"># rows?!!?!</span>
+    <span class="n">controller2</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;landing_height&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">12.63</span><span class="p">,</span>
+                   <span class="s2">&quot;eroded_cells&quot;</span><span class="p">:</span> <span class="mf">6.60</span><span class="p">,</span>
+                   <span class="s2">&quot;row_trans&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">9.22</span><span class="p">,</span>
+                   <span class="s2">&quot;col_trans&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">19.77</span><span class="p">,</span>
+                   <span class="s2">&quot;pits&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">13.08</span><span class="p">,</span>
+                   <span class="s2">&quot;cuml_wells&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">10.49</span><span class="p">,</span>
+                   <span class="s2">&quot;pit_depth&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">1.61</span><span class="p">,</span>
+                   <span class="s2">&quot;pit_rows&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">24.04</span><span class="p">}</span>
+
+    <span class="c1"># bad controller for demonstration&#39;s purposes</span>
+    <span class="n">controller3</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;landing_height&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+                   <span class="s2">&quot;eroded_cells&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+                   <span class="s2">&quot;row_trans&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+                   <span class="s2">&quot;col_trans&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+                   <span class="s2">&quot;pits&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+                   <span class="s2">&quot;cuml_wells&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">}</span>
+
+    <span class="c1"># Introducing overhangs</span>
+
+    <span class="n">osim</span> <span class="o">=</span> <span class="n">TetrisSimulator</span><span class="p">(</span>
+        <span class="n">controller</span><span class="o">=</span><span class="n">controller1</span><span class="p">,</span>
+            <span class="n">board</span><span class="o">=</span><span class="n">tetris_cow2</span><span class="p">(),</span>
+            <span class="n">curr</span><span class="o">=</span><span class="n">all_zoids</span><span class="p">[</span><span class="s2">&quot;L&quot;</span><span class="p">],</span>
+            <span class="nb">next</span><span class="o">=</span><span class="n">all_zoids</span><span class="p">[</span><span class="s2">&quot;S&quot;</span><span class="p">],</span>
+            <span class="n">show_choice</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+            <span class="n">show_scores</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+            <span class="n">show_options</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+            <span class="n">option_step</span><span class="o">=.</span><span class="mi">3</span><span class="p">,</span>
+            <span class="n">choice_step</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">seed</span><span class="o">=</span><span class="mi">1</span>
+    <span class="p">)</span>
+
+    <span class="c1"># enable for speed test</span>
+    <span class="n">osim</span><span class="o">.</span><span class="n">show_options</span> <span class="o">=</span> <span class="bp">False</span>
+    <span class="n">osim</span><span class="o">.</span><span class="n">choice_step</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="n">osim</span><span class="o">.</span><span class="n">run</span><span class="p">()</span></div>
+
+    <span class="c1"># overhangs allowed, but legality not enforced</span>
+    <span class="c1"># osim.overhangs, osim.force_legal = True, False</span>
+    <span class="c1"># osim.run()</span>
+
+    <span class="c1"># legality enforced</span>
+    <span class="c1"># osim.overhangs, osim.force_legal = True, True</span>
+    <span class="c1"># osim.run()</span>
+
+<div class="viewcode-block" id="mm_test"><a class="viewcode-back" href="../simulator.html#simulator.mm_test">[docs]</a><span class="k">def</span> <span class="nf">mm_test</span><span class="p">(</span><span class="n">landing_height</span><span class="p">,</span> <span class="n">eroded_cells</span><span class="p">,</span> <span class="n">row_trans</span><span class="p">,</span> <span class="n">col_trans</span><span class="p">,</span> <span class="n">pits</span><span class="p">,</span> <span class="n">cuml_wells</span><span class="p">,</span> <span class="n">pit_depth</span><span class="p">,</span> <span class="n">pit_rows</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Runs with python main.</span>
+<span class="sd">        Builds a controller with parameters and runs TetrisSimulator with that controller.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">controller</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;landing_height&quot;</span><span class="p">:</span> <span class="n">landing_height</span><span class="p">,</span>
+        <span class="s2">&quot;eroded_cells&quot;</span><span class="p">:</span> <span class="n">eroded_cells</span><span class="p">,</span>
+        <span class="s2">&quot;row_trans&quot;</span><span class="p">:</span> <span class="n">row_trans</span><span class="p">,</span>
+        <span class="s2">&quot;col_trans&quot;</span><span class="p">:</span> <span class="n">col_trans</span><span class="p">,</span>
+        <span class="s2">&quot;pits&quot;</span><span class="p">:</span> <span class="n">pits</span><span class="p">,</span>
+        <span class="s2">&quot;cuml_wells&quot;</span><span class="p">:</span><span class="n">cuml_wells</span><span class="p">,</span>
+        <span class="s2">&quot;pit_depth&quot;</span><span class="p">:</span> <span class="n">pit_depth</span><span class="p">,</span>
+        <span class="s2">&quot;pit_rows&quot;</span><span class="p">:</span> <span class="n">pit_rows</span>
+    <span class="p">}</span>
+
+    <span class="n">osim</span> <span class="o">=</span> <span class="n">TetrisSimulator</span><span class="p">(</span>
+        <span class="n">controller</span><span class="o">=</span><span class="n">controller</span><span class="p">,</span>
+            <span class="n">board</span><span class="o">=</span><span class="n">tetris_cow2</span><span class="p">(),</span>
+            <span class="n">curr</span><span class="o">=</span><span class="n">all_zoids</span><span class="p">[</span><span class="s2">&quot;L&quot;</span><span class="p">],</span>
+            <span class="nb">next</span><span class="o">=</span><span class="n">all_zoids</span><span class="p">[</span><span class="s2">&quot;S&quot;</span><span class="p">],</span>
+            <span class="n">show_choice</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+            <span class="n">show_scores</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+            <span class="n">show_options</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+            <span class="n">show_result</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+            <span class="n">seed</span><span class="o">=</span><span class="mi">1</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">osim</span><span class="o">.</span><span class="n">run</span><span class="p">()</span></div>
+
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="k">print</span> <span class="n">mm_test</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2016, John Lindstedt, Catherine Sibert, Ryan Hope, Keenan Sanchez, Mitchell Mellone.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.7</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

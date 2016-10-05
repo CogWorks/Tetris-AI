@@ -30,7 +30,9 @@ class tetris_cow(object):
 
     def __getitem__(self,(r,c)):
         """Get a cell value (row first), e.g., 'myboard[0,0]'."""
-        if self._max_rows > r >= len(self._board) and 0 <= c < self._cols: return 0
+        if self._max_rows > r >= len(self._board) and \
+                0 <= c < self._cols:
+                return 0
         else: return self._board[r][c]
 
     def __setitem__(self,(r,c),val):
