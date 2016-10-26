@@ -13,7 +13,6 @@ class TetrisSimulator(object):
 
     """| **TetrisSimulator is a board object that supports assessment metrics and future simulations.**
     | This class is the basic building block of the Tetris A.I. Simulator.
-
     :ivar random.Random sequence: Python random object, used to randomly select zoids.
     :ivar tetris_cow2 space: Board representation.
     :ivar tetris_zoid curr_z: Current zoid.
@@ -53,7 +52,6 @@ class TetrisSimulator(object):
                  name="Controller", seed=time.time(), overhangs=False,
                  force_legal=True):
         """Initializes the simulator object.
-
         :param board: A board representation [20 rows, 10 columns].
         :param curr: The current zoid.
         :param next: The next zoid.
@@ -67,7 +65,6 @@ class TetrisSimulator(object):
         :param name: The name given for logging and tracking purposes (printed during long runs).
         :param overhangs: If enabled, uses a more robust system for determining possible moves.
         :param force_legal: Enables an A* search to determine if overhang moves are actually legal (COSTLY).
-
         :type board: tetris_cow2
         :type curr: tetris_zoid
         :type next: tetris_zoid
@@ -135,9 +132,7 @@ class TetrisSimulator(object):
 
     def get_random_zoid(self):
         """Generates a new random zoid. duplicates are generally avoided.
-
         :return: int -- A zoid id.
-
         ..  warning::
             This function generates an error and is not used elsewhere in this
             module.
@@ -157,7 +152,6 @@ class TetrisSimulator(object):
     def new_zoids(self):
         """Sets current zoid to next zoid and chooses a new random zoid for the
         next zoid.
-
         :modifies: self.curr_z, self.next_z
         """
         self.curr_z = self.next_z
@@ -166,7 +160,6 @@ class TetrisSimulator(object):
     def update_score(self):
         """Scores the board. Should be called immediately after a move
         is made.
-
         :modifies: self.lines, self.l, self.score, self.level
         """
         clears = sum(all(row) for row in self.space)
@@ -183,7 +176,6 @@ class TetrisSimulator(object):
 
     def printscores(self):
         """Print the scores in the following format:
-
         | Name:  self.name
         | Level: self.level
         | Score: self.score
@@ -200,7 +192,6 @@ class TetrisSimulator(object):
 
     def printspace(self, space=None):
         """Generic space-printing.
-
         .. note::
             Now that the board engine is decoupled from this class, it's probably
             a good idea to migrate this to boards._helpers
@@ -219,7 +210,6 @@ class TetrisSimulator(object):
 
     def printcontroller(self, feats=False):
         """Print the controller's values.
-
         :param feats: Additional information about values in controller (optional).
         :type feats: dictionary {string : ?}
         """
@@ -242,7 +232,6 @@ class TetrisSimulator(object):
 
     def get_options(self):
         """Generates the list of options
-
         :modifies: self.options
         :raises: Exception if self.overhangs == True
         :returns: [(int, (int, int))] -- A list of options in the format [(orientaion, (row, column))]
@@ -259,7 +248,6 @@ class TetrisSimulator(object):
         """Generates a list of possible moves via the Straight-Drop method
         for each orientation, it drops the zoid straight down in each
         column.
-
         :returns: [(int, (int, int))] -- A list of possible moves in the format [(orientaion, (row, column))]
         """
         zoid = self.curr_z
@@ -294,14 +282,12 @@ class TetrisSimulator(object):
 
     def get_features(self, space, prev_space=None, convert=False):
         """Retrieves all of the features for a given space
-
         :param space: The current board space.
         :type space: tetris_cow2
         :param prev_space: Previous board space (default = None).
         :type prev_space: tetris_cow2
         :param convert: converts space to an integer values of its boolean representation (default = False).
         :type convert: bool
-
         :returns: {string : number} -- A dictionary of all features
         """
 
@@ -423,10 +409,8 @@ class TetrisSimulator(object):
 
     def get_height(self, v):
         """Gets the height of any column.
-
         :param v: The column number.
         :type v: int
-
         :returns: int -- The height of the column v.
         """
         for i, x in enumerate(v):
@@ -437,7 +421,6 @@ class TetrisSimulator(object):
     # !# parallelize
     def get_full_cells(self, space, row_weighted=False):
         """Counts the total number of filled cells.
-
         :param space: The current space.
         :type space: tetris_cow2
         :param row_weighted: Decides whether to weight cells by row.
@@ -458,10 +441,8 @@ class TetrisSimulator(object):
 
     def get_pits(self, v):
         """For one column, search for the number of covered empty cells
-
         :param v: The column number.
         :type v: int
-
         :returns: a list of the rows in which pits exist. And
                   a 'lumped' measure of pits (adjacent pits considered one pit).
         """
@@ -488,10 +469,8 @@ class TetrisSimulator(object):
 
     def get_matches(self, space):
         """Detect the total number of matched edges for a given zoid placement.
-
         :param space: The board space to get matches from.
         :type space: tetris_cow2
-
         :returns: int -- The number of total matched edges for a given zoid placement.
         """
         matches = 0
@@ -530,9 +509,7 @@ class TetrisSimulator(object):
 
     def get_all_pits(self, colspace):
         """Get pit values for all columns.
-
         :param colspace: The desired column space (returned from tetris_cow2.col_space()).
-
         :returns: ([int],[int],int) -- (count of all pits [col_pits],
             list of rows containing pits [row_pits],
             adjacently lumped pits [lumped_pits]).
@@ -551,10 +528,8 @@ class TetrisSimulator(object):
 
     def get_landing_height(self, space):
         """Determine the bottommost height of a zoid placement.
-
         :param space: The desired board space.
         :type space: tetris_cow2
-
         :returns: int -- The bottommost height of a zoid placement.
         """
         for i in space.rows():
@@ -564,10 +539,8 @@ class TetrisSimulator(object):
     def get_transitions(self, v):
         """For one vector, get the number of transitions from empty to
         full, or vice versa.
-
         :param v: Vector of a row.
         :type v: [int]
-
         :returns: int -- Number of transitions from empty to full.
         """
         state = v[0]
@@ -584,10 +557,8 @@ class TetrisSimulator(object):
     # !# parallelize
     def get_all_transitions(self, space):
         """Get transitions for all vectors in a space (generic).
-
         :param space: The desired board space.
         :type space: tetris_cow2
-
         :returns: [int] -- Number of transitions for each row in space.
         """
         return [self.get_transitions(list(row)) for row in space]
@@ -595,9 +566,7 @@ class TetrisSimulator(object):
     def get_col_diversity(self, colspace):
         """Determine how many times a pattern is repeated
         lower values mean the pattern is less diverse, and more ordered.
-
         :param colspace: The desired column space (returned from tetris_cow2.col_space()).
-
         :returns: Number of repeated patterns.
         """
         patterns = []
@@ -611,10 +580,8 @@ class TetrisSimulator(object):
 
     def get_pit_depth(self, v):
         """Detect the depth of all pits in a vector.
-
         :param v: Vector of a row.
         :type v: [int]
-
         :returns: Depth of a pit in a vector.
         """
         state = 0
@@ -636,10 +603,8 @@ class TetrisSimulator(object):
     def get_wells(self, heights, cumulative=False):
         """ Determine the number of wells.
         Wells are columns with higher columns on either side.
-
         :param heights: List of heights for each column (from self.get_height(col)).
         :type heights: [int]
-
         :returns: [int] -- A list of wells.
         """
         heights = [len(self.space)] + heights + [len(self.space)]
@@ -658,10 +623,8 @@ class TetrisSimulator(object):
     def nine_filled(self, row):
         """Determines if a row has 9 cells filled.
         (Useful in determining tetris progress)
-
         :param row: A vector representation of the row.
         :type row: [int]
-
         :returns: int, None -- Empty column number if 9 cells filled, None otherwise.
         """
         filled = 0
@@ -677,14 +640,11 @@ class TetrisSimulator(object):
 
     def get_tetris_progress(self, space):
         """Determines the current progress toward scoring a tetris.
-
         e.g. If four rows have 9 cells filled and the 9th cell is in
         the same column for each and there is nothing above that column
         tetris_progress = 4, (i.e. a tetris is available)
-
         :param space: The desired board space.
         :type space: tetris_cow2
-
         .. warning::
             eating a LOT of the processing, complicated measure JKL cooked up.
             **Only Returns 0, 0**
@@ -754,10 +714,8 @@ class TetrisSimulator(object):
         """
         Returns an integer corresponding to the score of a move given the
         orientation and position to place the current zoid.
-
         :param orient: The orientation to place the current zoid.
         :param pos: The position to place the current zoid.
-
         :returns: int -- Move score.
         """
         zoid = self.curr_z.get_copy()
@@ -870,4 +828,3 @@ def main(argv):
     # legality enforced
     # osim.overhangs, osim.force_legal = True, True
     # osim.run()
-
