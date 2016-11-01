@@ -706,6 +706,30 @@ class TetrisSimulator(object):
                     stagnated = True
         return progress, nine_count
 
+    def get_options_and_features(self):
+        """
+        Generates a list of all options and associated features.
+        Returns it as a list of dictionarys which hold information
+        about each possible option.
+        Each dictionary has the following information: zoid, row, col,
+        rotation, board, features
+        :returns: [{string: info}]
+        """
+        all_options_and_features = []
+        for orient, pos in self.get_options():
+            option = {}
+            zoid = self.curr_z.get_copy()
+            option['zoid'] = zoid
+            option['row'] = pos[0]
+            option['col'] = pos[1]
+            option['rotation'] = orient
+            board = self.space.get_cow()
+            board.imprint_zoid(zoid, orient=orient, pos=pos, value=2)
+            option['board'] = board
+            option['features'] = self.get_features(board, self.space)
+            all_options_and_features.append(option)
+        return all_options_and_features
+
     # <<<<< METHODS TO GET PERCEPTS
 
     # CONTROLLERS >>>>>
@@ -828,3 +852,6 @@ def main(argv):
     # legality enforced
     # osim.overhangs, osim.force_legal = True, True
     # osim.run()
+
+if __name__ == '__main__':
+    main([])
