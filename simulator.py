@@ -8,7 +8,7 @@ from tetris_cpp import *
 from boards import print_board, all_zoids, tetris_cow2
 import time, random, os
 from datetime import datetime
-
+from simulator_API import getboard, setup_epfile, write_episode, close_epfile
 
 class TetrisSimulator(object):
 
@@ -42,7 +42,7 @@ class TetrisSimulator(object):
             show_options : whether to print POTENTIAL move as it is considered
             show_result : whether to print the results of each game
             show_choice : whether to show the CHOSEN move
-	    show_episodes : whether to log the episodes
+	        show_episodes : whether to log the episodes
             option_step : the delay time (in seconds) for displaying each
             option (COSTLY)
             choice_step : the delay time (in seconds) for displaying each
@@ -180,153 +180,12 @@ class TetrisSimulator(object):
                 outstr += ('%3.3f' % self.controller[k]).rjust(8)
             print(outstr)
 
-    def getboard(self):
-        """returns the board represented as a list of lists"""
-        board = []
-        for i in range(20):
-    		row = []
-    		for j in range(10):
-    		    row.append(self.space[i,j])
-    		board.append(row)
-    	return board
     # u"\u2b1c"
     # u"\u2b1c"
     # u"\u27DD"
 
-    # <<<<< DISPLAY
+    # <<<<< DISPLAY  
     
-    # >>>>> METHODS FOR FILE MANAGEMENT
-    
-    def setup_epfile(self):
-        """ Sets up episode file """
-        
-        # Searches for directory. If not found, create it
-        if not os.path.exists(self.logdir):
-            os.makedirs(self.logdir)  
-        
-    	self.logname = os.path.join(self.logdir,self.filename)
-    	
-    	self.ep_header = ["episode_number","level","score","lines_cleared",
-    	                    "zoid_sequence","curr_zoid","next_zoid","danger_mode",
-                            "tetrises_game","tetrises_level","agree","board_rep",
-                            "all_diffs","all_ht","all_trans","cd_1","cd_2","cd_3",
-                            "cd_4","cd_5","cd_6","cd_7","cd_8","cd_9","cleared",
-                            "col_trans","column_9","cuml_cleared","cuml_eroded",
-                            "cuml_wells","d_all_ht","d_max_ht","d_mean_ht","d_pits",
-                            "deep_wells","eroded_cells","full_cells","jaggedness",
-                            "landing_height","lumped_pits","matches","max_diffs",
-                            "max_ht","max_ht_diff","max_well","nine_filled",
-                            "pattern_div","pit_depth","pit_rows","pits","row_trans",
-                            "tetris","tetris_progress","weighted_cells","wells","\n"]
-                    
-        # Finalizes file path and writes episode header to file        
-    	self.epfile_path = self.logname + ".tsv"
-    	self.epfile = open(self.epfile_path + ".incomplete","w")
-    	self.write_episode(self.ep_header)
-    	
-    def write_episode(self,specified=None):
-    	""" Writes episode to file """
-    	# If what is to be written is specified, write that instead.
-    	# Otherwise, write the episode
-    	if specified:
-    		data = specified 
-    	else:
-    	
-    	    # Gather data
-            episode_number = self.ep_num
-            lines_cleared = 0   
-            zoid_sequence = []
-            danger_mode = False 
-            tetrises_game = 0    
-            tetrises_level = 0   
-            agree = None
-            board_rep = self.getboard()
-            name_curr_z = self.label_zoid(self.curr_z)
-            name_next_z = self.label_zoid(self.next_z)    
-            
-            features = self.get_features(self.space)
-            move_score = features['move_score']
-            d_max_ht = features['d_max_ht']
-            d_pits = features['d_pits']
-            row_trans = features['row_trans']
-            deep_wells = features['deep_wells']
-            cuml_wells = features['cuml_wells']
-            min_ht_diff = features['min_ht_diff']
-            mean_ht = features['mean_ht']
-            max_ht_diff = features['max_ht_diff']
-            cd_4 = features['cd_4']
-            cd_5 = features['cd_5']
-            cd_6 = features['cd_6']
-            cd_7 = features['cd_7']
-            cd_1 = features['cd_1']
-            cd_2 = features['cd_2']
-            lumped_pits = features['lumped_pits']
-            min_ht = features['min_ht']
-            jaggedness = features['jaggedness']
-            cuml_eroded = features['cuml_eroded']
-            pit_rows = features['pit_rows']
-            d_mean_ht = features['d_mean_ht']
-            max_ht = features['max_ht']
-            eroded_cells = features['eroded_cells']
-            all_trans = features['all_trans']
-            pattern_div = features['pattern_div']
-            d_all_ht = features['d_all_ht']
-            all_ht = features['all_ht']
-            matches = features['matches']
-            landing_height = features['landing_height']
-            wells = features['wells']
-            column_9 = features['column_9']
-            cuml_cleared = features['cuml_cleared']
-            all_diffs = features['all_diffs']
-            col_trans = features['col_trans']
-            tetris = features['tetris']
-            cleared = features['cleared']
-            tetris_progress = features['tetris_progress']
-            full_cells = features['full_cells']
-            cd_3 = features['cd_3']
-            weighted_cells = features['weighted_cells']
-            pits = features['pits']
-            mean_pit_depth = features['mean_pit_depth']
-            nine_filled = features['nine_filled']
-            max_well = features['max_well']
-            cd_8 = features['cd_8']
-            pit_depth = features['pit_depth']
-            max_diffs = features['max_diffs']
-            cd_9 = features['cd_9']
-            
-            # Data added to list to be displayed on file
-    	    data = [episode_number,self.level,self.score,lines_cleared, 
-    	              zoid_sequence,name_curr_z,name_next_z,
-    	              danger_mode,tetrises_game,tetrises_level,
-    	              agree,board_rep,all_diffs,all_ht,all_trans,cd_1,cd_2,
-    	              cd_3,cd_4,cd_5,cd_6,cd_7,cd_8,cd_9,cleared,
-    	              col_trans,column_9,cuml_cleared,cuml_eroded,
-    	              cuml_wells,d_all_ht,d_max_ht,d_mean_ht,d_pits,
-                      deep_wells,eroded_cells,full_cells,jaggedness,
-                      landing_height,lumped_pits,matches,max_diffs,
-                      max_ht,max_ht_diff,max_well,nine_filled,
-                      pattern_div,pit_depth,pit_rows,pits,row_trans,
-                      tetris,tetris_progress,weighted_cells,wells,"\n"]
-        
-        # Checks whether data is string or not
-        # (data needs to be a list for this to be added)
-    	if isinstance(data,str):
-    	    data_list = [data]
-    	else:
-    	    data_list = data
-    	    
-    	# Adds tab character and newline to data_list 
-    	# before writing it to the file
-    	out = "\t".join(map(str,data_list))+"\n"
-    	self.epfile.write(out)
-    	
-    def close_epfile(self):
-    	""" Episode file closure """
-        self.epfile.close()
-        os.rename(self.epfile_path + ".incomplete", self.epfile_path)
-    
-    # <<<<< METHODS FOR FILE MANAGEMENT
-
     # METHODS TO GET PERCEPTS >>>>>
     
     def label_zoid(self,zoid):
@@ -772,7 +631,7 @@ class TetrisSimulator(object):
             loops until game_over or max_eps is exceeded"""
         
         # Set up episode file for episode logging    
-        self.setup_epfile()
+        setup_epfile(self)
         
         ep = 0
         while ep != max_eps and self.get_options():
@@ -791,7 +650,7 @@ class TetrisSimulator(object):
             # Code for logging episodes
             if self.log_episodes:
             	self.ep_num = ep
-            	self.write_episode()
+            	write_episode(self,ep_num=ep,board=self.space)
 
             if self.show_scores and ep % printstep == 0 and not printstep == -1:
             	print("Episode: " + str(ep) + "\n")
@@ -812,7 +671,7 @@ class TetrisSimulator(object):
             print("\n")
 
 		# Closes the episode file
-        self.close_epfile()
+        close_epfile(self)
         
         return({"lines": self.lines,
                 "l1": self.l[1],
