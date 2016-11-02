@@ -42,6 +42,7 @@ class TetrisSimulator(object):
             show_options : whether to print POTENTIAL move as it is considered
             show_result : whether to print the results of each game
             show_choice : whether to show the CHOSEN move
+	    show_episodes : whether to log the episodes
             option_step : the delay time (in seconds) for displaying each
             option (COSTLY)
             choice_step : the delay time (in seconds) for displaying each
