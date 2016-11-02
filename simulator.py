@@ -234,11 +234,11 @@ class TetrisSimulator(object):
     	
     	    # Gather data
             episode_number = self.ep_num
-            lines_cleared = 0   # Is this the same as cleared in the features?
+            lines_cleared = 0   
             zoid_sequence = []
-            danger_mode = False # Does danger mode apply to controllers?
-            tetrises_game = 0    # Is this for in-game tetrises?
-            tetrises_level = 0   # The level
+            danger_mode = False 
+            tetrises_game = 0    
+            tetrises_level = 0   
             agree = None
             board_rep = self.getboard()
             name_curr_z = self.label_zoid(self.curr_z)
