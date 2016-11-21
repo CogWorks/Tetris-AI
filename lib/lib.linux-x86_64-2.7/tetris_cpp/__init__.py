@@ -36,6 +36,16 @@ class tetris_cow2(tetris_20_10):
     def col_space(self):
         return zip(*tuple(tuple(row) for row in reversed(self)))
 
+    def row_space(self):
+        """ Returns a list of rows representation of this tetris_cow2
+            object
+        """
+        rows = [[] for i in range(20)]
+        for col in self.col_space():
+            for i, elem in enumerate(col):
+                rows[i].append(elem)
+        return rows
+
     # ELEMENT ACCESS >>>>>
 
     def __reversed__(self):
