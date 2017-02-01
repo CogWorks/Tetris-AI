@@ -244,6 +244,21 @@ class TetrisSimulator(object):
 
         return self.options
 
+    def get_overhangs(self):
+        overhangs = {}
+        for c, c_val in enumerate(self.space.col_space()):
+            top = False
+            for r, r_val in enumerate(c_val):
+                if (not top) and r_val != 0:
+                    top = True
+                if top and r_val == 0:
+                    if c in overhangs:
+                        # iterating from top down, so reverse r with 19-r
+                        overhangs[c].append(len(c_val)-1-r)
+                    else:
+                        overhangs[c] = [len(c_val)-1-r]
+        return overhangs
+
     def possible_moves(self):
         """Generates a list of possible moves via the Straight-Drop method
         for each orientation, it drops the zoid straight down in each
