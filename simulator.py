@@ -245,6 +245,11 @@ class TetrisSimulator(object):
         return self.options
 
     def get_overhangs(self):
+        """Finds every place where an overhang occurs and places it into
+        a dictionary where the keys are columns and the values are rows
+        underneath overhangs in that column
+        :returns: {col_index: [row_indices]} -- list of overhang locations
+        """
         overhangs = {}
         for c, c_val in enumerate(self.space.col_space()):
             top = False
@@ -267,6 +272,8 @@ class TetrisSimulator(object):
         """
         zoid = self.curr_z
         options = []
+        heights = tuple(self.get_height(col) for col in
+                        self.space.col_space())
         for orient in xrange(4):
             zoid.set_orient(orient)
             # get the indices of all occupied cells in the zoid
@@ -277,21 +284,18 @@ class TetrisSimulator(object):
                 if c + zoid.col_count() > self.space.col_count():
                     break
 
-                # find where the zoid rests
-                heights = tuple(self.get_height(col) for col in
-                                self.space.col_space())
-                # start at the lowest column height
-                r = min(heights[c:c + zoid.col_count()])
+                # find where the zoid rests (tallest column underneath it)
+                r = max(heights[c:c + zoid.col_count()])
                 try:
-                    # then keep checking the next row until all cells in the
-                    # board are unoccupied
-                    while any(self.space[r + i, c + j] for i, j in crds):
-                        r += 1
+                    # Make sure zoid is not on top of any already occupied cells
+                    if any(self.space[r + i, c + j] for i, j in crds):
+                        # One of the cells is occupied, should never happen
+                        # with max column height check above...
+                        continue
                 except IndexError:
-                    # can't place the zoid in this column
+                    # can't place the zoid in this column, out of bounds somewhere
                     continue
-                else:
-                    options.append((orient, (r, c)))
+                options.append((orient, (r, c)))
 
         return options
 
