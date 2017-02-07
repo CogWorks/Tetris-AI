@@ -237,7 +237,8 @@ class TetrisSimulator(object):
         :returns: [(int, (int, int))] -- A list of options in the format [(orientaion, (row, column))]
         """
         if self.overhangs:
-            raise Exception("support for overhangs has not been implemented")
+            # raise Exception("support for overhangs has not been implemented")
+            self.options = self.possible_moves_overhangs()
         else:
             self.options = self.possible_moves()
             # self.options = [x for x in self.possible_moves() if not x[5]]
@@ -246,9 +247,9 @@ class TetrisSimulator(object):
 
     def get_overhangs(self):
         """Finds every place where an overhang occurs and places it into
-        a dictionary where the keys are columns and the values are rows
-        underneath overhangs in that column
-        :returns: {col_index: [row_indices]} -- list of overhang locations
+        a dictionary where the keys are columns and the values are **rows
+        underneath overhangs in that column**
+        :returns: {col_index: [row_indices]} -- Dictionary of columns with list of open spaces beneath overhang
         """
         overhangs = {}
         for c, c_val in enumerate(self.space.col_space()):
@@ -263,6 +264,51 @@ class TetrisSimulator(object):
                     else:
                         overhangs[c] = [len(c_val)-1-r]
         return overhangs
+
+    def possible_moves_overhangs(self):
+        """Generates a list of possible moves using the Straight-Drop method
+        for each orientation and then seeing if the piece can be legally moved
+        into any overhang area; adding legal moves to the list.
+        :returns: [(int, (int, int))] -- A list of possible moves in the format [(orientaion, (row, column))]
+        """
+        overhang_moves = []
+        basic_moves = self.possible_moves()
+        overhangs = self.get_overhangs()
+        zoid = self.curr_z
+
+        for move in basic_moves:
+            # Get position of move and set zoid orientation
+            orient = move[0]
+            pos = move[1]
+            zoid.set_orient(orient)
+
+            # See if zoid fits into any overhangs to the left or right
+            cols_to_check = [pos[1]-1, pos[1]+zoid.col_count()]
+            crds = [(i, j) for i in zoid.rows()
+                    for j in zoid.cols() if zoid[i, j]]
+            for col in cols_to_check:
+                if col not in overhangs:
+                    continue
+                # Get zoid "landing point" for each overhang
+                o = overhangs[col]
+                overhang_landings = [r for r in o if r-1 not in o]
+                zoid_offset = 0
+                if col < pos[1]: # looking at overhangs to the left
+                    zoid_offset = min([r for (r, c) in crds if c == 0])
+                else: # looking at overhagns to the right
+                    zoid_offset = min([r for (r, c) in crds if c == zoid.col_count()-1])
+
+                # Calculate position to place the zoid to move it under the overhang
+                for landing in overhang_landings:
+                    test_r = landing - zoid_offset
+                    test_c = pos[1]-1 if col < pos[1] else pos[1]+1
+                    try:
+                        if not any(self.space[test_r + i, test_c + j] for i, j in crds):
+                            overhang_moves.append((orient, (test_r, test_c)))
+                    except IndexError:
+                        # can't place the zoid in this column, out of bounds somewhere
+                        continue
+        return basic_moves + overhang_moves
 
     def possible_moves(self):
         """Generates a list of possible moves via the Straight-Drop method
