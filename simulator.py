@@ -1,3 +1,5 @@
+## Next project - feature regularization May 2017
+
 #!/usr/bin/python
 import platform, sys
 if platform.system() == 'Linux':
