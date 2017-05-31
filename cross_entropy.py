@@ -285,10 +285,11 @@ if __name__ == '__main__':
     
     #harvest argparse
     args = parser.parse_args()
+    file_seed = args.output_file + args.regularization_type + str(args.regularization_type_parameter)
     
     if not os.path.exists("runs"):
         os.makedirs("runs")
-    outfile = open("runs/" + args.output_file + ".incomplete.tsv", "w")
+    outfile = open("runs/" + '-'.join(file_seed) + ".incomplete.tsv", "w")
         
     depth = args.depth
     controllers = args.controllers
@@ -405,5 +406,5 @@ if __name__ == '__main__':
         noise = noise * dim_noise
         
     outfile.close()
-    os.rename("runs/" + args.output_file + ".incomplete.tsv", "runs/" + args.output_file+".tsv")
+    os.rename("runs/" + '-'.join(file_seed) + ".incomplete.tsv", "runs/" + '-'.join(file_seed)+".tsv")
     
