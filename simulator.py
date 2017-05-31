@@ -1,5 +1,3 @@
-## Next project - feature regularization May 2017
-
 #!/usr/bin/python
 import platform, sys
 if platform.system() == 'Linux':
@@ -159,7 +157,7 @@ class TetrisSimulator(object):
         self.curr_z = self.next_z
         self.next_z = self.sequence.choice(all_zoids.values())
 
-    def update_score(self, penalty):
+    def update_score(self):
         """Scores the board. Should be called immediately after a move
         is made.
         :modifies: self.lines, self.l, self.score, self.level
@@ -169,7 +167,7 @@ class TetrisSimulator(object):
         if clears in self.l:
             self.l[clears] += 1
             self.score += {1: 40, 2: 100, 3: 300, 4: 1200}[clears] * \
-                (self.level + 1) - penalty
+                (self.level + 1)
         self.level = int(self.lines / 10)
 
     # <<<<< GAME METHODS
@@ -726,7 +724,7 @@ class TetrisSimulator(object):
         features = self.get_features(zoid_board, self.space)
         return sum(features[x] * self.controller[x] for x in self.controller)
 
-    def run(self, penalty, max_eps=None, printstep=500):
+    def run(self, max_eps=None, printstep=500):
         """Runs the simulator.
         Generates possible moves and chooses one.
         Loops until game_over or max_eps is exceeded.
@@ -739,7 +737,7 @@ class TetrisSimulator(object):
                                if v == max(scores.values()))
             orient, pos = self.sequence.choice(best_moves)
             self.space.imprint_zoid(self.curr_z, orient=orient, pos=pos)
-            self.update_score(penalty)
+            self.update_score()
             self.new_zoids()
             # the True parameter means full rows are counted *and* cleared
             self.space.check_full(True)

@@ -64,32 +64,7 @@ def merge_controllers(controllers, noise):
         new_tolerances[k] = tol + noise
     
     return new_controller, new_tolerances
-
-#Counts the number of active features a controller uses. Active is defined as having a weight above a certain threshold.
-#This method exists for purposes of regularization.
-
-def activeFeatures(controller, tol):
-	count = 0
-	for k in sorted(controller.keys()):
-		if numpy.absolute(controller[k])>tol:
-			count+=1
-	return count
-
-#This method is also for regularization. It computes the value of the parameter that measures how much regularization to use.
-#In typical machine learning applications, this parameter is often denoted by a lambda.
-#This method relies on access to the generation number in the CERL training, and so it must be placed here for minimal disruption.
-       
-def updatePenalty(update_type, initial_value, update_parameter, generation):
-	penalty = initial_value
-	if update_type != 'none':
-		if update_type == 'linear':
-			penalty += generation*update_parameter
-		elif update_type == 'exponential':
-			penalty *= numpy.exp(generation*update_parameter)
-		elif update_type == 'step' and generation <= update_parameter:
-			penalty = 0
-	return penalty
-
+        
 
 
 header = ["session","optimize","depth","controllers","survivors","episodes",
@@ -277,12 +252,6 @@ if __name__ == '__main__':
                                 max_well,  cuml_cleared,  cuml_eroded,  pit_depth,  \n
                                 mean_pit_depth,  pit_rows,  column_9,  tetris.\n""")
     
-    parser.add_argument('-ip','--initial_penalty',action = "store", dest = "initial_penalty", default = 0, help = "The initial strength of the regularization coefficient")
-
-    parser.add_argument('-rt','--regularization_type',action = "store", dest = "regularization_type", default = 'none', help = "How regularization strength will be updated. Choices are linear, exponential, step, and none")
-
-    parser.add_argument('-rtp','--regularization_type_parameter', action = "store", dest = "regularization_type_parameter", default = 0, help = "Extra parameter required. Generation number for step, otherwise a number multiplied by generation and put through some function to determine penalty strength.")
-    
     #harvest argparse
     args = parser.parse_args()
     
@@ -296,9 +265,6 @@ if __name__ == '__main__':
     episodes = args.episodes
     noise = args.noise
     dim_noise = args.dim_noise
-    initial_penalty = args.initial_penalty
-    regularization_type = args.regularization_type
-    regularization_type_parameter = args.regularization_type_parameter
     report_every = args.report_every
     initial_val = args.initial_val
     variance = args.variance
@@ -347,13 +313,11 @@ if __name__ == '__main__':
         for a in range(0, controllers):
             random_controller = generate_controller(start_controller, tolerances, rng = rng)
             controller_name = "G" + str(x + 1) + "_" + str(a+1)
-            controller_length = activeFeatures(random_controller, 0.001)
-	    penalty_strength = updatePenalty(regularization_type,initial_penalty,regularization_type_parameter, x)
-            penalty = controller_length*penalty_strength
+            
             game_seed = rng.randint(0,100000)
             
             sim = TetrisSimulator(controller = random_controller, show_choice = show_choice, show_result = show_result, choice_step = v_step, name = controller_name, seed = game_seed)
-            sim_result = sim.run(penalty, max_eps = episodes, printstep = report_every)
+            sim_result = sim.run(max_eps = episodes, printstep = report_every)
             
             #session_vars, name, features, controller, vars = False, outs = False
             write_controller(outfile, session_variables, controller_name, features, random_controller, 
@@ -383,7 +347,7 @@ if __name__ == '__main__':
             for r in range(0, test_reps):
                 test_name = "G" + str(x + 1) + "_T" + str(g+1) + "_R" + str(r+1)
                 test_sim = TetrisSimulator(controller = start_controller, show_result = show_result, show_choice = show_choice, choice_step = v_step, name = test_name, seed = test_seed)
-                test_res = test_sim.run(0, max_eps = episodes, printstep = report_every)
+                test_res = test_sim.run(max_eps = episodes, printstep = report_every)
                 
                 test_results.append(test_res)
                 write_controller(outfile, session_variables, test_name, features, start_controller, outs = test_res, 
