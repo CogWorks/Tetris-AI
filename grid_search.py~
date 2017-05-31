@@ -1,4 +1,4 @@
-#a program to expedite the process of trying different annealing schemes and parameter values
+#a program to expediate the process of trying different annealing schemes and parameter values
 import numpy as np
 import argparse
 from subprocess import call

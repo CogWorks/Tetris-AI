@@ -739,7 +739,7 @@ class TetrisSimulator(object):
                                if v == max(scores.values()))
             orient, pos = self.sequence.choice(best_moves)
             self.space.imprint_zoid(self.curr_z, orient=orient, pos=pos)
-            self.update_score()
+            self.update_score(penalty)
             self.new_zoids()
             # the True parameter means full rows are counted *and* cleared
             self.space.check_full(True)
