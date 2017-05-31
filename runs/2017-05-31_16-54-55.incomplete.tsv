@@ -1,0 +1,2 @@
+session	optimize	depth	controllers	survivors	episodes	noise	initial_value	variance	session_seed	game_seed	name	generation	type	game_num	repetition	landing_height	eroded_cells	row_trans	col_trans	pits	cuml_wells	landing_height_norm	eroded_cells_norm	row_trans_norm	col_trans_norm	pits_norm	cuml_wells_norm	landing_height_var	eroded_cells_var	row_trans_var	col_trans_var	pits_var	cuml_wells_var	lines	l1	l2	l3	l4	score	level	eps
+2017-05-31_16-54-55	lines	80	100	10	-1	4	0	100	1496249695.5	NIL	G0	0	base	0	0	0	0	0	0	0	0	0	0	0	0	0	0	100	100	100	100	100	100								
