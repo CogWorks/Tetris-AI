@@ -1,4 +1,4 @@
-#a program to expediate the process of trying different annealing schemes and parameter values
+#a program to expedite the process of trying different annealing schemes and parameter values
 import numpy as np
 import argparse
 from subprocess import call
@@ -34,7 +34,9 @@ if __name__ == "__main__":
 	parser.add_argument( '-gr', '--granularity',
                         action = "store", dest = "granularity",
                         type = int, default = 3,
-                        help = "How many samples the user wishes to divide the constructed intervals into.")						
+                        help = "How many samples the user wishes to divide the constructed intervals into.")		
+	parser.add_argument('-no','--norm',action = "store", dest = "norm_type", default = 0,
+		 help = "The type of penalty norm to use. Choices are 0, length of feature list, 1 absolute value of features, 2 sum 			 of squared features.")				
 	
 	#harvest the collected arguments
 	
@@ -46,6 +48,7 @@ if __name__ == "__main__":
 	min_update_value = args.min_update_value
 	regularization_type = args.regularization_type
 	granularity = args.granularity
+	norm_type = args.norm_type
 	
 	#creates the potential values the grid search will visit. Experiments or runs consist of running cross_entropy using 1 value from each of the following arrays.
 	initial_penalty_samples = np.linspace(min_initial_penalty,max_initial_penalty,num=granularity)
@@ -59,6 +62,7 @@ if __name__ == "__main__":
 		for upd in update_value_samples:
 			#puts a string on the command line to call cross_entropy.py, passing as arguments the regularization type, pen, and upd. Other parameters will remain as the default
 			# values found in cross_entropy.py for this branch of the Tetris project.
-			command = "python cross_entropy.py -ip " + str(pen) + " -rtp " + str(upd) + " -rt " + regularization_type
+			command = "python cross_entropy.py -ip " + str(pen) + " -rtp " + str(upd) + " -rt " + regularization_type + " -no " + str(norm_type)
 			subprocess.call(command,shell=True)
+	print 'The run has been completed. Output files should be stored in the runs directory.'
 			

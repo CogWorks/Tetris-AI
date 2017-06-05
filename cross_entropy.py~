@@ -61,19 +61,41 @@ def merge_controllers(controllers, noise):
         tol = numpy.std(vals)
         
         new_controller[k] = mean
-        new_tolerances[k] = tol + noise
+        new_tolerances[k] = numpy.sqrt(tol*tol + noise)
     
     return new_controller, new_tolerances
 
-#Counts the number of active features a controller uses. Active is defined as having a weight above a certain threshold.
-#This method exists for purposes of regularization.
+#The following methods define the norm in use for regularization
 
-def activeFeatures(controller, tol):
-	count = 0
+def 0_norm_of_features(controller, tol):
+	norm = 0
 	for k in sorted(controller.keys()):
 		if numpy.absolute(controller[k])>tol:
-			count+=1
-	return count
+			norm+=1
+	return norm
+
+def 1_norm_of_features(controller):
+	norm = 0
+	for k in sorted(controller.keys()):
+		norm+=numpy.absolute(controller[k])
+	return norm
+
+def 2_norm_of_features(controller):
+	norm = 0
+	for k in sorted(controller.keys()):
+		m=controller[k] #so that the weight only needs to be retrieved once, may be significant for long runs
+		norm+=m*m
+	return norm
+
+def norm(controller, norm_type)
+	if norm_type==0:
+		return 0_norm_of_features(controller,0.001)
+	elif norm_type==1:
+		return 1_norm_of_features(controller)
+	elif norm_type==2:
+		return 2_norm_of_features(controller)
+	else:
+		raise ValueError('Other norms are not supported at this time.')
 
 #This method is also for regularization. It computes the value of the parameter that measures how much regularization to use.
 #In typical machine learning applications, this parameter is often denoted by a lambda.
@@ -95,7 +117,7 @@ def updatePenalty(update_type, initial_value, update_parameter, generation):
 header = ["session","optimize","depth","controllers","survivors","episodes",
             "noise","initial_value","variance","session_seed",
             "game_seed","name","generation","type","game_num","repetition"]
-outputs = ["lines","l1","l2","l3","l4","score","level","eps"]
+outputs = ["lines","l1","l2","l3","l4","score","level","eps","norm_of_weights"]
 
 def write_header(file, features):
     vars = []
@@ -282,13 +304,16 @@ if __name__ == '__main__':
     parser.add_argument('-rt','--regularization_type',action = "store", dest = "regularization_type", default = 'none', help = "How regularization strength will be updated. Choices are linear, exponential, step, and none")
 
     parser.add_argument('-rtp','--regularization_type_parameter', action = "store", dest = "regularization_type_parameter", default = 0, help = "Extra parameter required. Generation number for step, otherwise a number multiplied by generation and put through some function to determine penalty strength.")
+
+	parser.add_argument('-no','--norm',action = "store", dest = "norm_type", default = 0, help = "The type of penalty norm to use. Choices are 0, length of feature list, 1 absolute value of features, 2 sum of squared features.")
     
     #harvest argparse
     args = parser.parse_args()
+    file_seed = args.output_file + args.regularization_type + str(args.regularization_type_parameter)
     
     if not os.path.exists("runs"):
         os.makedirs("runs")
-    outfile = open("runs/" + args.output_file + ".incomplete.tsv", "w")
+    outfile = open("runs/" + '-'.join(file_seed) + ".incomplete.tsv", "w")
         
     depth = args.depth
     controllers = args.controllers
@@ -299,6 +324,7 @@ if __name__ == '__main__':
     initial_penalty = args.initial_penalty
     regularization_type = args.regularization_type
     regularization_type_parameter = args.regularization_type_parameter
+    norm_type = args.norm_type
     report_every = args.report_every
     initial_val = args.initial_val
     variance = args.variance
@@ -331,7 +357,7 @@ if __name__ == '__main__':
     tolerances = {}
     for f in features:
         start_controller[f] = initial_val
-        tolerances[f] = variance
+        tolerances[f] = numpy.sqrt(variance)
         
     
     write_controller(outfile, session_variables, "G" + str(0), features, start_controller, 
@@ -347,13 +373,14 @@ if __name__ == '__main__':
         for a in range(0, controllers):
             random_controller = generate_controller(start_controller, tolerances, rng = rng)
             controller_name = "G" + str(x + 1) + "_" + str(a+1)
-            controller_length = activeFeatures(random_controller, 0.001)
+            norm_of_weights = norm(random_controller)
 	    penalty_strength = updatePenalty(regularization_type,initial_penalty,regularization_type_parameter, x)
-            penalty = controller_length*penalty_strength
+            penalty = norm_of_weights*penalty_strength
             game_seed = rng.randint(0,100000)
             
             sim = TetrisSimulator(controller = random_controller, show_choice = show_choice, show_result = show_result, choice_step = v_step, name = controller_name, seed = game_seed)
             sim_result = sim.run(penalty, max_eps = episodes, printstep = report_every)
+	    sim_result['controller_length'] = controller_length #to allow the length of the controller to be seen as output 
             
             #session_vars, name, features, controller, vars = False, outs = False
             write_controller(outfile, session_variables, controller_name, features, random_controller, 
@@ -375,6 +402,7 @@ if __name__ == '__main__':
             top_controllers.append(f[0])
         
         start_controller, tolerances = merge_controllers(top_controllers, noise)
+	controller_length = norm(start_controller)
         
         
         test_results = []
@@ -384,7 +412,8 @@ if __name__ == '__main__':
                 test_name = "G" + str(x + 1) + "_T" + str(g+1) + "_R" + str(r+1)
                 test_sim = TetrisSimulator(controller = start_controller, show_result = show_result, show_choice = show_choice, choice_step = v_step, name = test_name, seed = test_seed)
                 test_res = test_sim.run(0, max_eps = episodes, printstep = report_every)
-                
+                test_res['controller_length'] = controller_length #to allow the length of the controller to be seen as output
+
                 test_results.append(test_res)
                 write_controller(outfile, session_variables, test_name, features, start_controller, outs = test_res, 
                             game_seed = test_seed, type = "test", gen = x + 1, num = g+1, rep = r+1)
@@ -405,5 +434,5 @@ if __name__ == '__main__':
         noise = noise * dim_noise
         
     outfile.close()
-    os.rename("runs/" + args.output_file + ".incomplete.tsv", "runs/" + args.output_file+".tsv")
+    os.rename("runs/" + '-'.join(file_seed) + ".incomplete.tsv", "runs/" + '-'.join(file_seed)+".tsv")
     
