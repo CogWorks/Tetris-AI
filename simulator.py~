@@ -168,8 +168,8 @@ class TetrisSimulator(object):
         self.lines += clears
         if clears in self.l:
             self.l[clears] += 1
-            self.score += {1: 40, 2: 100, 3: 300, 4: 1200}[clears] * \
-                (self.level + 1) - penalty
+            self.score += ({1: 40, 2: 100, 3: 300, 4: 1200}[clears] * \
+                (self.level + 1) - penalty)
         self.level = int(self.lines / 10)
 
     # <<<<< GAME METHODS
