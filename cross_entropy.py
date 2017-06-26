@@ -54,7 +54,7 @@ def generate_controller(start, tols, mask, rng):
     #for each feature
     for k in sorted(start.keys()):
         #generate a new value around
-        	val = rng.gauss(start[k],tols[k])
+        	val = rng.gauss(start[k],numpy.sqrt(tols[k]))
 
 	#add to the controller if the mask allows it
         	new_controller[k]= val*mask[k]
@@ -75,7 +75,10 @@ def merge_controllers(controllers, noise):
         tol = numpy.std(vals)
         
         new_controller[k] = mean
-        new_tolerances[k] = numpy.sqrt(tol*tol + noise)
+        #the idea here is to reduce the noise added to weights with value 0, to give them a chance to stay low
+        counterbalance = 1.0-numpy.exp(-0.01-numpy.absolute(mean))
+        new_tolerances[k] = tol*tol + noise*counterbalance
+
     
     return new_controller, new_tolerances
 
@@ -122,7 +125,7 @@ def updatePenalty(update_type, initial_value, update_parameter, generation):
 			penalty += generation*update_parameter
 		elif update_type == 'exponential':
 			penalty *= numpy.exp(generation*update_parameter)
-		elif update_type == 'step' and generation <= update_parameter:
+		elif (update_type == 'step' and generation <= update_parameter):
 			penalty = 0
 	return penalty
 
@@ -336,6 +339,18 @@ if __name__ == '__main__':
                         action = "store", dest = "dropout_prob",
                         type = float, default = 0,
                         help = "Set the probability a weight is set to 0 when a new controller is generated.")
+
+    parser.add_argument( '-gcw', '--given_controller_weights',
+                        action = "store", dest = "given_controller_weights",
+                        type = float, nargs = '+',
+                        default = [0.0],
+                        help = "Provide a default list of weights. Must match length of features vector.")
+
+    parser.add_argument( '-gcv', '--given_controller_variance',
+                        action = "store", dest = "given_controller_variances",
+                        type = float, nargs = '+',
+                        default = [0.0],
+                        help = "Provide a default list of variances. Must match length of features vector.")
     
     #harvest argparse
     args = parser.parse_args()
@@ -360,6 +375,8 @@ if __name__ == '__main__':
     dropout_prob = args.dropout_prob
     report_every = args.report_every
     initial_val = args.initial_val
+    given_controller_weights = args.given_controller_weights
+    given_controller_variances = args.given_controller_variances
     variance = args.variance
     features = args.features
     optimize = args.optimize
@@ -388,16 +405,41 @@ if __name__ == '__main__':
     
     start_controller = {}
     tolerances = {}
-    for f in features:
-        start_controller[f] = initial_val
-        tolerances[f] = numpy.sqrt(variance)
+
+    #Generates the length of the start controller weights, variances and feature list, these must match for start_controller to be used
+    given_controller_weight_length = len(given_controller_weights)
+    given_controller_variance_length = len(given_controller_variances)
+    features_length = len(features)
+
+    #If the lengths match, the start controller uses the weights from given_controller. If not, the initial value is given for all
+    #weights. Variance is set the same way regardless (for now).
+    if given_controller_weight_length == features_length:
+        
+	start_controller = dict(zip(features, given_controller_weights))
+
+        if given_controller_variance_length == features_length:
+
+            tolerances = dict(zip(features, given_controller_variances))
+
+        else:
+
+            for f in features:
+
+                tolerances[f] = variance
+
+    else:
+
+        for f in features:
+    
+            start_controller[f] = initial_val
+            tolerances[f] = variance
         
     
     write_controller(outfile, session_variables, "G" + str(0), features, start_controller, 
                         vars = tolerances, type = "base", gen = 0)
 
     #generates a 'mask' that allows all the features
-    list_of_ones = [1] * len(features)
+    list_of_ones = [1] * features_length
     allow_all_features = dict(zip(features, list_of_ones))
 
 
