@@ -63,7 +63,7 @@ def generate_controller(start, tols, mask, rng):
 
 #Takes a list of controllers (lists) with the same number of features
 #outputs a new average controller, and the stdev for each value
-def merge_controllers(controllers, noise):
+def merge_controllers(controllers, noise, counter):
     new_controller = {}
     new_tolerances = {}
     #for each feature (of all controllers)
@@ -76,7 +76,7 @@ def merge_controllers(controllers, noise):
         
         new_controller[k] = mean
         #the idea here is to reduce the noise added to weights with value 0, to give them a chance to stay low
-        counterbalance = 1.0-numpy.exp(-0.01-numpy.absolute(mean))
+        counterbalance = 1.0-counter*numpy.exp(-0.01-numpy.absolute(mean))
         new_tolerances[k] = tol*tol + noise*counterbalance
 
     
@@ -281,7 +281,7 @@ if __name__ == '__main__':
                         help = "Timestep between choices in seconds.")
                         
     parser.add_argument( '-o', '--output',
-                        action = "store", dest = "output_file",
+                        action = "store", dest = "]",
                         type = str, default = datestring,
                         help = "Output file. Extension will be .tsv")
     
@@ -351,11 +351,16 @@ if __name__ == '__main__':
                         type = float, nargs = '+',
                         default = [0.0],
                         help = "Provide a default list of variances. Must match length of features vector.")
+
+    parser.add_argument( '-cou', '--counter',
+                        action = "store", dest = "counter",
+                        type = float, default = 1.0,
+                        help = "Determine whether counterbalance is applied to the noise variance. 1.0 for yes, 0.0 for no")
     
     #harvest argparse
     args = parser.parse_args()
     #For the regularization project, the file name has been generalized to include regularization parameters for reference
-    file_seed = args.output_file + args.regularization_type + str(args.regularization_type_parameter) + str(args.initial_penalty)+ str(args.norm_type)
+    file_seed = (args.output_file, args.regularization_type, str(args.regularization_type_parameter), str(args.initial_penalty), str(args.norm_type))
     
     #the path is searched for a directory called runs. If it does not exist, it is created. All runs are stored here.
     if not os.path.exists("runs"):
@@ -372,6 +377,7 @@ if __name__ == '__main__':
     regularization_type = args.regularization_type
     regularization_type_parameter = args.regularization_type_parameter
     norm_type = args.norm_type
+    counter = args.counter
     dropout_prob = args.dropout_prob
     report_every = args.report_every
     initial_val = args.initial_val
@@ -496,7 +502,7 @@ if __name__ == '__main__':
             top_controllers.append(f[0])
         
 	#The survivors are merged to generate the base controller for the next generation.
-        start_controller, tolerances = merge_controllers(top_controllers, noise)
+        start_controller, tolerances = merge_controllers(top_controllers, noise, counter)
 	norm_of_weights = norm(start_controller, norm_type)
         
         #For data comparison purposes, the scores of the result controller on standardized games are collected.

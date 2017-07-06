@@ -76,7 +76,7 @@ def merge_controllers(controllers, noise):
         
         new_controller[k] = mean
         #the idea here is to reduce the noise added to weights with value 0, to give them a chance to stay low
-        counterbalance = 1.0-numpy.exp(-0.01-numpy.absolute(mean)))
+        counterbalance = 1.0-numpy.exp(-0.01-numpy.absolute(mean))
         new_tolerances[k] = tol*tol + noise*counterbalance
 
     
@@ -355,7 +355,7 @@ if __name__ == '__main__':
     #harvest argparse
     args = parser.parse_args()
     #For the regularization project, the file name has been generalized to include regularization parameters for reference
-    file_seed = args.output_file + args.regularization_type + str(args.regularization_type_parameter) + str(args.initial_penalty)+ str(args.norm_type)
+    file_seed = (args.output_file, args.regularization_type, str(args.regularization_type_parameter), str(args.initial_penalty), str(args.norm_type))
     
     #the path is searched for a directory called runs. If it does not exist, it is created. All runs are stored here.
     if not os.path.exists("runs"):
