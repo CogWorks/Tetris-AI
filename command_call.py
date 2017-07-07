@@ -1,5 +1,5 @@
 import subprocess
 
-command = "python cross_entropy.py -d 80 -op score -c 200 -rt linear -rtp 0 -cou 0.0 -dr 0.15 -ip 100 -e 600 -f landing_height eroded_cells row_trans col_trans pits cuml_wells deep_wells max_well cuml_cleared pit_depth pit_rows tetris -gcw -17.84303 -64.50654 -16.20005 -53.06947 -53.23822 -8.680245 -0.2771131 80.23337 -5.0577417 -4.9643727 4.779058 28.11260 -gcv 21.5382 23.91866 7.74722 42.32221 40.21499 6.544137 20.36678 11.37082 6.894212 11.90838 21.49596 24.46683"
+command = "python cross_entropy.py -d 64 -op score -c 200 -rt linear -rtp 0 -cou 0.0 -dr 0.15 -ip 100 -e 600 -f landing_height eroded_cells row_trans col_trans pits cuml_wells deep_wells max_well cuml_cleared pit_depth pit_rows tetris -gcw -18.594110 -49.89329 -19.93395 -56.59616 -55.51307 -7.937560 -0.2377499 78.28183 -3.5911434 -5.924762 1.182153 28.57080 -gcv 17.29559 34.16077 10.54538 28.83381 32.28161 7.527053 13.9974 19.67477 20.71313 8.146976 32.3329 20.97502"
 
 subprocess.call(command,shell=True)

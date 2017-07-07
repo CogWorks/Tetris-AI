@@ -281,7 +281,7 @@ if __name__ == '__main__':
                         help = "Timestep between choices in seconds.")
                         
     parser.add_argument( '-o', '--output',
-                        action = "store", dest = "]",
+                        action = "store", dest = "output_file",
                         type = str, default = datestring,
                         help = "Output file. Extension will be .tsv")
     
