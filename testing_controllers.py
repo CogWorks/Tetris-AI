@@ -216,7 +216,7 @@ if __name__ == '__main__':
            test_res = test_sim.run(0, max_eps = episodes, printstep = report_every)
 
            test_results.append(test_res)
-                write_controller(outfile, session_variables, test_name, features, start_controller, outs = test_res, 
+           write_controller(outfile, session_variables, test_name, features, start_controller, outs = test_res, 
                             game_seed = test_seed, type = "test", gen = 0, num = g+1, rep = r+1)
             
         test_avg = {}
