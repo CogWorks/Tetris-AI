@@ -149,7 +149,7 @@ if __name__ == '__main__':
     #harvest argparse
     args = parser.parse_args()
     #For the regularization project, the file name has been generalized to include regularization parameters for reference
-    file_seed = (args.output_file, test_data)
+    file_seed = args.output_file
     
     #the path is searched for a directory called runs. If it does not exist, it is created. All runs are stored here.
     if not os.path.exists("runs"):
