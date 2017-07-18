@@ -49,13 +49,6 @@ def write_controller(file, session_vars, name, features, controller, game_seed =
         #outlist.append(str( (f - avg_feat) / max_feat ))
         outlist.append(str( f / max_feat ))
     
-    #do the vars if present. Searches the dictionary of features provided and writes the value for each one.
-    for f in features:
-        if vars:
-            outlist.append(str(vars[f]))
-        else:
-            outlist.append("")
-    
     #do the outputs if present. Searches the dictionary of outputs provided and writes the value for each one.
     for o in outputs:
         if outs:
