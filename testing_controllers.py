@@ -162,6 +162,7 @@ if __name__ == '__main__':
     features = args.features
     test_games = args.test_games
     test_reps = args.test_reps
+    initial_val = args.initial_val
     show_result = not args.no_results
     
     random_seed = args.random_seed
