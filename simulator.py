@@ -828,3 +828,6 @@ def main(argv):
     # legality enforced
     # osim.overhangs, osim.force_legal = True, True
     # osim.run()
+
+if __name__ == "__main__":
+    main([])
