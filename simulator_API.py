@@ -24,6 +24,12 @@ def get_features(board, zoid_str, controller, dictionaries=True):
     """ Given a board (with list of list representation), future zoid,
     and controller, this function returns the set of all possible options
     and their feature values.
+
+    Params:
+    board - [[int]] - list of list representation of board
+    zoid_str - string - string value for a zoid (e.g. "T")
+    controller - {string: int} - dictionary controller for a simulator
+
     If dictionaries=True then it will return it as a series of nested
     dictionaries organized as:
         return_val[orientation][row][col] = {zoid: '', board: [[]], features: {}}
@@ -69,7 +75,7 @@ def get_features(board, zoid_str, controller, dictionaries=True):
         return all_feats
 
 def pretty_print_features(board, zoid, controller):
-    feats = get_features(board, zoid, controller)
+    feats = get_features(board, zoid, controller, dictionaries=False)
     for f in feats:
         print "Current Zoid:", f['zoid']
         print "Row:", f['row']

@@ -18,7 +18,7 @@ class TetrisSimulator(object):
     :ivar tetris_zoid curr_z: Current zoid.
     :ivar tetris_zoid next_z: Next zoid.
     :ivar string name: The name for logging and tracking purposes.
-    :ivar bool overhangs: Decides whether to use a more robust system for determining possible moves. **Has not been implemented yet**
+    :ivar bool overhangs: Decides whether to use a more robust system for determining possible moves.
     :ivar bool force_legal: Enables an A* search to determine if overhang moves are actually legal (**COSTLY**).
     :ivar dictionary{string-float} controller: Feature names and their relative weights.
     :ivar bool show_result: Determines whether to print the results of each game.
@@ -126,6 +126,7 @@ class TetrisSimulator(object):
         self.l = {1: 0, 2: 0, 3: 0, 4: 0}
         self.score = 0
         self.level = 0
+        self.times = []
         # self.stats_dict = {}
 
     # GAME METHODS >>>>>
@@ -236,12 +237,15 @@ class TetrisSimulator(object):
         :raises: Exception if self.overhangs == True
         :returns: [(int, (int, int))] -- A list of options in the format [(orientaion, (row, column))]
         """
+        stime = time.time()
         if self.overhangs:
             # raise Exception("support for overhangs has not been implemented")
             self.options = self.possible_moves_overhangs()
         else:
             self.options = self.possible_moves()
             # self.options = [x for x in self.possible_moves() if not x[5]]
+        etime = time.time() - stime
+        self.times.append(etime)
 
         return self.options
 
@@ -289,6 +293,8 @@ class TetrisSimulator(object):
             for col in cols_to_check:
                 if col not in overhangs:
                     continue
+                elif min(overhangs[col]) < pos[0]: # if the overhang is below the current location of the piece
+                    continue
                 # Get zoid "landing point" for each overhang
                 o = overhangs[col]
                 overhang_landings = [r for r in o if r-1 not in o]
@@ -332,15 +338,18 @@ class TetrisSimulator(object):
 
                 # find where the zoid rests (tallest column underneath it)
                 r = max(heights[c:c + zoid.col_count()])
-                try:
-                    # Make sure zoid is not on top of any already occupied cells
-                    if any(self.space[r + i, c + j] for i, j in crds):
-                        # One of the cells is occupied, should never happen
-                        # with max column height check above...
-                        continue
-                except IndexError:
-                    # can't place the zoid in this column, out of bounds somewhere
-                    continue
+                while True:
+                    try:
+                        # Make sure zoid is not on top of any already occupied cells
+                        if not any(self.space[r-1 + i, c + j] for i, j in crds):
+                            # One of the cells is occupied, should never happen
+                            # with max column height check above...
+                            r -= 1
+                        else:
+                            break
+                    except IndexError:
+                        # can't place the zoid in this column, out of bounds somewhere
+                        break
                 options.append((orient, (r, c)))
 
         return options
@@ -802,6 +811,20 @@ class TetrisSimulator(object):
                                if v == max(scores.values()))
             orient, pos = self.sequence.choice(best_moves)
             self.space.imprint_zoid(self.curr_z, orient=orient, pos=pos)
+
+            # Print some info
+            # print "Scores:", scores
+            # print "\nbest_moves:", best_moves
+            # print "\norient:", orient, "  pos:", pos
+            # self.curr_z.set_orient(orient)
+            # print "zoid:"
+            # for r in self.curr_z.rows(reverse=True):
+            #     row = ''
+            #     for c in self.curr_z.row_iter(r):
+            #         row += str(c)
+            #     print row
+            # print "\n\n"
+
             self.update_score()
             self.new_zoids()
             # the True parameter means full rows are counted *and* cleared
@@ -812,16 +835,22 @@ class TetrisSimulator(object):
                 self.printscores()
             ep += 1
 
+
+
             if self.show_choice:
                 print_board(self.space, entire=True, show_full=True)
                 time.sleep(self.choice_step)
+
+            # raw_input("Press Enter to continue:")
+            # print "\n"
 
         if self.show_result:
             print("\n\nGame Over\nFinal scores:")
             print("Episodes: " + str(ep))
             self.printscores()
             self.printcontroller()
-            print("\n")
+            # print("\n")
+            print "get_options average time:", (sum(self.times) / len(self.times)), '\n'
 
         return({"lines": self.lines,
                 "l1": self.l[1],
@@ -838,6 +867,8 @@ class TetrisSimulator(object):
 def main(argv):
     """ Initializes 3 separate controllers, creates a model with controller1, and runs it.
     """
+
+    print "test"
 
     controller1 = {"landing_height": -1,
                    "eroded_cells": 1,
