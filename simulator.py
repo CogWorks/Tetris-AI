@@ -293,20 +293,19 @@ class TetrisSimulator(object):
             for col in cols_to_check:
                 if col not in overhangs:
                     continue
-                elif min(overhangs[col]) < pos[0]: # if the overhang is below the current location of the piece
+                elif max(overhangs[col]) < pos[0]:  # if the overhang is below the current location of the piece
                     continue
                 # Get zoid "landing point" for each overhang
                 o = overhangs[col]
                 overhang_landings = [r for r in o if r-1 not in o]
-                zoid_offset = 0
-                if col < pos[1]: # looking at overhangs to the left
+                if col < pos[1]:  # looking at overhangs to the left
                     zoid_offset = min([r for (r, c) in crds if c == 0])
-                else: # looking at overhagns to the right
+                else:  # looking at overhangs to the right
                     zoid_offset = min([r for (r, c) in crds if c == zoid.col_count()-1])
 
                 # Calculate position to place the zoid to move it under the overhang
                 for landing in overhang_landings:
-                    test_r = landing - zoid_offset
+                    test_r = max(landing - zoid_offset, pos[0])
                     test_c = pos[1]-1 if col < pos[1] else pos[1]+1
                     try:
                         if not any(self.space[test_r + i, test_c + j] for i, j in crds):
