@@ -50,7 +50,7 @@ class TetrisSimulator(object):
                  show_scores=False, show_options=False, show_result=True,
                  show_choice=False, option_step=0, choice_step=0,
                  name="Controller", seed=time.time(), overhangs=False,
-                 force_legal=True):
+                 force_legal=True, two_step=False):
         """Initializes the simulator object.
         :param board: A board representation [20 rows, 10 columns].
         :param curr: The current zoid.
@@ -65,6 +65,7 @@ class TetrisSimulator(object):
         :param name: The name given for logging and tracking purposes (printed during long runs).
         :param overhangs: If enabled, uses a more robust system for determining possible moves.
         :param force_legal: Enables an A* search to determine if overhang moves are actually legal (COSTLY).
+        :param two_step: If enabled, uses lookahead to determine moves.
         :type board: tetris_cow2
         :type curr: tetris_zoid
         :type next: tetris_zoid
@@ -78,6 +79,7 @@ class TetrisSimulator(object):
         :type name: string
         :type overhangs: bool
         :type force_legal: bool
+        :type two_step: bool
         """
 
         self.sequence = random.Random(seed)
@@ -101,6 +103,7 @@ class TetrisSimulator(object):
 
         self.overhangs = overhangs
         self.force_legal = force_legal
+        self.two_step = two_step
 
         if controller:
             self.controller = controller
@@ -230,7 +233,7 @@ class TetrisSimulator(object):
 
     # METHODS TO GET PERCEPTS >>>>>
 
-    def get_options(self):
+    def get_options(self, check_zoid, space):
         """Generates the list of options
         :modifies: self.options
         :raises: Exception if self.overhangs == True
@@ -239,38 +242,38 @@ class TetrisSimulator(object):
         if self.overhangs:
             raise Exception("support for overhangs has not been implemented")
         else:
-            self.options = self.possible_moves()
+            self.options = self.possible_moves(check_zoid, space)
             # self.options = [x for x in self.possible_moves() if not x[5]]
 
         return self.options
 
-    def possible_moves(self):
+    def possible_moves(self, check_zoid, space):
         """Generates a list of possible moves via the Straight-Drop method
         for each orientation, it drops the zoid straight down in each
         column.
         :returns: [(int, (int, int))] -- A list of possible moves in the format [(orientaion, (row, column))]
         """
-        zoid = self.curr_z
+        zoid = check_zoid
         options = []
         for orient in xrange(4):
             zoid.set_orient(orient)
             # get the indices of all occupied cells in the zoid
             crds = [(i, j) for i in zoid.rows()
                     for j in zoid.cols() if zoid[i, j]]
-            for c in self.space.cols():
+            for c in space.cols():
                 # stop if we run off the board
-                if c + zoid.col_count() > self.space.col_count():
+                if c + zoid.col_count() > space.col_count():
                     break
 
                 # find where the zoid rests
                 heights = tuple(self.get_height(col) for col in
-                                self.space.col_space())
+                                space.col_space())
                 # start at the lowest column height
                 r = min(heights[c:c + zoid.col_count()])
                 try:
                     # then keep checking the next row until all cells in the
                     # board are unoccupied
-                    while any(self.space[r + i, c + j] for i, j in crds):
+                    while any(space[r + i, c + j] for i, j in crds):
                         r += 1
                 except IndexError:
                     # can't place the zoid in this column
@@ -710,7 +713,7 @@ class TetrisSimulator(object):
 
     # CONTROLLERS >>>>>
 
-    def control(self, orient, pos):
+    def control(self, zoid, zoid_board, orient, pos):
         """
         Returns an integer corresponding to the score of a move given the
         orientation and position to place the current zoid.
@@ -718,23 +721,62 @@ class TetrisSimulator(object):
         :param pos: The position to place the current zoid.
         :returns: int -- Move score.
         """
-        zoid = self.curr_z.get_copy()
-        zoid_board = self.space.get_cow()
+        #print "entered control with orient of ", orient, " and pos of ", pos
         zoid_board.imprint_zoid(zoid, orient=orient, pos=pos, value=2)
+        #print "got past an imprint"
+        #print_board(zoid_board, entire=True, show_full=True)
         features = self.get_features(zoid_board, self.space)
+
         return sum(features[x] * self.controller[x] for x in self.controller)
 
-    def run(self, max_eps=None, printstep=500):
+    def run(self, max_eps=500, printstep=500):
         """Runs the simulator.
         Generates possible moves and chooses one.
         Loops until game_over or max_eps is exceeded.
         """
         ep = 0
-        while ep != max_eps and self.get_options():
+        #print self.curr_z, " : ", self.next_z
+        while ep != max_eps and self.get_options(self.curr_z, self.space):
             # generate options and features
-            scores = {x: self.control(*x) for x in self.options}
-            best_moves = tuple(k for k, v in scores.items()
-                               if v == max(scores.values()))
+            next_z_scores = {}
+            zoid = self.curr_z.get_copy()
+            curr_z_options = self.options
+            next_zoid = self.next_z.get_copy()
+        #    print curr_z_options
+            """
+            For each option for the current zoid, imprint it on the board
+            and get options for the next zoid. Then for each option create
+            a pair of both where the current zoid would be placed and where
+            the next zoid would be placed, and add that as a score to a
+            dictionary with the pair as its key.
+            """
+            for x in curr_z_options:
+        #        print "on curr_z_option", x
+                z_board = self.space.get_cow()
+                z_board.imprint_zoid(zoid, orient=x[0], pos=x[1], value=2)
+        #        print_board(z_board, entire=True, show_full=True)
+                next_z_options = self.get_options(next_zoid, z_board)
+        #        print next_z_options
+
+                for y in next_z_options:
+                    pair = (y, x)
+                    next_z_board = z_board.get_cow()
+        #            print "on next_z_option", y
+                    next_z_scores.update({pair: self.control(next_zoid, next_z_board, *y)})
+
+        #    print next_z_scores
+            """
+            Get the option that corresponds to the current zoid from the
+            key in next_z_scores.items() that is also associated with the
+            max score in the dictionary.
+            """
+            best_moves = tuple(k[1] for k, v in next_z_scores.items()
+                    if v == max(next_z_scores.values()))
+            #scores = {x: self.control(*x) for x in self.options}
+            #print scores
+            #best_moves = tuple(k for k, v in scores.items()
+            #                   if v == max(scores.values()))
+        #    print best_moves
             orient, pos = self.sequence.choice(best_moves)
             self.space.imprint_zoid(self.curr_z, orient=orient, pos=pos)
             self.update_score()
@@ -759,15 +801,15 @@ class TetrisSimulator(object):
             print("\n")
 
         return({"lines": self.lines,
-                "l1": self.l[1],
-                "l2": self.l[2],
-                "l3": self.l[3],
-                "l4": self.l[4],
-                "score": self.score,
-                "level": self.level,
-                "eps": ep})
+            "l1": self.l[1],
+            "l2": self.l[2],
+            "l3": self.l[3],
+            "l4": self.l[4],
+            "score": self.score,
+            "level": self.level,
+            "eps": ep})
 
-    # <<<<< CONTROLLERS
+        # <<<<< CONTROLLERS
 
 
 def main(argv):
@@ -775,35 +817,35 @@ def main(argv):
     """
 
     controller1 = {"landing_height": -1,
-                   "eroded_cells": 1,
-                   "row_trans": -1,
-                   "col_trans": -1,
-                   "pits": -4,
-                   "cuml_wells": -1}
+            "eroded_cells": 1,
+            "row_trans": -1,
+            "col_trans": -1,
+            "pits": -4,
+            "cuml_wells": -1}
 
     # DTS controller, from Dellacherie + Thiery & Scherrer; 35,000,000
     # rows?!!?!
     controller2 = {"landing_height": -12.63,
-                   "eroded_cells": 6.60,
-                   "row_trans": -9.22,
-                   "col_trans": -19.77,
-                   "pits": -13.08,
-                   "cuml_wells": -10.49,
-                   "pit_depth": -1.61,
-                   "pit_rows": -24.04}
+            "eroded_cells": 6.60,
+            "row_trans": -9.22,
+            "col_trans": -19.77,
+            "pits": -13.08,
+            "cuml_wells": -10.49,
+            "pit_depth": -1.61,
+            "pit_rows": -24.04}
 
     # bad controller for demonstration's purposes
     controller3 = {"landing_height": 1,
-                   "eroded_cells": 1,
-                   "row_trans": -1,
-                   "col_trans": -1,
-                   "pits": 1,
-                   "cuml_wells": -1}
+            "eroded_cells": 1,
+            "row_trans": -1,
+            "col_trans": -1,
+            "pits": 1,
+            "cuml_wells": -1}
 
     # Introducing overhangs
 
     osim = TetrisSimulator(
-        controller=controller1,
+            controller=controller1,
             board=tetris_cow2(),
             curr=all_zoids["L"],
             next=all_zoids["S"],
@@ -813,12 +855,12 @@ def main(argv):
             option_step=.3,
             choice_step=1,
             seed=1
-    )
+            )
 
     # enable for speed test
     osim.show_options = False
     osim.choice_step = 0
-
+    
     osim.run()
 
     # overhangs allowed, but legality not enforced
