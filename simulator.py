@@ -5,7 +5,7 @@ if platform.system() == 'Linux':
 elif platform.system() == 'Darwin':
     sys.path.insert(1,"lib/lib.macosx-10.10-x86_64-2.7")
 from tetris_cpp import *
-from boards import print_board, all_zoids
+from boards import print_board, all_zoids, unique_orientations
 import time, random
 
 
@@ -325,7 +325,7 @@ class TetrisSimulator(object):
         options = []
         heights = tuple(self.get_height(col) for col in
                         self.space.col_space())
-        for orient in xrange(4):
+        for orient in xrange(unique_orientations[zoid.get_shape()]):
             zoid.set_orient(orient)
             # get the indices of all occupied cells in the zoid
             crds = [(i, j) for i in zoid.rows()
