@@ -729,7 +729,7 @@ class TetrisSimulator(object):
 
         return sum(features[x] * self.controller[x] for x in self.controller)
 
-    def run(self, max_eps=500, printstep=500):
+    def run(self, max_eps=1500, printstep=500):
         """Runs the simulator.
         Generates possible moves and chooses one.
         Loops until game_over or max_eps is exceeded.
@@ -737,6 +737,8 @@ class TetrisSimulator(object):
         ep = 0
         #print self.curr_z, " : ", self.next_z
         while ep != max_eps and self.get_options(self.curr_z, self.space):
+            print ep
+            print self.options
             # generate options and features
             next_z_scores = {}
             zoid = self.curr_z.get_copy()
@@ -756,7 +758,7 @@ class TetrisSimulator(object):
                 z_board.imprint_zoid(zoid, orient=x[0], pos=x[1], value=2)
         #        print_board(z_board, entire=True, show_full=True)
                 next_z_options = self.get_options(next_zoid, z_board)
-        #        print next_z_options
+                print next_z_options
 
                 for y in next_z_options:
                     pair = (y, x)
@@ -774,9 +776,11 @@ class TetrisSimulator(object):
                     if v == max(next_z_scores.values()))
             #scores = {x: self.control(*x) for x in self.options}
             #print scores
+            print best_moves
             #best_moves = tuple(k for k, v in scores.items()
             #                   if v == max(scores.values()))
-        #    print best_moves
+            if not best_moves:
+                break
             orient, pos = self.sequence.choice(best_moves)
             self.space.imprint_zoid(self.curr_z, orient=orient, pos=pos)
             self.update_score()
