@@ -126,13 +126,15 @@ class TetrisSimulator(object):
         self.l = {1: 0, 2: 0, 3: 0, 4: 0}
         self.score = 0
         self.level = 0
-        self.times = []
         # self.stats_dict = {}
 
     # GAME METHODS >>>>>
 
     def get_random_zoid(self):
-        """Generates a new random zoid. duplicates are generally avoided.
+        """
+        *DEPRECATED*
+
+        Generates a new random zoid. duplicates are generally avoided.
         :return: int -- A zoid id.
         ..  warning::
             This function generates an error and is not used elsewhere in this
@@ -234,18 +236,12 @@ class TetrisSimulator(object):
     def get_options(self):
         """Generates the list of options
         :modifies: self.options
-        :raises: Exception if self.overhangs == True
         :returns: [(int, (int, int))] -- A list of options in the format [(orientaion, (row, column))]
         """
-        stime = time.time()
         if self.overhangs:
-            # raise Exception("support for overhangs has not been implemented")
             self.options = self.possible_moves_overhangs()
         else:
             self.options = self.possible_moves()
-            # self.options = [x for x in self.possible_moves() if not x[5]]
-        etime = time.time() - stime
-        self.times.append(etime)
 
         return self.options
 
@@ -849,7 +845,6 @@ class TetrisSimulator(object):
             self.printscores()
             self.printcontroller()
             # print("\n")
-            print "get_options average time:", (sum(self.times) / len(self.times)), '\n'
 
         return({"lines": self.lines,
                 "l1": self.l[1],
