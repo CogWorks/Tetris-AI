@@ -4,7 +4,7 @@ import _helpers
 
 class tetris_zoid(object):
     """Tetris zoid object, for use with 'tetris_cow'."""
-    def __init__(self,values,dims,pos=(0,0),value=1,orient=0):
+    def __init__(self, values, dims, shape=None, pos=(0, 0), value=1, orient=0):
         """Initialize zoid: pass 2d array of values, dims of array,
         and orientation."""
 
@@ -14,6 +14,7 @@ class tetris_zoid(object):
 
         self._dims = dims
         self._profiles = [None]*4
+        self._shape = shape
 
         #stored per copy
         self._value = value
@@ -47,6 +48,10 @@ class tetris_zoid(object):
     def get_orient(self):
         """Orientation: 90deg clockwise per increment."""
         return self._orient
+
+    def get_shape(self):
+        """Returns the string value representing the shape of this zoid"""
+        return self._shape
 
     #<<<<< ZOID MANIPULATION
 
@@ -164,23 +169,33 @@ class tetris_zoid(object):
 
 all_zoids = {
     'I': tetris_zoid(((1,1,1,1),),
-                      (1,4)),
+                      (1,4), 'I'),
 
     'T': tetris_zoid(((1,1,1), (0,1,0)),
-                      (2,3)),
+                      (2,3), 'T'),
 
     'L': tetris_zoid(((1,1,1), (1,0,0)),
-                      (2,3)),
+                      (2,3), 'L'),
 
     'J': tetris_zoid(((1,1,1), (0,0,1)),
-                      (2,3)),
+                      (2,3), 'J'),
 
     'O': tetris_zoid(((1,1), (1,1)),
-                      (2,2)),
+                      (2,2), 'O'),
 
     'Z': tetris_zoid(((1,1,0), (0,1,1)),
-                      (2,3)),
+                      (2,3), 'Z'),
 
     'S': tetris_zoid(((0,1,1), (1,1,0)),
-                      (2,3))
+                      (2,3), 'S')
     }
+
+unique_orientations = {
+    'I': 2,
+    'T': 4,
+    'L': 4,
+    'J': 4,
+    'O': 1,
+    'Z': 2,
+    'S': 2
+}
