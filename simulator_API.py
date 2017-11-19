@@ -8,18 +8,6 @@ from boards import all_zoids
 from simulator import TetrisSimulator
 
 
-## UNTESTED - Predict function - given a board and a zoid and a controller, returns best placement as determined by the controller
-
-# def predict(space, zoid, controller):
-#         sim = TetrisSimulator(controller = controller)
-#         sim.space = sim.convert_space(space)
-#         sim.curr_z = zoid
-#
-#         sim.get_options()
-#         return sim.control()
-
-
-
 def get_features(board, zoid_str, controller, dictionaries=True):
     """ Given a board (with list of list representation), future zoid,
     and controller, this function returns the set of all possible options
@@ -87,11 +75,11 @@ def pretty_print_features(board, zoid, controller):
             print "  ", lf, ":", f['features'][lf]
         print
 
-board = [[0]*10 for i in range(20)]
-controller1 = {"landing_height": -1,
-               "eroded_cells": 1,
-               "row_trans": -1,
-               "col_trans": -1,
-               "pits": -4,
-               "cuml_wells": -1}
-a = get_features(board, 'L', controller1)
+# board = [[0]*10 for i in range(20)]
+# controller1 = {"landing_height": -1,
+#                "eroded_cells": 1,
+#                "row_trans": -1,
+#                "col_trans": -1,
+#                "pits": -4,
+#                "cuml_wells": -1}
+# a = get_features(board, 'L', controller1)

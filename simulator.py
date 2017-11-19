@@ -9,6 +9,13 @@ from boards import print_board, all_zoids, unique_orientations
 import time, random
 
 
+# Constants
+level_speeds = {0: 800, 1: 720, 2: 630, 3: 550, 4: 470,
+                5: 380, 6: 300, 7: 220, 8: 130, 9: 100,
+                10: 80, 13: 70, 16: 50, 19: 30, 29: 20}
+MAX_LEVEL_SPEED_CHANGE = max(level_speeds)  # The last level with a speed change
+
+
 class TetrisSimulator(object):
 
     """| **TetrisSimulator is a board object that supports assessment metrics and future simulations.**
@@ -50,7 +57,8 @@ class TetrisSimulator(object):
                  show_scores=False, show_options=False, show_result=True,
                  show_choice=False, option_step=0, choice_step=0,
                  name="Controller", seed=time.time(), overhangs=False,
-                 force_legal=True):
+                 force_legal=True, avg_lat=250.9, resp_time=79.8,
+                 move_eff=1.23):
         """Initializes the simulator object.
         :param board: A board representation [20 rows, 10 columns].
         :param curr: The current zoid.
@@ -128,6 +136,11 @@ class TetrisSimulator(object):
         self.level = 0
         self.times = []
         # self.stats_dict = {}
+
+        # time pressure params
+        self.avg_lat = avg_lat
+        self.resp_time = resp_time
+        self.move_eff = move_eff
 
     # GAME METHODS >>>>>
 
@@ -240,7 +253,8 @@ class TetrisSimulator(object):
         stime = time.time()
         if self.overhangs:
             # raise Exception("support for overhangs has not been implemented")
-            self.options = self.possible_moves_overhangs()
+            # self.options = self.possible_moves_overhangs()
+            self.options = self.possible_moves_time_pressure(200)
         else:
             self.options = self.possible_moves()
             # self.options = [x for x in self.possible_moves() if not x[5]]
@@ -337,6 +351,8 @@ class TetrisSimulator(object):
 
                 # find where the zoid rests (tallest column underneath it)
                 r = max(heights[c:c + zoid.col_count()])
+                if r + zoid.row_count() > 20:
+                    break
                 while True:
                     try:
                         # Make sure zoid is not on top of any already occupied cells
@@ -352,6 +368,70 @@ class TetrisSimulator(object):
                 options.append((orient, (r, c)))
 
         return options
+
+    # >>>>>>>>>>>>>>>>>> Time pressure stuff
+
+    def get_min_clicks(self, pos):
+        """
+        Finds the minimum number of button clicks (rotations and translations)
+        needed to move the piece into the desired. Uses a more naive method for
+        now, not taking into account any advanced behavior like navigating a
+        piece around a structure in the board.
+
+        :return: (int) number of required button clicks
+        """
+        zoid_str = self.curr_z.get_shape()
+        zoid_col_offset = {  # from meta_t
+            "O": [4],
+            "L": [4, 4, 4, 5],
+            "J": [4, 4, 4, 5],
+            "S": [4, 5],
+            "Z": [4, 5],
+            "T": [4, 4, 4, 5],
+            "I": [3, 5]
+        }
+        starting_col = zoid_col_offset[zoid_str][pos[0]]
+        translation_clicks = starting_col - pos[1][1]
+        rot_clicks = pos[0]
+
+        return translation_clicks + rot_clicks
+
+    def get_speed(self):
+        if self.level in level_speeds:
+            return level_speeds[self.level]
+        elif self.level > MAX_LEVEL_SPEED_CHANGE:
+            return level_speeds[MAX_LEVEL_SPEED_CHANGE]
+        else:
+            i = self.level
+            while i not in level_speeds:
+                i -= 1
+            return level_speeds[i]
+
+    def possible_moves_time_pressure(self, click_latency):
+        """
+        Decides if a move is possible given time pressure
+
+        :param pos: The move to make (rotation (row, col))
+        :param click_latency: The amount of time per click (in milliseconds)
+        :return: (boolean) True if the move is possible, false otherwise
+        """
+        moves = self.possible_moves_overhangs()
+        time_pressure_moves = []
+
+        for m in moves:
+            # Calculate time it takes to move piece into position
+            min_clicks = self.get_min_clicks(m)
+            move_time = self.resp_time + (min_clicks * self.move_eff * self.avg_lat)
+
+            # Calculate the time allowed before piece locks in place
+            drop_time = (20 - m[1][0]) * self.get_speed()
+
+            if drop_time >= move_time:
+                time_pressure_moves.append(m)
+
+        return time_pressure_moves
+
+    # Time pressure stuff <<<<<<<<<<<<<<<<<<<
 
     def get_features(self, space, prev_space=None, convert=False):
         """Retrieves all of the features for a given space
@@ -793,7 +873,16 @@ class TetrisSimulator(object):
         """
         zoid = self.curr_z.get_copy()
         zoid_board = self.space.get_cow()
-        zoid_board.imprint_zoid(zoid, orient=orient, pos=pos, value=2)
+        try:
+            zoid_board.imprint_zoid(zoid, orient=orient, pos=pos, value=2)
+        except IndexError:
+            print "Index Error: position =", pos, "orient =", orient, "zoid =", zoid.get_shape()
+            crds = [(i, j) for i in zoid.rows()
+                    for j in zoid.cols() if zoid[i, j]]
+            print "crds", crds
+
+            exit(1)
+
         features = self.get_features(zoid_board, self.space)
         return sum(features[x] * self.controller[x] for x in self.controller)
 
@@ -849,7 +938,7 @@ class TetrisSimulator(object):
             self.printscores()
             self.printcontroller()
             # print("\n")
-            print "get_options average time:", (sum(self.times) / len(self.times)), '\n'
+            # print "get_options average time:", (sum(self.times) / len(self.times)), '\n'
 
         return({"lines": self.lines,
                 "l1": self.l[1],
@@ -899,15 +988,16 @@ def main(argv):
 
     osim = TetrisSimulator(
         controller=controller1,
-            board=tetris_cow2(),
-            curr=all_zoids["L"],
-            next=all_zoids["S"],
-            show_choice=True,
-            show_scores=True,
-            show_options=True,
-            option_step=.3,
-            choice_step=1,
-            seed=1
+        board=tetris_cow2(),
+        curr=all_zoids["L"],
+        next=all_zoids["S"],
+        show_choice=True,
+        show_scores=True,
+        show_options=True,
+        option_step=.3,
+        choice_step=1,
+        seed=1,
+        overhangs=True
     )
 
     # enable for speed test
