@@ -58,7 +58,7 @@ class TetrisSimulator(object):
                  show_choice=False, option_step=0, choice_step=0,
                  name="Controller", seed=time.time(), overhangs=False,
                  force_legal=True, avg_lat=250.9, resp_time=79.8,
-                 move_eff=1.23):
+                 move_eff=1.23, two_but_rot=False):
         """Initializes the simulator object.
         :param board: A board representation [20 rows, 10 columns].
         :param curr: The current zoid.
@@ -141,6 +141,7 @@ class TetrisSimulator(object):
         self.avg_lat = avg_lat
         self.resp_time = resp_time
         self.move_eff = move_eff
+        self.two_but_rot = two_but_rot
 
     # GAME METHODS >>>>>
 
@@ -254,7 +255,7 @@ class TetrisSimulator(object):
         if self.overhangs:
             # raise Exception("support for overhangs has not been implemented")
             # self.options = self.possible_moves_overhangs()
-            self.options = self.possible_moves_time_pressure(200)
+            self.options = self.possible_moves_time_pressure()
         else:
             self.options = self.possible_moves()
             # self.options = [x for x in self.possible_moves() if not x[5]]
@@ -394,6 +395,9 @@ class TetrisSimulator(object):
         translation_clicks = starting_col - pos[1][1]
         rot_clicks = pos[0]
 
+        if self.two_but_rot and rot_clicks == 3:
+            rot_clicks = 1
+
         return translation_clicks + rot_clicks
 
     def get_speed(self):
@@ -407,7 +411,7 @@ class TetrisSimulator(object):
                 i -= 1
             return level_speeds[i]
 
-    def possible_moves_time_pressure(self, click_latency):
+    def possible_moves_time_pressure(self):
         """
         Decides if a move is possible given time pressure
 

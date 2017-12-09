@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Tetris-AI - RPI Cogworks Laboratory documentation build configuration file, created by
+# TetrisAI - RPI Cogworks Laboratory documentation build configuration file, created by
 # sphinx-quickstart on Wed Feb 24 00:09:30 2016.
 #
 # This file is execfile()d with the current directory set to its
@@ -61,7 +61,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'Tetris-AI - RPI Cogworks Laboratory'
+project = u'TetrisAI - RPI Cogworks Laboratory'
 copyright = u'2016, John Lindstedt, Catherine Sibert, Ryan Hope, Keenan Sanchez, Mitchell Mellone'
 author = u'John Lindstedt, Catherine Sibert, Ryan Hope, Keenan Sanchez, Mitchell Mellone'
 
@@ -215,7 +215,7 @@ html_static_path = ['_static']
 #html_search_scorer = 'scorer.js'
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'Tetris-AI-RPICogworksLaboratorydoc'
+htmlhelp_basename = 'TetrisAI-RPICogworksLaboratorydoc'
 
 # -- Options for LaTeX output ---------------------------------------------
 
@@ -237,7 +237,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'Tetris-AI-RPICogworksLaboratory.tex', u'Tetris-AI - RPI Cogworks Laboratory Documentation',
+    (master_doc, 'TetrisAI-RPICogworksLaboratory.tex', u'TetrisAI - RPI Cogworks Laboratory Documentation',
      u'John Lindstedt, Catherine Sibert, Ryan Hope, Keenan Sanchez, Mitchell Mellone', 'manual'),
 ]
 
@@ -267,7 +267,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'tetris-ai-rpicogworkslaboratory', u'Tetris-AI - RPI Cogworks Laboratory Documentation',
+    (master_doc, 'tetris-ai-rpicogworkslaboratory', u'TetrisAI - RPI Cogworks Laboratory Documentation',
      [author], 1)
 ]
 
@@ -281,8 +281,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'Tetris-AI-RPICogworksLaboratory', u'Tetris-AI - RPI Cogworks Laboratory Documentation',
-     author, 'Tetris-AI-RPICogworksLaboratory', 'One line description of project.',
+    (master_doc, 'TetrisAI-RPICogworksLaboratory', u'TetrisAI - RPI Cogworks Laboratory Documentation',
+     author, 'TetrisAI-RPICogworksLaboratory', 'One line description of project.',
      'Miscellaneous'),
 ]
 
