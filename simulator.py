@@ -721,10 +721,7 @@ class TetrisSimulator(object):
         :param pos: The position to place the current zoid.
         :returns: int -- Move score.
         """
-        #print "entered control with orient of ", orient, " and pos of ", pos
         zoid_board.imprint_zoid(zoid, orient=orient, pos=pos, value=2)
-        #print "got past an imprint"
-        #print_board(zoid_board, entire=True, show_full=True)
         features = self.get_features(zoid_board, self.space)
 
         return sum(features[x] * self.controller[x] for x in self.controller)
@@ -735,16 +732,13 @@ class TetrisSimulator(object):
         Loops until game_over or max_eps is exceeded.
         """
         ep = 0
-        #print self.curr_z, " : ", self.next_z
         while ep != max_eps and self.get_options(self.curr_z, self.space):
             print ep
-            print self.options
-            # generate options and features
             next_z_scores = {}
+            curr_scores = {}
             zoid = self.curr_z.get_copy()
             curr_z_options = self.options
             next_zoid = self.next_z.get_copy()
-        #    print curr_z_options
             """
             For each option for the current zoid, imprint it on the board
             and get options for the next zoid. Then for each option create
@@ -753,20 +747,14 @@ class TetrisSimulator(object):
             dictionary with the pair as its key.
             """
             for x in curr_z_options:
-        #        print "on curr_z_option", x
                 z_board = self.space.get_cow()
                 z_board.imprint_zoid(zoid, orient=x[0], pos=x[1], value=2)
-        #        print_board(z_board, entire=True, show_full=True)
                 next_z_options = self.get_options(next_zoid, z_board)
-                print next_z_options
-
                 for y in next_z_options:
                     pair = (y, x)
                     next_z_board = z_board.get_cow()
-        #            print "on next_z_option", y
                     next_z_scores.update({pair: self.control(next_zoid, next_z_board, *y)})
 
-        #    print next_z_scores
             """
             Get the option that corresponds to the current zoid from the
             key in next_z_scores.items() that is also associated with the
@@ -774,11 +762,6 @@ class TetrisSimulator(object):
             """
             best_moves = tuple(k[1] for k, v in next_z_scores.items()
                     if v == max(next_z_scores.values()))
-            #scores = {x: self.control(*x) for x in self.options}
-            #print scores
-            print best_moves
-            #best_moves = tuple(k for k, v in scores.items()
-            #                   if v == max(scores.values()))
             if not best_moves:
                 break
             orient, pos = self.sequence.choice(best_moves)
