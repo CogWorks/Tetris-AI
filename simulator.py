@@ -333,6 +333,8 @@ class TetrisSimulator(object):
 
                 # find where the zoid rests (tallest column underneath it)
                 r = max(heights[c:c + zoid.col_count()])
+                if r + zoid.row_count() > 20:
+                    break
                 while True:
                     try:
                         # Make sure zoid is not on top of any already occupied cells
