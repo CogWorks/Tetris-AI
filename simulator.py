@@ -255,6 +255,7 @@ class TetrisSimulator(object):
         """
         zoid = check_zoid
         options = []
+        features = []
         for orient in xrange(4):
             zoid.set_orient(orient)
             # get the indices of all occupied cells in the zoid
@@ -280,6 +281,37 @@ class TetrisSimulator(object):
                     continue
                 else:
                     options.append((orient, (r, c)))
+                    copy_space = space.get_cow()
+                    copy_space.imprint_zoid(zoid, orient=orient, pos=(r, c), value=2)
+                    features.append(self.get_features(copy_space, space))
+                    less_vals = 0
+                    one_greater = 0
+                    valid_options = []
+                    valid_features = []
+                    for i in range(len(options)):
+                        i_features = features[i].values()
+                        for j in range(len(options)):
+                            if i != j:
+                                j_features = features[j].values()
+                                for k in range(len(i_features)):
+                                    if j_features[k] >= i_features[k]:
+                                        if one_greater != 1 and j_features[k] > i_features[k]:
+                                            one_greater = 1
+                                        less_vals += 1
+                                if less_vals == 48 and one_greater == 1:
+                                    one_greater = 0
+                                    break
+                                else:
+                                    less_vals = 0
+                                    one_greater = 0
+                        if less_vals < 48:
+                            valid_options.append(options[i])
+                            valid_features.append(features[i])
+                            less_vals = 0
+                        else:
+                            less_vals = 0
+                    options = valid_options
+                    features = valid_features
 
         return options
 
@@ -713,6 +745,11 @@ class TetrisSimulator(object):
 
     # CONTROLLERS >>>>>
 
+    def simple_dominance(self, options, zoid):
+        simple_dom = []
+
+        return simple_dom
+
     def control(self, zoid, zoid_board, orient, pos):
         """
         Returns an integer corresponding to the score of a move given the
@@ -726,19 +763,21 @@ class TetrisSimulator(object):
 
         return sum(features[x] * self.controller[x] for x in self.controller)
 
-    def run(self, max_eps=1500, printstep=500):
+    def run(self, max_eps=500, printstep=500):
         """Runs the simulator.
         Generates possible moves and chooses one.
         Loops until game_over or max_eps is exceeded.
         """
         ep = 0
+        total_options = 0
         while ep != max_eps and self.get_options(self.curr_z, self.space):
-            print ep
             next_z_scores = {}
             curr_scores = {}
             zoid = self.curr_z.get_copy()
             curr_z_options = self.options
             next_zoid = self.next_z.get_copy()
+            # go through cur_z_options and filter it using simple dominance
+            total_options += len(curr_z_options)
             """
             For each option for the current zoid, imprint it on the board
             and get options for the next zoid. Then for each option create
@@ -785,6 +824,8 @@ class TetrisSimulator(object):
             print("Episodes: " + str(ep))
             self.printscores()
             self.printcontroller()
+            print("\n")
+            print("Average options : " + str(total_options/ep))
             print("\n")
 
         return({"lines": self.lines,
