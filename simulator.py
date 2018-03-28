@@ -758,7 +758,7 @@ class TetrisSimulator(object):
 
         return sum(features[x] * self.controller[x] for x in self.controller)
 
-    def run(self, max_eps=500, printstep=500):
+    def run(self, max_eps=None, printstep=500):
         """Runs the simulator.
         Generates possible moves and chooses one.
         Loops until game_over or max_eps is exceeded.
