@@ -74,3 +74,10 @@ Screen-ception.
     and no screen sessions are persistent, 
     you're in the clear.
     
+To save output files to a Workspace folder on the server:
+    Ex: Saving output files to the Two-Step Workspace folder in the Tetris project:
+    (in cross_entropy.py)
+    
+    if not os.path.exists("/CogWorks/cwl-data/Active_Projects/Tetris/Workspaces/Two-Step/runs"):
+        os.makedirs("/CogWorks/cwl-data/Active_Projects/Tetris/Workspaces/Two-Step/runs")
+    outfile = open("/CogWorks/cwl-data/Active_Projects/Tetris/Workspaces/Two-Step/runs/" + args.output_file + ".incomplete.tsv", "w")
