@@ -254,10 +254,11 @@ if __name__ == '__main__':
     
     #harvest argparse
     args = parser.parse_args()
+   
+    if not os.path.exists("/CogWorks/cwl-data/Active_Projects/Tetris/Workspaces"):
+        os.makedirs("/CogWorks/cwl-data/Active_Projects/Tetris/Workspaces")
+    outfile = open("/CogWorks/cwl-data/Active_Projects/Tetris/Workspaces" + args.output_file + ".incomplete.tsv", "w")
     
-    if not os.path.exists("runs"):
-        os.makedirs("runs")
-    outfile = open("runs/" + args.output_file + ".incomplete.tsv", "w")
         
     depth = args.depth
     controllers = args.controllers
