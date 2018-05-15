@@ -370,5 +370,5 @@ if __name__ == '__main__':
         noise = noise * dim_noise
         
     outfile.close()
-    os.rename("runs/" + args.output_file + ".incomplete.tsv", "runs/" + args.output_file+".tsv")
+    os.rename(args.output_file + ".incomplete.tsv", args.output_file+".tsv")
     
