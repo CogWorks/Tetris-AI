@@ -7,6 +7,6 @@ setup(
     install_requires=[
         'numpy~=1.14',
     ],
-    python_requires='~=2.7',
+    python_requires='>=2.7, <4',
 
 )
