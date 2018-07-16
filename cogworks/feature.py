@@ -50,6 +50,6 @@ def with_transformed_state(transformer, feature):
 def evaluate(state, features):
     cache = {}
     if isinstance(features, collections.Mapping):
-        return {f: f(state, cache=cache) * w for (f, w) in features.iteritems()}
+        return {f: f(state, cache=cache) * w for (f, w) in features.items()}
     else:
         return {f: f(state, cache=cache) for f in features}

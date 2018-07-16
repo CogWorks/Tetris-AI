@@ -154,7 +154,7 @@ class State:
         if simultaneously is not None:
             return self.cleared[simultaneously]
 
-        return sum(count * times for (count, times) in self.cleared.iteritems())
+        return sum(count * times for (count, times) in self.cleared.items())
 
     def level(self):
         return int(self.lines_cleared() / 10)
