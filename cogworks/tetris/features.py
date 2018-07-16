@@ -17,7 +17,7 @@ import numpy as np
 #   NOTE: This is a helper feature, and should only be used for computing other features.
 @feature.define()
 def __heights(state):
-    return [state.board.height(c) for c in xrange(0, state.board.cols())]
+    return [state.board.height(c) for c in range(0, state.board.cols())]
 
 # mean_ht:
 #   The average height of the columns.
@@ -123,7 +123,7 @@ def all_trans(_, col_trans, row_trans):
 def __wells(_, __heights):
     return [
         max(0, min(__heights[i - 1], __heights[i + 1]) - __heights[i])
-        for i in xrange(1, len(__heights) - 1)
+        for i in range(1, len(__heights) - 1)
     ]
 
 # wells:
@@ -162,10 +162,10 @@ def max_well(_, __wells):
 def __pits(state, __heights):
     return [
         {
-            r for r in xrange(state.board.rows() - __heights[c] + 1, state.board.rows())
+            r for r in range(state.board.rows() - __heights[c] + 1, state.board.rows())
             if not state.board[r,c]
         }
-        for c in xrange(0, state.board.cols())
+        for c in range(0, state.board.cols())
     ]
 
 # pits:
@@ -197,7 +197,7 @@ def lumped_pits(_, __pits):
 @feature.define(__heights, __pits)
 def pit_depth(state, __heights, __pits):
     return sum(
-        len(set(xrange(state.board.rows() - __heights[c], r)) - __pits[c])
+        len(set(range(state.board.rows() - __heights[c], r)) - __pits[c])
         for (c, rows) in enumerate(__pits)
         for r in rows
     )
@@ -219,7 +219,7 @@ def __diffs(_, __heights):
 
 # cd_n:
 #   The difference in height between column n-1 and n.
-for i in xrange(0, 9):
+for i in range(0, 9):
     name = 'cd_{}'.format(i + 1)
     globals()[name] = feature.define(__diffs)(lambda _, __diffs: __diffs[i], name=name)
 
@@ -289,7 +289,7 @@ def pattern_div(state):
 def __nine_filled(state):
     return {
         row: unfilled[0]
-        for row in xrange(0, state.board.rows())
+        for row in range(0, state.board.rows())
         for unfilled in np.nonzero(~state.board[row, ::])
         if len(unfilled) == 1
     }
@@ -307,7 +307,7 @@ def nine_filled(_, __nine_filled):
 def tetris_progress(state, __nine_filled):
     progress = 0
     covered = set()
-    for row in xrange(0, state.board.rows()):
+    for row in range(0, state.board.rows()):
         # Whatever columns are filled cover lower rows
         covered |= set(np.nonzero(state.board[row, ::])[0])
         col = __nine_filled.get(row)
@@ -337,7 +337,7 @@ def full_cells(state):
 #   The sum of non-empty cells, weighted multiplicatively by height.
 @feature.define()
 def weighted_cells(state):
-    return np.sum(np.sum(state.board.data, axis=1) * xrange(state.board.rows(), 0, -1))
+    return np.sum(np.sum(state.board.data, axis=1) * range(state.board.rows(), 0, -1))
 
 # eroded_cells:
 #   The number of cells that were cleared from the previously placed zoid.

@@ -9,15 +9,12 @@ def simulate(state, zoid_gen, scorer, tie_breaker, lookahead=1):
             return state, scorer(state)
 
         # Compute best non-losing futures
-        futures = itertools.ifilter(
-            lambda future: future is not None,
-            (best_future(future, zoids[1:]) for future in state.futures(zoids[0]))
-        )
+        futures = (best_future(future, zoids[1:]) for future in state.futures(zoids[0]))
 
         # Find the best options
         choices = []
         best = -float('inf')
-        for (future, score) in futures:
+        for (future, score) in (f for f in futures if f is not None):
             if score >= best:
                 if best < score:
                     choices = []

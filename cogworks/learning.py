@@ -26,18 +26,18 @@ def cross_entropy(feats, width, keep, test_f, stdev, noise, smooth, rng, map_f=m
     while True:
         # Generate new weights around the mean
         generation = [
-            [rng.gauss(weights[i], stdev[i] + noise) for i in xrange(0, len(feats))]
-            for _ in xrange(0, width)
+            [rng.gauss(weights[i], stdev[i] + noise) for i in range(0, len(feats))]
+            for _ in range(0, width)
         ]
 
         # Evaluate the weights
-        results = map_f(lambda (i, weights): (test_f(dict(zip(feats, weights))), i), enumerate(generation))
+        results = map_f(lambda i: (test_f(dict(zip(feats, generation[i]))), i), range(0, width))
 
         # Collect top performers
-        top_weights = zip(*(generation[i] for (_, i) in nlargest(keep, results)))
+        top_weights = list(zip(*(generation[i] for (_, i) in nlargest(keep, results))))
 
         # Compute mean weights and new deviations
-        for i in xrange(0, len(feats)):
+        for i in range(0, len(feats)):
             weights[i] = np.mean(top_weights[i])
             stdev[i] = np.std(top_weights[i])
 
