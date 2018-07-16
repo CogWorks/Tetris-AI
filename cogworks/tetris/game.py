@@ -7,7 +7,7 @@ class Zoid:
 
     def __init__(self, name, shape, rots):
         self.name = name
-        self.shapes = tuple(np.rot90(shape, k=i) for i in xrange(0, rots))
+        self.shapes = tuple(np.rot90(shape, k=i) for i in range(0, rots))
 
     def __repr__(self):
         return 'Zoid.{}'.format(self.name)
@@ -61,7 +61,7 @@ class Board:
 
     def imprint(self, orient, row, col):
         self.data[row:row+orient.shape[0], col:col+orient.shape[1]] |= orient
-        for c in xrange(0, orient.shape[1]):
+        for c in range(0, orient.shape[1]):
             self.heights[col + c] = self.rows() - row - np.nonzero(orient[::, c])[0][0]
 
     def overlaps(self, orient, row, col):
@@ -77,7 +77,7 @@ class Board:
 
     def clear(self, rows):
         self.data = np.insert(np.delete(self.data, list(rows), 0), 0, np.zeros((len(rows), self.cols()), dtype=np.bool_), axis=0)
-        for c in xrange(0, self.cols()):
+        for c in range(0, self.cols()):
             nonzero = np.nonzero(self.col(c))[0]
             if len(nonzero) > 0:
                 self.heights[c] = self.rows() - nonzero[0]
@@ -91,7 +91,7 @@ class Board:
         return "{}x{} Board@{:#x}".format(self.rows(), self.cols(), id(self))
 
     def __str__(self):
-        return '\n'.join([''.join(['#' if self[i,j] else '.' for j in xrange(0, self.cols())]) for i in xrange(0, self.rows())])
+        return '\n'.join([''.join(['#' if self[i,j] else '.' for j in range(0, self.cols())]) for i in range(0, self.rows())])
 
     def __deepcopy__(self, memo):
         if self in memo:
@@ -162,8 +162,8 @@ class State:
     def futures(self, zoid):
 
         def possible_places(board, orient):
-            for col in xrange(0, board.cols() - orient.shape[1] + 1):
-                highest = max(board.height(col + c) for c in xrange(0, orient.shape[1]))
+            for col in range(0, board.cols() - orient.shape[1] + 1):
+                highest = max(board.height(col + c) for c in range(0, orient.shape[1]))
                 row = board.rows() - highest - orient.shape[0]
                 if not board.overlaps(orient, row, col):
                     while not board.overlaps(orient, row + 1, col):
@@ -172,7 +172,7 @@ class State:
                     yield (row, col)
 
         # For every possible placement of the current zoid, yield a representative State
-        for rot in xrange(0, len(zoid)):
+        for rot in range(0, len(zoid)):
             for (row, col) in possible_places(self.board, zoid[rot]):
                 yield self.future(zoid, row, col, rot)
 
