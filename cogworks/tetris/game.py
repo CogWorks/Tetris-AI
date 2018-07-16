@@ -84,8 +84,8 @@ class Board:
             else:
                 self.heights[c] = 0
 
-    def __getitem__(self, (row, col)):
-        return self.data[row, col]
+    def __getitem__(self, pos):
+        return self.data[pos]
 
     def __repr__(self):
         return "{}x{} Board@{:#x}".format(self.rows(), self.cols(), id(self))
