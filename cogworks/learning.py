@@ -34,7 +34,7 @@ def cross_entropy(feats, width, keep, test_f, stdev, noise, smooth, rng, map_f=m
         results = map_f(lambda i: (test_f(dict(zip(feats, generation[i]))), i), range(0, width))
 
         # Collect top performers
-        top_weights = zip(*(generation[i] for (_, i) in nlargest(keep, results)))
+        top_weights = list(zip(*(generation[i] for (_, i) in nlargest(keep, results))))
 
         # Compute mean weights and new deviations
         for i in range(0, len(feats)):
