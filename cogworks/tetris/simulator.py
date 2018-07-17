@@ -1,15 +1,30 @@
 import itertools
 
+def move_drop(state, zoid):
+    board = state.board
+    for rot in range(0, len(zoid)):
+        orient = zoid[rot]
+        for col in range(0, board.cols() - orient.shape[1] + 1):
+            highest = max(board.height(col + c) for c in range(0, orient.shape[1]))
+            row = board.rows() - highest - orient.shape[0]
+            if not board.overlaps(orient, row, col):
+                while not board.overlaps(orient, row + 1, col):
+                    row += 1
+                yield (rot, row, col)
 
-def simulate(state, zoid_gen, scorer, tie_breaker, lookahead=1):
+
+def simulate(state, zoid_gen, move_gen, scorer, tie_breaker, lookahead=1):
 
     def best_future(state, zoids):
         if len(zoids) == 0:
             # No more zoids, so score the current state
             return state, scorer(state)
 
-        # Compute best non-losing futures
-        futures = (best_future(future, zoids[1:]) for future in state.futures(zoids[0]))
+        # Compute futures from move_gen
+        futures = (state.future(zoids[0], *move) for move in move_gen(state, zoids[0]))
+
+        # Recursively evaluate futures to compute ultimate scores
+        futures = (best_future(future, zoids[1:]) for future in futures)
 
         # Find the best options
         choices = []
