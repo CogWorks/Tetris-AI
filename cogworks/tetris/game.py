@@ -132,7 +132,7 @@ class State:
         ancestor = self
         while ancestor.prev is not None:
             d = ancestor.delta
-            deltas.append((d.zoid, d.row, d.col, d.rot))
+            deltas.append((d.zoid, d.rot, d.row, d.col))
             ancestor = ancestor.prev
 
         return (ancestor.board, ancestor.cleared, ancestor.score, ancestor.CLEARED_POINTS, deltas)
@@ -174,9 +174,9 @@ class State:
         # For every possible placement of the current zoid, yield a representative State
         for rot in range(0, len(zoid)):
             for (row, col) in possible_places(self.board, zoid[rot]):
-                yield self.future(zoid, row, col, rot)
+                yield self.future(zoid, rot, row, col)
 
-    def future(self, zoid, row, col, rot):
+    def future(self, zoid, rot, row, col):
         # Copy important info from this state
         board = deepcopy(self.board)
         cleared = self.cleared.copy()
