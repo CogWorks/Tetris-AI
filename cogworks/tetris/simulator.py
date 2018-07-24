@@ -46,6 +46,44 @@ def move_with_overhang_slide(move_gen):
 
     return augmented_gen
 
+def move_with_wiggle(move_gen):
+
+    def wiggle(board, zoid, rot, row, col, seen):
+        moves = []
+        if (rot, row, col) not in seen:
+            seen.add((rot, row, col))
+            if not board.overlaps(zoid[rot], row, col):
+                if board.overlaps(zoid[rot], row + 1, col):
+                    # Hit the bottom, so the current move is valid
+                    moves.append((rot, row, col))
+                else:
+                    # The piece can still drop, so try that
+                    moves.extend(wiggle(board, zoid, rot, row + 1, col, seen))
+
+                # Try to wiggle the piece left and right to generate unseen moves
+                if col > 0:
+                    moves.extend(wiggle(board, zoid, rot, row, col - 1, seen))
+                if col + zoid[rot].shape[1] <= board.cols():
+                    moves.extend(wiggle(board, zoid, rot, row, col + 1, seen))
+
+        return moves
+
+    def augmented_gen(state, zoid):
+        seen = set()
+        for (rot, row, col) in move_gen(state, zoid):
+            for move in wiggle(state.board, zoid, rot, row, col, seen):
+                yield move
+
+    return augmented_gen
+
+# Nearly every possible move can be found by wiggling from the top of every column
+# This doesn't include moves that require mid-placement rotations, like spins
+move_wiggle = move_with_wiggle(lambda state, zoid: (
+    (rot, 0, col)
+    for rot in range(0, len(zoid))
+    for col in range(0, state.board.cols() - zoid[rot].shape[1] + 1)
+))
+
 def policy_best(scorer, tie_breaker):
     # Like builtin max, but returns all elements that have max value
     def all_max(itr, key):
