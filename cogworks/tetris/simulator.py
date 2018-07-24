@@ -12,6 +12,40 @@ def move_drop(state, zoid):
                     row += 1
                 yield (rot, row, col)
 
+def move_with_overhang_slide(move_gen):
+
+    def augmented_gen(state, zoid):
+        board = state.board
+        for (rot, row, col) in move_gen(state, zoid):
+            # Pass on the original move as-is
+            yield (rot, row, col)
+            orient = zoid[rot]
+
+            # Check if there is an overhang to the right of the move
+            if col + orient.shape[1] < board.cols() and row > board.rows() - board.height(col + orient.shape[1]):
+                # Slide to the left, yielding every legal placement as a move
+                for c in reversed(range(board.cols() - orient.shape[1], col, -1)):
+                    if not board.overlaps(orient, row, c):
+                        r = row
+                        while not board.overlaps(orient, r + 1, c):
+                            r += 1
+                        yield (rot, r, c)
+                    else: break
+
+            # Check if there is an overhang to the left of the move
+            if col > 0 and row > board.rows() - board.height(col - 1):
+                # Slide to the right, yielding every legal placement as a move
+                for c in reversed(range(0, col)):
+                    if not board.overlaps(orient, row, c):
+                        r = row
+                        # Lower the piece, if possible
+                        while not board.overlaps(orient, r + 1, c):
+                            r += 1
+                        yield (rot, r, c)
+                    else: break
+
+    return augmented_gen
+
 def policy_best(scorer, tie_breaker):
     # Like builtin max, but returns all elements that have max value
     def all_max(itr, key):
