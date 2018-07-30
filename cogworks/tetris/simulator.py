@@ -84,6 +84,41 @@ move_wiggle = move_with_wiggle(lambda state, zoid: (
     for col in range(0, state.board.cols() - zoid[rot].shape[1] + 1)
 ))
 
+
+def move_with_pressure(move_gen, avg_lat=250.9, resp_time=79.8, move_eff=1.23, two_but_rot=False):
+
+    def is_time(state, zoid, move):
+        rot, row, col = move
+        s_col = {
+            'O': [4],
+            'L': [4, 4, 4, 5],
+            'J': [4, 4, 4, 5],
+            'S': [4, 5],
+            'T': [4, 5],
+            'I': [3, 5]
+        }[zoid.name][rot]
+
+        # Compute the minimum number of key presses to achieve the placement by adding translational
+        # and rotational clicks
+        clicks = abs(s_col - col) + (1 if two_but_rot and rot == 3 else rot)
+
+        # Compute time required to move piece into position
+        time = resp_time + (clicks * move_eff * avg_lat)
+
+        # Compute time until piece locks into place
+        brackets = [(29, 20), (19, 30), (16, 50), (13, 70), (10, 80),
+                    (9, 100), (8, 130), (7, 220), (6, 300), (5, 380),
+                    (4, 470), (3, 550), (2, 630), (1, 720), (0, 800)]
+        for (level, speed) in brackets:
+            if level <= state.level(): break
+
+        limit = (state.board.rows() - row) * speed
+
+        return time <= limit
+
+    return lambda state, zoid: (move for move in move_gen(state, zoid) if is_time(state, zoid, move))
+
+
 def policy_best(scorer, tie_breaker):
     # Like builtin max, but returns all elements that have max value
     def all_max(itr, key):
