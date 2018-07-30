@@ -132,7 +132,7 @@ class State:
         ancestor = self
         while ancestor.prev is not None:
             d = ancestor.delta
-            deltas.append((d.zoid, d.row, d.col, d.rot))
+            deltas.append((d.zoid, d.rot, d.row, d.col))
             ancestor = ancestor.prev
 
         return (ancestor.board, ancestor.cleared, ancestor.score, ancestor.CLEARED_POINTS, deltas)
@@ -159,24 +159,7 @@ class State:
     def level(self):
         return int(self.lines_cleared() / 10)
 
-    def futures(self, zoid):
-
-        def possible_places(board, orient):
-            for col in range(0, board.cols() - orient.shape[1] + 1):
-                highest = max(board.height(col + c) for c in range(0, orient.shape[1]))
-                row = board.rows() - highest - orient.shape[0]
-                if not board.overlaps(orient, row, col):
-                    while not board.overlaps(orient, row + 1, col):
-                        row += 1
-
-                    yield (row, col)
-
-        # For every possible placement of the current zoid, yield a representative State
-        for rot in range(0, len(zoid)):
-            for (row, col) in possible_places(self.board, zoid[rot]):
-                yield self.future(zoid, row, col, rot)
-
-    def future(self, zoid, row, col, rot):
+    def future(self, zoid, rot, row, col):
         # Copy important info from this state
         board = deepcopy(self.board)
         cleared = self.cleared.copy()
