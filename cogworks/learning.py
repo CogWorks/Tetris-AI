@@ -4,7 +4,7 @@ from heapq import nlargest
 import collections
 import numpy as np
 
-def cross_entropy(feats, width, keep, test_f, stdev, noise, smooth, rng, map_f=map):
+def cross_entropy(feats, stdev, width, keep, rng, test_f, noise_f=None, map_f=map):
     # Interpret features
     if isinstance(feats, collections.Mapping):
         # Weights provided
@@ -24,9 +24,13 @@ def cross_entropy(feats, width, keep, test_f, stdev, noise, smooth, rng, map_f=m
         stdev = [stdev] * len(feats)
 
     while True:
+        if noise_f is not None:
+            # Apply noise function
+            stdev = [noise_f(s) for s in stdev]
+
         # Generate new weights around the mean
         generation = [
-            [rng.gauss(weights[i], stdev[i] + noise) for i in range(0, len(feats))]
+            [rng.gauss(weights[i], stdev[i]) for i in range(0, len(feats))]
             for _ in range(0, width)
         ]
 
@@ -40,9 +44,6 @@ def cross_entropy(feats, width, keep, test_f, stdev, noise, smooth, rng, map_f=m
         for i in range(0, len(feats)):
             weights[i] = np.mean(top_weights[i])
             stdev[i] = np.std(top_weights[i])
-
-        # Smooth noise factor
-        noise *= smooth
 
         # Reconstruct weight and stdev feature maps
         yield collections.OrderedDict(zip(feats, weights)), collections.OrderedDict(zip(feats, stdev))
