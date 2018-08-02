@@ -100,13 +100,9 @@ class Board:
         return not np.array_equal(self.data, other.data)
 
     def __deepcopy__(self, memo):
-        if self in memo:
-            return self
-
         clone = Board(self.rows(), self.cols(), zero=False)
         np.copyto(clone.data, self.data)
         clone.heights = list(self.heights)
-        memo[self] = clone
         return clone
 
 class State:
