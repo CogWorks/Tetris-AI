@@ -120,7 +120,8 @@ def all_trans(_, col_trans, row_trans):
 #   Otherwise, its value is how much shorter it is than its shortest neighbor.
 #   NOTE: This is a helper feature, and should only be used for computing other features.
 @feature.define(__heights)
-def __wells(_, __heights):
+def __wells(state, __heights):
+    __heights = [state.board.rows()] + __heights + [state.board.rows()]
     return [
         max(0, min(__heights[i - 1], __heights[i + 1]) - __heights[i])
         for i in range(1, len(__heights) - 1)
