@@ -274,7 +274,7 @@ def d_pits(_, pits, p_pits):
 #   The height of the row containing the bottom-most cell of the previously placed zoid.
 @feature.define()
 def landing_height(state):
-    return state.board.rows() - (state.delta.row + state.delta.zoid[state.delta.rot].shape[0] - 1)
+    return state.board.rows() - (state.delta.row + state.delta.zoid[state.delta.rot].shape[0])
 
 # pattern_div:
 #   The number of columns that do not have the same pattern.
