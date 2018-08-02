@@ -93,6 +93,12 @@ class Board:
     def __str__(self):
         return '\n'.join([''.join(['#' if self[i,j] else '.' for j in range(0, self.cols())]) for i in range(0, self.rows())])
 
+    def __eq__(self, other):
+        return np.array_equal(self.data, other.data)
+
+    def __ne__(self, other):
+        return not np.array_equal(self.data, other.data)
+
     def __deepcopy__(self, memo):
         if self in memo:
             return self
