@@ -82,7 +82,7 @@ def tetris(_, cleared):
 #   NOTE: This is not equal to the actual difference in State.score.
 @feature.define(cleared)
 def move_score(state, cleared):
-    return cleared * state.prev.level() + 1
+    return cleared * (state.prev.level() + 1)
 
 # Transition Features
 
