@@ -7,7 +7,7 @@ class Zoid:
 
     def __init__(self, name, shape, rots):
         self.name = name
-        self.shapes = tuple(np.rot90(shape, k=i) for i in range(0, rots))
+        self.shapes = tuple(np.rot90(shape, k=-i) for i in range(0, rots))
 
     def __repr__(self):
         return 'Zoid.{}'.format(self.name)
