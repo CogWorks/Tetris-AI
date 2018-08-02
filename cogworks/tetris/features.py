@@ -220,9 +220,15 @@ def __diffs(_, __heights):
 
 # cd_n:
 #   The difference in height between column n-1 and n.
-for i in range(0, 9):
-    name = 'cd_{}'.format(i + 1)
-    globals()[name] = feature.define(__diffs)(lambda _, __diffs: __diffs[i], name=name)
+cd_1 = feature.define(__diffs)(lambda _, __diffs: __diffs[0], name='cd_1')
+cd_2 = feature.define(__diffs)(lambda _, __diffs: __diffs[1], name='cd_2')
+cd_3 = feature.define(__diffs)(lambda _, __diffs: __diffs[2], name='cd_3')
+cd_4 = feature.define(__diffs)(lambda _, __diffs: __diffs[3], name='cd_4')
+cd_5 = feature.define(__diffs)(lambda _, __diffs: __diffs[4], name='cd_5')
+cd_6 = feature.define(__diffs)(lambda _, __diffs: __diffs[5], name='cd_6')
+cd_7 = feature.define(__diffs)(lambda _, __diffs: __diffs[6], name='cd_7')
+cd_8 = feature.define(__diffs)(lambda _, __diffs: __diffs[7], name='cd_8')
+cd_9 = feature.define(__diffs)(lambda _, __diffs: __diffs[8], name='cd_9')
 
 # all_diffs:
 #   The sum of all column differences.
