@@ -107,8 +107,6 @@ class Board:
 
 class State:
 
-    CLEARED_POINTS = (0, 40, 100, 300, 1200)
-
     class Delta:
         def __init__(self, zoid, rot, row, col, cleared):
             self.zoid = zoid
@@ -117,15 +115,12 @@ class State:
             self.col = col
             self.cleared = cleared
 
-    def __init__(self, prev, board, cleared=None, score=0, delta=None):
+    def __init__(self, prev, board, cleared=None, delta=None):
         self.prev = prev
         self.board = board
         self.cleared = cleared
-        self.score = score
         self.delta = delta
 
-        if self.prev is not None:
-            self.CLEARED_POINTS = self.prev.CLEARED_POINTS
         if self.cleared is None:
             self.cleared = collections.defaultdict(int)
 
@@ -137,19 +132,17 @@ class State:
             deltas.append((d.zoid, d.rot, d.row, d.col))
             ancestor = ancestor.prev
 
-        return (ancestor.board, ancestor.cleared, ancestor.score, ancestor.CLEARED_POINTS, deltas)
+        return (ancestor.board, ancestor.cleared, deltas)
 
     def __setstate__(self, state):
-        board, cleared, score, POINTS, deltas = state
-        prev = State(None, board, cleared=cleared, score=score, delta=None)
-        prev.CLEARED_POINTS = POINTS
+        board, cleared, deltas = state
+        prev = State(None, board, cleared=cleared, delta=None)
         while deltas:
             next = prev.future(*deltas.pop())
             prev = next
         self.prev = prev.prev
         self.board = prev.board
         self.cleared = prev.cleared
-        self.score = prev.score
         self.delta = prev.delta
 
     def lines_cleared(self, simultaneously=None):
@@ -159,13 +152,19 @@ class State:
         return sum(count * times for (count, times) in self.cleared.items())
 
     def level(self):
-        return int(self.lines_cleared() / 10)
+        return self.lines_cleared() // 10
+
+    def score(self, points=(0, 40, 100, 300, 1200)):
+        score = 0
+        while self is not None:
+            score += points[len(self.delta.cleared)] * (self.level() + 1)
+            self = self.prev
+        return score
 
     def future(self, zoid, rot, row, col):
         # Copy important info from this state
         board = deepcopy(self.board)
         cleared = self.cleared.copy()
-        score = self.score
 
         # Compute future info with copies
         board.imprint(zoid[rot], row, col)
@@ -173,8 +172,7 @@ class State:
         delta = State.Delta(zoid, rot, row, col, full)
         if len(full) > 0:
             cleared[len(full)] += 1
-            score += self.CLEARED_POINTS[len(full)] * (self.level() + 1)
             board.clear(full)
 
         # Create future state with this as the previous one
-        return State(self, board, cleared=cleared, score=score, delta=delta)
+        return State(self, board, cleared=cleared, delta=delta)
