@@ -76,14 +76,6 @@ def cuml_cleared(_, cleared):
 def tetris(_, cleared):
     return cleared // 4
 
-# move_score:
-#   The number of points earned.
-#   Computed as the number of cleared rows times the state's level.
-#   NOTE: This is not equal to the actual difference in State.score.
-@feature.define(cleared)
-def move_score(state, cleared):
-    return cleared * (state.prev.level() + 1)
-
 # Transition Features
 
 # col_trans:
