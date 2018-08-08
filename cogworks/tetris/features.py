@@ -275,10 +275,10 @@ def landing_height(state):
     return state.board.rows() - (state.delta.row + state.delta.zoid[state.delta.rot].shape[0])
 
 # pattern_div:
-#   The number of columns that do not have the same pattern.
+#   The number of unique transitions between adjacent columns.
 @feature.define()
 def pattern_div(state):
-    return np.unique(state.board.data, axis=1).shape[1]
+    return np.unique(np.diff(state.board.data.astype(int)), axis=1).shape[1]
 
 # __nine_filled:
 #   A mapping from row to the only empty space in that column, if such a space exists.
