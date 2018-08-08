@@ -62,7 +62,9 @@ class Board:
     def imprint(self, orient, row, col):
         self.data[row:row+orient.shape[0], col:col+orient.shape[1]] |= orient
         for c in range(0, orient.shape[1]):
-            self.heights[col + c] = self.rows() - row - np.nonzero(orient[::, c])[0][0]
+            top = self.rows() - row - np.nonzero(orient[::, c])[0][0]
+            if top >= self.heights[col + c]:
+                self.heights[col + c] = top
 
     def overlaps(self, orient, row, col):
         if row < 0 or col < 0:
