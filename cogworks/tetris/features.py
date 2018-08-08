@@ -88,23 +88,15 @@ def move_score(state, cleared):
 
 # col_trans:
 #   The number of times that two adjacent cells in the same column mismatch.
-#   That is, the total number of times a column transitions from filled to empty, or vice versa.
-#   Computed by first XORing the board with itself after being shifted by one row and padding with
-#   the values of the row closest to the new row and summing the elements, as only cells with an
-#   unequal neighbor will evaluate to 1.
 @feature.define()
 def col_trans(state):
-    return np.sum(state.board.data ^ np.pad(state.board.data, ((0,1),(0,0)), 'edge')[1:,:])
+    return np.sum(np.diff(state.board.data, axis=0))
 
 # row_trans:
 #   The number of times that two adjacent cells in the same row mismatch.
-#   That is, the total number of times a row transitions from filled to empty, or vice versa.
-#   Computed by first XORing the board with itself after being shifted by one column and padding
-#   with the values of the column closest to the new column and summing the elements, as only cells
-#   with an unequal neighbor will evaluate to 1.
 @feature.define()
 def row_trans(state):
-    return np.sum(state.board.data ^ np.pad(state.board.data, ((0,0),(0,1)), 'edge')[:,1:])
+    return np.sum(np.diff(state.board.data, axis=1))
 
 # all_trans:
 #   The total number of times that two adjacent cells mismatch.
