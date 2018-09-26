@@ -76,35 +76,19 @@ def cuml_cleared(_, cleared):
 def tetris(_, cleared):
     return cleared // 4
 
-# move_score:
-#   The number of points earned.
-#   Computed as the number of cleared rows times the state's level.
-#   NOTE: This is not equal to the actual difference in State.score.
-@feature.define(cleared)
-def move_score(state, cleared):
-    return cleared * state.prev.level() + 1
-
 # Transition Features
 
 # col_trans:
 #   The number of times that two adjacent cells in the same column mismatch.
-#   That is, the total number of times a column transitions from filled to empty, or vice versa.
-#   Computed by first XORing the board with itself after being shifted by one row and padding with
-#   the values of the row closest to the new row and summing the elements, as only cells with an
-#   unequal neighbor will evaluate to 1.
 @feature.define()
 def col_trans(state):
-    return np.sum(state.board.data ^ np.pad(state.board.data, ((0,1),(0,0)), 'edge')[1:,:])
+    return np.sum(np.diff(state.board.data, axis=0))
 
 # row_trans:
 #   The number of times that two adjacent cells in the same row mismatch.
-#   That is, the total number of times a row transitions from filled to empty, or vice versa.
-#   Computed by first XORing the board with itself after being shifted by one column and padding
-#   with the values of the column closest to the new column and summing the elements, as only cells
-#   with an unequal neighbor will evaluate to 1.
 @feature.define()
 def row_trans(state):
-    return np.sum(state.board.data ^ np.pad(state.board.data, ((0,0),(0,1)), 'edge')[:,1:])
+    return np.sum(np.diff(state.board.data, axis=1))
 
 # all_trans:
 #   The total number of times that two adjacent cells mismatch.
@@ -120,7 +104,8 @@ def all_trans(_, col_trans, row_trans):
 #   Otherwise, its value is how much shorter it is than its shortest neighbor.
 #   NOTE: This is a helper feature, and should only be used for computing other features.
 @feature.define(__heights)
-def __wells(_, __heights):
+def __wells(state, __heights):
+    __heights = [state.board.rows()] + __heights + [state.board.rows()]
     return [
         max(0, min(__heights[i - 1], __heights[i + 1]) - __heights[i])
         for i in range(1, len(__heights) - 1)
@@ -219,9 +204,15 @@ def __diffs(_, __heights):
 
 # cd_n:
 #   The difference in height between column n-1 and n.
-for i in range(0, 9):
-    name = 'cd_{}'.format(i + 1)
-    globals()[name] = feature.define(__diffs)(lambda _, __diffs: __diffs[i], name=name)
+cd_1 = feature.define(__diffs)(lambda _, __diffs: __diffs[0], name='cd_1')
+cd_2 = feature.define(__diffs)(lambda _, __diffs: __diffs[1], name='cd_2')
+cd_3 = feature.define(__diffs)(lambda _, __diffs: __diffs[2], name='cd_3')
+cd_4 = feature.define(__diffs)(lambda _, __diffs: __diffs[3], name='cd_4')
+cd_5 = feature.define(__diffs)(lambda _, __diffs: __diffs[4], name='cd_5')
+cd_6 = feature.define(__diffs)(lambda _, __diffs: __diffs[5], name='cd_6')
+cd_7 = feature.define(__diffs)(lambda _, __diffs: __diffs[6], name='cd_7')
+cd_8 = feature.define(__diffs)(lambda _, __diffs: __diffs[7], name='cd_8')
+cd_9 = feature.define(__diffs)(lambda _, __diffs: __diffs[8], name='cd_9')
 
 # all_diffs:
 #   The sum of all column differences.
@@ -273,13 +264,13 @@ def d_pits(_, pits, p_pits):
 #   The height of the row containing the bottom-most cell of the previously placed zoid.
 @feature.define()
 def landing_height(state):
-    return state.board.rows() - (state.delta.row + state.delta.zoid[state.delta.rot].shape[0] - 1)
+    return state.board.rows() - (state.delta.row + state.delta.zoid[state.delta.rot].shape[0])
 
 # pattern_div:
-#   The number of columns that do not have the same pattern.
+#   The number of unique transitions between adjacent columns.
 @feature.define()
 def pattern_div(state):
-    return np.unique(state.board.data, axis=1).shape[1]
+    return np.unique(np.diff(state.board.data.astype(int)), axis=1).shape[1]
 
 # __nine_filled:
 #   A mapping from row to the only empty space in that column, if such a space exists.
