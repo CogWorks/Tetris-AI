@@ -158,7 +158,7 @@ class State:
 
     def score(self, points=(0, 40, 100, 300, 1200)):
         score = 0
-        while self is not None:
+        while self.delta is not None:
             score += points[len(self.delta.cleared)] * (self.level() + 1)
             self = self.prev
         return score
