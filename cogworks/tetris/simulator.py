@@ -120,40 +120,14 @@ def move_with_pressure(move_gen, avg_lat=250.9, resp_time=79.8, move_eff=1.23, t
     return lambda state, zoid: (move for move in move_gen(state, zoid) if is_time(state, zoid, move))
 
 
-def policy_best(scorer, tie_breaker):
-    # Like builtin max, but returns all elements that have max value
-    def all_max(itr, key):
-        group = []
-        max = None
-        for e in itr:
-            k = key(e)
-            if max is None or max < k:
-                # e is new max, since previous max is strictly less
-                group = []
-                max = k
-            elif k < max:
-                # e cannot be a max, so skip it
-                continue
-            # k >= max
-            # e is a max, so add to group
-            group.append(e)
-        return group
+class MovePolicy(object):
+    def __init__(self, move_gen):
+        self.move_gen = move_gen
 
-    def pick_best(futures):
-        maxes = all_max(futures, scorer)
-        if len(maxes) == 0:
-            return None
-        elif len(maxes) == 1:
-            return maxes[0]
-        else:
-            return tie_breaker(maxes)
-    return pick_best
+    def _select(self, states):
+        pass
 
-def simulate(state, zoid_gen, move_gen, move_policy, lookahead=1):
-    assert lookahead > 0
-    while True:
-        # Slice out 'visible' zoids using lookahead
-        zoids = tuple(itertools.islice(zoid_gen, 0, lookahead))
+    def select(self, state, zoids):
         # Create a stack of future pools
         # First layer is simply the current state
         pool_stack = [[state]]
@@ -163,24 +137,64 @@ def simulate(state, zoid_gen, move_gen, move_policy, lookahead=1):
             pool_stack.append([
                 prev.future(zoid, *move)
                 for prev in pool_stack[-1]
-                for move in move_gen(prev, zoid)
+                for move in self.move_gen(prev, zoid)
             ])
 
         # Apply the move policy to the farthest non-empty future pool
         next = None
-        while next is None and len(pool_stack) > 1:
+        while len(pool_stack) > 1:
             pool = pool_stack.pop()
-            if pool:
-                next = move_policy(pool)
-
-        if next is not None:
-            # Backtrack to find first move on the path to this far-future, and yield it
-            while next.prev is not state:
+            if next is not None:
                 next = next.prev
-            yield next
+            elif pool:
+                next = self._select(pool)
+        return (next.delta.rot, next.delta.row, next.delta.col) if next is not None else None
 
-            # Reset for the next iteration
-            state = next
+
+class MovePolicyBest(MovePolicy):
+    def __init__(self, move_gen, scorer, tie_breaker=None):
+        super(MovePolicyBest, self).__init__(move_gen)
+        self.scorer = scorer
+        self.tie_breaker = tie_breaker
+
+    def _select(self, states):
+        def all_max(itr, key=None):
+            group = []
+            max = None
+            for e in itr:
+                k = key(e) if key is not None else e
+                if max is None or max < k:
+                    # e is new max, since previous max is strictly less
+                    group = []
+                    max = k
+                elif k < max:
+                    # e cannot be a max, so skip it
+                    continue
+                # k >= max
+                # e is a max, so add to group
+                group.append(e)
+            return group
+
+        best = all_max(states, self.scorer)
+        if len(best) == 0:
+            return None
+        elif len(best) > 1 and self.tie_breaker is not None:
+            return self.tie_breaker(best)
+        else:
+            return best[0]
+
+
+def simulate(state, zoid_gen, move_policy, lookahead=1):
+    assert lookahead > 0
+    while True:
+        # Slice out 'visible' zoids using lookahead
+        zoids = tuple(itertools.islice(zoid_gen, 0, lookahead))
+
+        move = move_policy.select(state, zoids)
+        if move is not None:
+            # If a move was selected, do it and yield the new state
+            state = state.future(zoids[0], *move)
+            yield state
             # Push all yet-unplaced zoids back into front of zoid_gen, if any
             if len(zoids) > 1:
                 zoid_gen = itertools.chain(zoids[1:], zoid_gen)
