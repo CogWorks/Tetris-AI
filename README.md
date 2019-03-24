@@ -13,4 +13,4 @@ Simulations of Tetris controlled by AI developed through a variety of methods (c
 2. In CMD, run this command.
     pip install git+https://github.com/CogWorks/Tetris-AI
     
-    Cursory explanation of the syntax: pip install git+<link to the git page>
+    Cursory explanation of the syntax: pip install git+link_to_the_git_page
