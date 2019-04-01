@@ -95,7 +95,7 @@ def move_with_pressure(move_gen, avg_lat=250.9, resp_time=79.8, move_eff=1.23, t
             'J': [4, 4, 4, 5],
             'S': [4, 5],
             'Z': [4, 5],
-            'T': [4, 5],
+            'T': [4, 4, 4, 5],
             'I': [3, 5]
         }[zoid.name][rot]
 
